@@ -1,0 +1,17 @@
+{
+    "extraction_directory": "",
+    "output_directory": "example2",
+    "output_format": "JSON",
+    "metdata":"PATH",
+    "extraction_members": [
+        "env-vars.out",
+        "mhm.nml",
+        "mhm_parameter.nml",
+        "mhm_outputs.nml",
+        "mrm_outputs.nml"
+    ],
+    "parsing_rules": {
+        "mode": "overwrite",
+        "module": "./custom_parse.py"
+    }
+}

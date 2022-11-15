@@ -1,0 +1,19 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+[project]
+name = "metadata_archivist"
+version = "0.1"
+authors = [
+  { name="Jose Villamar", email="j.villamar@fz-juelich.de" },
+  { name="Matthias Kelbling", email="matthias.kelbling@ufz.de" },
+]
+description = "A tool collection for processing metadata in workflows"
+readme = "README.md"
+requires-python = ">=3.6"
+classifiers = [
+    "Programming Language :: Python :: 3",
+]
+
+[project.urls]
+"Homepage" = "https://codebase.helmholtz.cloud/metamosim/metadata_archivist.git"

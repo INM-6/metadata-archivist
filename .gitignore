@@ -1,5 +1,6 @@
-example/example1
-example/example2
+examples/example1
+examples/example2
+examples/test_namelist
 
 # Created by https://www.toptal.com/developers/gitignore/api/python
 # Edit at https://www.toptal.com/developers/gitignore?templates=python

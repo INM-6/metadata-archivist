@@ -174,7 +174,7 @@ Output path: {self.out_dir_path}
 Extraction path: {self.dc_dir_path}
 Remove extracted: {self.rm_dc_dir}''')
 
-        self.decompressor.output_files_pattern = self.parser.input_files_pattern
+        self.decompressor.output_files_pattern = self.parser.input_file_pattern
 
         for file_path, file_content in self.decompressor:
             self.parser.parse(file_path, file_content)

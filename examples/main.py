@@ -9,7 +9,12 @@ Author: Jose V.
 """
 
 from metadata_archivist import Archivist
+from my_parsers import custom_parser
 
-arch = Archivist(config='config.json', archive='test_namelist.tgz')
+my_parser = custom_parser()
+
+arch = Archivist(config='config.json',
+                 archive='test_namelist.tgz',
+                 parser=my_parser)
 
 arch.extract()

@@ -18,13 +18,16 @@ from typing import Optional, Union
 from . import decompressor as dc
 from . import parser as pr
 from . import exporter as ex
+from .AParser import AParser
+from .Decompressor import Decompressor
 
 
 class Archivist():
 
     def __init__(self,
                  config: Union[dict, str],
-                 archive: str,
+                 archive: Path,
+                 parser: AParser,
                  verbose: Optional[bool] = True,
                  rm_dc_dir: Optional[bool] = False):
         """init
@@ -49,8 +52,14 @@ class Archivist():
         # check config
         self._check_config()
 
+        # set decompressor
+        self.decompressor = Decompressor(archive, config)
+
+        # set parser
+        self.parser = parser
+
         # check and get paths and types
-        self.archive_path, self.archive_type = dc.check_archive(archive)
+        # self.archive_path, self.archive_type = dc.check_archive(archive)
         self.dc_dir_path = self._check_dir(self.config["extraction_directory"],
                                            allow_existing=False)
         self.out_dir_path = self._check_dir(self.config["output_directory"],
@@ -161,10 +170,14 @@ class Archivist():
         if self.verbose:
             print(f'''
 Extracting:
-Archive path: {self.archive_path}
 Output path: {self.out_dir_path}
 Extraction path: {self.dc_dir_path}
 Remove extracted: {self.rm_dc_dir}''')
+
+        self.decompressor.output_files_pattern = self.parser.input_files_pattern
+
+        for file_path, file_content in self.decompressor:
+            self.parser.parse(file_path, file_content)
 
         dc.decompress(self.archive_path,
                       self.archive_type,
@@ -172,15 +185,12 @@ Remove extracted: {self.rm_dc_dir}''')
                       self.members,
                       verb=self.verbose)
 
-        if self.verbose:
-            print("Finished extracting self.archive.")
-
         arch_name = self.archive_path.stem.split(".")[0]
         dc_arch_dir = self.dc_dir_path.joinpath(arch_name)
 
-        if self.verbose:
-            print(f'''Extracted self.archive path: {dc_arch_dir}
-    Beginning collecting metadata.''')
+        #     if self.verbose:
+        #         print(f'''Extracted self.archive path: {dc_arch_dir}
+        # Beginning collecting metadata.''')
 
         module = None
         if self.mode == "overwrite":

@@ -13,8 +13,6 @@ import tarfile
 
 from pathlib import Path
 
-TAR_FORMATS = [".tar", ".tgz", ".tar.gz"]
-
 
 def is_archive(file_path: Path) -> str:
     """

@@ -1,79 +1,107 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Decompressor class
+Originally:
 
 Metadata archive extractor example.
 Tested with Python 3.8.10
 Author: Jose V.
-
 """
 
+import sys
+
+from typing import Optional
 from pathlib import Path
-from zipfile import is_zipfile
-from tarfile import is_tarfile
-
-from . import decompressing_procedures as dprc
-
-
-def formats() -> list:
-    """
-    Get function acceptable archive formats.
-
-    Returns:
-        List of acceptable archive formats.
-    """
-
-    return list(dprc.PROCEDURES.keys())
+import zipfile
+import tarfile
+from re import pattern
 
 
-def check_archive(file_path: str):
-    """
-    Checks if file in path is archive.
-    Acceptable formats are stored in ARCHIVE_FORMATS.
-    Stops execution if archive is in wrong format.
+class Decompressor():
+    '''
+    class containing all methods around processing compressed archives
 
-    Args:
-        file_path: String path to archive.
+    main purposes in the framework:
+    - receive list of re.patterns
+    - send a list of tuples (path/to/file/in/archive, IOBase object)
+    '''
 
-    Returns:
-        Path object to archive.
-    """
+    def __init__(self,
+                 archive: str,
+                 config: dict,
+                 verbose: Optional[bool] = True):
 
-    path = Path(file_path)
+        if self.verbose:
+            print('''\n    - Decompressor:''')
 
-    assert path.is_file(), f"Incorrect path to archive {file_path}"
+        self.current_file = (None, None)
 
-    is_z = is_zipfile(path)
-    is_t = is_tarfile(path)
+        self._archive = None
 
-    assert is_z or is_t
+        self.archive = archive
 
-    return path, "zip" if is_z else "tar"
+    def __iter__(self):
+        return self
 
-
-def decompress(archive_path: Path,
-               archive_type: str,
-               dc_dir_path: Path,
-               members: list = None,
-               verb: bool = False):
-    """
-    Extracts archive using extraction rules.
-    This function is called from the main python file where the check_archive
-    was previously used.
-    No additional check needed.
-
-    Args:
-        archive_path: Path object to archive.
-        archive_type: String type of archive.
-        dc_dir_path: Path object to decompression directory.
-        members: list of members of archive to extract, None if extract all.
-        verb: Boolean to control verbose output.
-    """
-
-    if verb:
-        if members is not None:
-            print(f"Decompressing files: {members}")
+    def __next__(self):
+        if self.n <= self.max:
+            result = 2**self.n
+            self.n += 1
+            return result
         else:
-            print(f"Decompressing archive: {archive_path.name}")
+            raise StopIteration
 
-    dprc.PROCEDURES[archive_type](archive_path, dc_dir_path, members)
+    @property
+    def output_files_pattern(self):
+        return self._output_files_pattern
+
+    @output_files_pattern.setter
+    def output_files_pattern(self, file_pattern: list[pattern]):
+        self._output_files_pattern = file_pattern
+
+    @property
+    def archive(self):
+        return self._archive
+
+    @archive.setter
+    def archive(self, file_path: Path):
+
+        assert file_path.is_file(), f"Incorrect path to archive {file_path}"
+
+        if zipfile.is_zipfile(file_path):
+            raise NotImplementedError("ZIP decompressor not yet implemented")
+        elif tarfile.is_tarfile(file_path):
+            self._archive = tarfile.open(file_path)
+            _ = self._archive.next()
+            self.next_file = self._next_tar_file
+        else:
+            print(f'Unknown archive format: {file_path.name}')
+            sys.exit()
+
+        print('''\n    archive: {file_path}''')
+        self._archive_path = file_path
+
+    def _next_tar_file(self,
+                       archive_path: Path,
+                       dc_dir_path: Path,
+                       members: list = None):
+        """
+        Decompresses tar archive.
+        If no members list is given then a recursive extraction of
+        all files is done.
+
+        Args:
+            archive_path: Path object to archive.
+            dc_dir_path: Path object to decompression directory.
+            members: list of members of archive to extract, None if extract all.
+        """
+        archive_name = archive_path.stem.split(".")[0]
+        new_path = dc_dir_path.joinpath(archive_name)
+
+        item = self._archive.next()
+        while item is not None and not any(
+            [pat.match(item.name)
+             for pat in self.output_files_pattern]) and not item.isfile():
+            item = self._archive.next()
+        return (self._archive.extractfile(item))

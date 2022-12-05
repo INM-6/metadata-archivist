@@ -3,7 +3,7 @@
 """
 
 Metadata archive integrating class.
-Author: Kelbling, M.
+Author: Kelbling, M., Jose V.
 
 """
 
@@ -176,47 +176,7 @@ Remove extracted: {self.rm_dc_dir}''')
 
         self.decompressor.output_files_pattern = self.parser.input_file_pattern
 
-        for file_path, file_content in self.decompressor:
-            self.parser.parse(file_path, file_content)
+        self.decompresssor.decompress()
 
-        dc.decompress(self.archive_path,
-                      self.archive_type,
-                      self.dc_dir_path,
-                      self.members,
-                      verb=self.verbose)
-
-        arch_name = self.archive_path.stem.split(".")[0]
-        dc_arch_dir = self.dc_dir_path.joinpath(arch_name)
-
-        #     if self.verbose:
-        #         print(f'''Extracted self.archive path: {dc_arch_dir}
-        # Beginning collecting metadata.''')
-
-        module = None
-        if self.mode == "overwrite":
-            # Taken from https://docs.python.org/3/library/importlib.html#importing-a-source-file-directly
-            spec = importlib.util.spec_from_file_location(
-                self.module_path.name, self.module_path)
-            module = importlib.util.module_from_spec(spec)
-            sys.modules[self.module_path.name] = module
-            spec.loader.exec_module(module)
-
-        metadata = {"_id": arch_name}
-        pr.parse_data(dc_arch_dir,
-                      metadata,
-                      self.mode,
-                      module,
-                      rm=self.rm_dc_dir,
-                      verb=self.verbose)
-
-        if self.verbose:
-            print("Finished collecting metadata.")
-
-        if self.rm_dc_dir and str(self.dc_dir) != ".":
-            self.dc_dir.rmdir()
-
-        metadata_file = self.out_dir_path.joinpath(f"{arch_name}.json")
-        ex.export(metadata,
-                  metadata_file,
-                  self.config['output_format'],
-                  verb=self.verbose)
+        for file_path in self.decompressor.files:
+            self.parser.parse(file_path)

@@ -6,7 +6,7 @@ Originally:
 
 Metadata archive extractor example.
 Tested with Python 3.8.10
-Author: Jose V.
+Author: Jose V., Kelbling, M.
 """
 
 import sys
@@ -15,7 +15,7 @@ from typing import Optional
 from pathlib import Path
 import zipfile
 import tarfile
-from re import pattern
+from re import Pattern
 
 
 class Decompressor():
@@ -32,6 +32,7 @@ class Decompressor():
                  config: dict,
                  verbose: Optional[bool] = True):
 
+        self.verbose = verbose
         if self.verbose:
             print('''\n    - Decompressor:''')
 
@@ -39,25 +40,18 @@ class Decompressor():
 
         self._archive = None
 
-        self.archive = archive
+        self.archive = Path(archive)
 
-    def __iter__(self):
-        return self
+        self._output_files_pattern = None
 
-    def __next__(self):
-        if self.n <= self.max:
-            result = 2**self.n
-            self.n += 1
-            return result
-        else:
-            raise StopIteration
+        self.files = None
 
     @property
     def output_files_pattern(self):
         return self._output_files_pattern
 
     @output_files_pattern.setter
-    def output_files_pattern(self, file_pattern: list[pattern]):
+    def output_files_pattern(self, file_pattern: list[Pattern]):
         self._output_files_pattern = file_pattern
 
     @property
@@ -73,13 +67,13 @@ class Decompressor():
             raise NotImplementedError("ZIP decompressor not yet implemented")
         elif tarfile.is_tarfile(file_path):
             self._archive = tarfile.open(file_path)
-            _ = self._archive.next()
+            self.decompress = self._decompress_tar
             self.next_file = self._next_tar_file
         else:
             print(f'Unknown archive format: {file_path.name}')
             sys.exit()
 
-        print('''\n    archive: {file_path}''')
+        print(f'''\n    archive: {file_path}''')
         self._archive_path = file_path
 
     def _next_tar_file(self,
@@ -105,3 +99,47 @@ class Decompressor():
              for pat in self.output_files_pattern]) and not item.isfile():
             item = self._archive.next()
         return (self._archive.extractfile(item))
+
+    def _decompress_tar(self,
+                        archive_path: Optional[Path] = None,
+                        dc_dir_path: Optional[Path] = None):
+        """
+        Decompresses files of archive in members list.
+        If another archive is found then operation is called on it.
+        Members are assumed to be files, if members are archives they will
+        NOT be unpacked.
+        Paths are assumed to be checked before call.
+
+        Args:
+        """
+        if archive_path is None:
+            archive_path = self._archive_path
+        if dc_dir_path is None:
+            dc_dir_path = self.config["extraction_directory"]
+
+        archive_name = archive_path.stem.split(".")[0]
+        new_path = dc_dir_path.joinpath(archive_name)
+
+        with tarfile.open(archive_path) as t:
+            item = t.next()
+            while item is not None:
+                if any(
+                        pat.match(item.name)
+                        for pat in self.output_files_pattern):
+                    t.extract(item, path=new_path)
+                elif any(
+                        item.name.endswith(format)
+                        for format in ['tgz', 'tar']):
+                    t.extract(item, path=new_path)
+                    new_archive = new_path.joinpath(item.name)
+                    self._decompress_tar(new_archive, new_archive.parent)
+                    new_archive.unlink()
+                item = t.next()
+
+    @property
+    def files(self):
+        files = set([
+            sorted(self._archive_path.glob(pat.pattern))
+            for pat in self.output_files_pattern
+        ])
+        return files

@@ -15,10 +15,8 @@ from pathlib import Path
 from enum import Enum
 from typing import Optional, Union
 
-from . import decompressor as dc
-from . import parser as pr
 from . import exporter as ex
-from .AParser import AParser
+from .AParser import Parser
 from .Decompressor import Decompressor
 
 
@@ -27,7 +25,7 @@ class Archivist():
     def __init__(self,
                  config: Union[dict, str],
                  archive: Path,
-                 parser: AParser,
+                 parser: Parser,
                  verbose: Optional[bool] = True,
                  rm_dc_dir: Optional[bool] = False):
         """init
@@ -53,7 +51,7 @@ class Archivist():
         self._check_config()
 
         # set decompressor
-        self.decompressor = Decompressor(archive, config)
+        self.decompressor = Decompressor(archive, self.config)
 
         # set parser
         self.parser = parser
@@ -65,10 +63,6 @@ class Archivist():
         self.out_dir_path = self._check_dir(self.config["output_directory"],
                                             allow_existing=True)
         self.checked_format = ex.check_format(self.config["output_format"])
-
-        self.members = self.config["extraction_members"]
-        assert self.members is None or (isinstance(self.members, list) and all(
-            isinstance(em, str) for em in self.members))
 
         self.mode = self.config["parsing_rules"]["mode"].lower()
 
@@ -97,7 +91,6 @@ class Archivist():
             "output_directory": str,
             "output_format": str,
             "metdata": str,
-            "extraction_members": list,
             "parsing_rules": dict
         }
         if self.verbose:
@@ -176,7 +169,7 @@ Remove extracted: {self.rm_dc_dir}''')
 
         self.decompressor.output_files_pattern = self.parser.input_file_pattern
 
-        self.decompresssor.decompress()
+        self.decompressor.decompress()
 
         for file_path in self.decompressor.files:
             self.parser.parse(file_path)

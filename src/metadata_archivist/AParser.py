@@ -11,10 +11,10 @@ Author: Jose V., Kelbling, M.
 
 import jsonschema  # to validate extracted data
 import sys
+import re
 
 import abc  # Abstract class base infrastructure
 from pathlib import Path
-from re import pattern
 from io import IOBase
 from typing import Optional
 
@@ -131,13 +131,14 @@ class Parser():
                  extractors: Optional[list[AExtractor]] = None) -> None:
         self._extractors = []
         self._schema = None
+        self._input_file_pattern = []
 
         if extractors is not None:
             for e in extractors:
                 self.add_extractor(e)
 
     @property
-    def input_files_pattern(self) -> list[pattern]:
+    def input_file_pattern(self) -> list[re.Pattern]:
         """
         return list of re.pattern for input files, given by the extractors
         The re.pattern are then used by the decompressor to select files

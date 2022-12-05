@@ -34,7 +34,7 @@ class Decompressor():
 
         self.verbose = verbose
         if self.verbose:
-            print('''\n    - Decompressor:''')
+            print('''\nDecompression:''')
 
         self.current_file = (None, None)
 
@@ -44,7 +44,9 @@ class Decompressor():
 
         self._output_files_pattern = None
 
-        self.files = None
+        self._files = None
+
+        self.config = config
 
     @property
     def output_files_pattern(self):
@@ -73,7 +75,7 @@ class Decompressor():
             print(f'Unknown archive format: {file_path.name}')
             sys.exit()
 
-        print(f'''\n    archive: {file_path}''')
+        print(f'''    archive: {file_path}''')
         self._archive_path = file_path
 
     def _next_tar_file(self,
@@ -115,7 +117,7 @@ class Decompressor():
         if archive_path is None:
             archive_path = self._archive_path
         if dc_dir_path is None:
-            dc_dir_path = self.config["extraction_directory"]
+            dc_dir_path = Path(self.config["extraction_directory"])
 
         archive_name = archive_path.stem.split(".")[0]
         new_path = dc_dir_path.joinpath(archive_name)
@@ -138,8 +140,9 @@ class Decompressor():
 
     @property
     def files(self):
-        files = set([
-            sorted(self._archive_path.glob(pat.pattern))
-            for pat in self.output_files_pattern
-        ])
+        files = []
+        for pat in self.output_files_pattern:
+            files.extend(sorted(self._archive_path.glob(pat.pattern)))
+        files = set(files)
+        print(files)
         return files

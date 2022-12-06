@@ -78,3 +78,4 @@ arch = Archivist(config='config.json',
                  parser=my_parser)
 
 arch.extract()
+arch.export()

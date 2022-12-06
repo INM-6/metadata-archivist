@@ -4,69 +4,40 @@
 
 Metadata file saver example.
 Tested with Python 3.8.10
-Author: Jose V.
+Author: Jose V., Matthias K.
 
 """
-
+import json
 from pathlib import Path
 
-from . import exporting_procedures as eprc
 
+class Exporter():
 
-def formats() -> list:
-    """
-    Get function for acceptable metadata formats.
+    def __init__(self) -> None:
+        pass
 
-    Returns:
-        List of acceptable metadata formats.
-    """
+    def export(self, metadata: dict, outfile: Path, verb: bool = False):
+        """
+        Saves metadata to file as JSON.
 
-    return list(eprc.PROCEDURES.keys())
+        Args:
+            metadata: Dictionary containing metadata.
+            outfile: Path object to target file.
+            form: String target form.
+            verb: Boolean to control verbose output.
 
+        Saves metadata to file as JSON.
 
-def check_format(form: str) -> str:
-    """
-    Checks provided format for metadata file, to avoid ambiguity,
-    upper case strings are used.
-    Acceptable formats are stored in SAVE_FORMATS.
-    Stops execution if format is incorrect.
+        Args:
+            metadata: Dictionary containing metadata.
+            outfile: Path object to target file.
+        """
 
-    Args:
-        form: String target format.
+        if verb:
+            print(f"Saving metadata to file: {outfile}")
 
-    Returns:
-        String target format (upper cased).
-    """
+        with outfile.open("w") as f:
+            json.dump(metadata, f, indent=4)
 
-    form = form.upper()
-
-    assert form in eprc.PROCEDURES, f'''Incorrect format: {form}.
-    Acceptable formats: {form()}'''
-
-    return form
-
-
-def export(metadata: dict,
-           outfile: Path,
-           form: str = "JSON",
-           verb: bool = False):
-    """
-    Saves metadata to file using given format.
-    This function is called from the main python file where the check_format
-    was previously used.
-    No additional check needed.
-
-    Args:
-        metadata: Dictionary containing metadata.
-        outfile: Path object to target file.
-        form: String target form.
-        verb: Boolean to control verbose output.
-    """
-
-    if verb:
-        print(f"Saving metadata to file: {outfile}")
-
-    eprc.PROCEDURES[form](metadata, outfile)
-
-    if verb:
-        print("Saved metadata file.")
+        if verb:
+            print("Saved metadata file.")

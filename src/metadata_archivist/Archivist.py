@@ -15,7 +15,7 @@ from pathlib import Path
 from enum import Enum
 from typing import Optional, Union
 
-from . import exporter as ex
+from .Exporter import Exporter
 from .Parser import Parser
 from .Decompressor import Decompressor
 
@@ -62,7 +62,7 @@ class Archivist():
                                            allow_existing=False)
         self.out_dir_path = self._check_dir(self.config["output_directory"],
                                             allow_existing=True)
-        self.checked_format = ex.check_format(self.config["output_format"])
+        # self.checked_format = ex.check_format(self.config["output_format"])
 
         self.mode = self.config["parsing_rules"]["mode"].lower()
 
@@ -75,6 +75,10 @@ class Archivist():
             assert self.module_path.is_file(
             ) and self.module_path.suffix == ".py"
             # TODO: implement checksum for security check against malicious code
+
+        # set exporter
+        self.exporter = Exporter()
+        self.metadata_output_file = self.out_dir_path / Path('metadata.json')
 
         self.rm_dc_dir = rm_dc_dir
 
@@ -186,3 +190,11 @@ parsing files ...''')
         if self.verbose:
             print(f'''Done!
 ''')
+
+    def export(self):
+        if self.verbose:
+            print(f'''
+Exporting metadata...''')
+        self.exporter.export(self.parser.metadata,
+                             self.metadata_output_file,
+                             verb=True)

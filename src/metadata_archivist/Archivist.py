@@ -16,7 +16,7 @@ from enum import Enum
 from typing import Optional, Union
 
 from . import exporter as ex
-from .AParser import Parser
+from .Parser import Parser
 from .Decompressor import Decompressor
 
 

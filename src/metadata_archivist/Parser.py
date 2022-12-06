@@ -142,7 +142,7 @@ class Parser():
                 self.add_extractor(e)
 
     @property
-    def input_file_pattern(self) -> list[re.Pattern]:
+    def input_file_pattern(self) -> list[str]:
         """
         return list of re.pattern for input files, given by the extractors
         The re.pattern are then used by the decompressor to select files

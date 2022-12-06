@@ -169,7 +169,20 @@ Remove extracted: {self.rm_dc_dir}''')
 
         self.decompressor.output_files_pattern = self.parser.input_file_pattern
 
+        if self.verbose:
+            print(f'''
+unpacking archive ...''')
         self.decompressor.decompress()
 
+        if self.verbose:
+            print(f'''Done!
+parsing files ...''')
+
         for file_path in self.decompressor.files:
-            self.parser.parse(file_path)
+            if True:
+                print(f'    {file_path.name}...')
+            self.parser.parse_file(file_path)
+
+        if self.verbose:
+            print(f'''Done!
+''')

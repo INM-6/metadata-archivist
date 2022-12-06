@@ -31,9 +31,9 @@ class AExtractor(abc.ABC):
     the data they process. The extraction process and
     returned structure defines the schema.
     """
-    _input_file_pattern = None  # re.Pattern object
-    _extracted_metadata = None  # JSON object as dict to be used as cache
-    _schema = None  # JSON schema as dict
+    _input_file_pattern: str
+    _extracted_metadata: dict  # JSON object as dict to be used as cache
+    _schema: dict  # JSON schema as dict
 
     @property
     def input_file_pattern(self):
@@ -41,7 +41,7 @@ class AExtractor(abc.ABC):
         return self._input_file_pattern
 
     @input_file_pattern.setter
-    def input_file_pattern(self, pattern: re.Pattern):
+    def input_file_pattern(self, pattern: str):
         """set pattern of input file"""
         self._input_file_pattern = pattern
 
@@ -55,7 +55,6 @@ class AExtractor(abc.ABC):
         """set schema"""
         self._schema = schema
 
-    @classmethod
     def extract_metadata_from_file(
             self, file_path: Path,
             data: IOBase) -> dict:  # JSON object as dict
@@ -64,18 +63,23 @@ class AExtractor(abc.ABC):
         takes care of prior file checking and applies validate
         on extracted metadata
         """
-        if not self._input_file_pattern.match(file_path.name):
+        pattern = self._input_file_pattern
+        if pattern[0] == '*':
+            pattern = '.' + pattern
+        if not re.fullmatch(pattern, file_path.name):
             raise RuntimeError(
-                f'The inputfile {file_path.name} does not match the extractors pattern: {self._input_file_pattern.pattern}'
+                f'The inputfile {file_path.name} does not match the extractors pattern: {self._input_file_pattern}'
             )
         elif not file_path.is_file():
             raise RuntimeError(
                 f'The inputfile {file_path.name} does not exist!')
         else:
-            self.extract(data)
+            self._extracted_metadata = self.extract(data)
         self.validate()
 
-    @abc.abstractclassmethod
+        return self._extracted_metadata
+
+    @abc.abstractmethod
     def extract(self, data: IOBase) -> dict:
         """
         Main method of the Extractor class
@@ -85,7 +89,6 @@ class AExtractor(abc.ABC):
         Result is stored in _extracted_metadata  and returned as value
         """
 
-    @classmethod
     def validate(self) -> bool:
         """
         Method used to validate extracted metadata.
@@ -105,13 +108,13 @@ class AExtractor(abc.ABC):
         return False
 
     def __eq__(self, other):
-        return other and self._file_name == other._file_name and self._schema == other._schema
+        return other and self._input_file_pattern == other._input_file_pattern and self._schema == other._schema
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     def __hash__(self):
-        return hash((self._file_name, self._schema))
+        return hash((self._input_file_pattern, self._schema))
 
 
 class Parser():
@@ -130,8 +133,9 @@ class Parser():
                  schema: dict,
                  extractors: Optional[list[AExtractor]] = None) -> None:
         self._extractors = []
-        self._schema = None
+        self._schema = schema
         self._input_file_pattern = []
+        self._metadata = {}
 
         if extractors is not None:
             for e in extractors:
@@ -189,7 +193,7 @@ class Parser():
         if len(tree) == 1:
             metadata[tree[0]] = value
         else:
-            self._deep_set(metadata[tree[-1]], value, tree[:-1])
+            self._deep_set(metadata[tree[0]], value, tree[1:])
 
     def parse_file(self, file_path: Path) -> None:
         """add metadata from input file to metadata object
@@ -203,7 +207,12 @@ class Parser():
 
         with file_path.open("r") as f:
             for extractor in self.extractors:
-                if extractor.input_file_pattern.match(file_path.name):
+                pattern = extractor.input_file_pattern
+                if pattern[0] == '*':
+                    pattern = '.' + pattern
+                if re.fullmatch(pattern, file_path.name):
                     f.seek(0)
-                    metadata = extractor.extract(file_path.name, f)
-                    self._deep_set(self.metadata, metadata, file_path)
+                    metadata = extractor.extract_metadata_from_file(
+                        file_path, f)
+                    self._deep_set(self.metadata, metadata,
+                                   list(file_path.parts))

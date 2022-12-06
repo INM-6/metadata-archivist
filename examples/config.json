@@ -1,5 +1,5 @@
 {
-    "extraction_directory": "",
+    "extraction_directory": "tmp",
     "output_directory": "example1",
     "output_format": "JSON",
     "metdata":"PATH",

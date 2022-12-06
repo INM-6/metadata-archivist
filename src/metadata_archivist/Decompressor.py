@@ -15,7 +15,7 @@ from typing import Optional
 from pathlib import Path
 import zipfile
 import tarfile
-from re import Pattern
+import re
 
 
 class Decompressor():
@@ -28,7 +28,7 @@ class Decompressor():
     '''
 
     def __init__(self,
-                 archive: str,
+                 archive: Path,
                  config: dict,
                  verbose: Optional[bool] = True):
 
@@ -40,9 +40,7 @@ class Decompressor():
 
         self._archive = None
 
-        self.archive = Path(archive)
-
-        self._output_files_pattern = None
+        self.archive = archive
 
         self._files = None
 
@@ -50,10 +48,12 @@ class Decompressor():
 
     @property
     def output_files_pattern(self):
+        if not hasattr(self, '_output_files_pattern'):
+            raise RuntimeError('output_files_pattern have not been set yet!')
         return self._output_files_pattern
 
     @output_files_pattern.setter
-    def output_files_pattern(self, file_pattern: list[Pattern]):
+    def output_files_pattern(self, file_pattern: list[str]):
         self._output_files_pattern = file_pattern
 
     @property
@@ -70,7 +70,7 @@ class Decompressor():
         elif tarfile.is_tarfile(file_path):
             self._archive = tarfile.open(file_path)
             self.decompress = self._decompress_tar
-            self.next_file = self._next_tar_file
+            # self.next_file = self._next_tar_file
         else:
             print(f'Unknown archive format: {file_path.name}')
             sys.exit()
@@ -78,29 +78,29 @@ class Decompressor():
         print(f'''    archive: {file_path}''')
         self._archive_path = file_path
 
-    def _next_tar_file(self,
-                       archive_path: Path,
-                       dc_dir_path: Path,
-                       members: list = None):
-        """
-        Decompresses tar archive.
-        If no members list is given then a recursive extraction of
-        all files is done.
+    # def _next_tar_file(self,
+    #                    archive_path: Path,
+    #                    dc_dir_path: Path,
+    #                    members: list = None):
+    #     """
+    #     Decompresses tar archive.
+    #     If no members list is given then a recursive extraction of
+    #     all files is done.
 
-        Args:
-            archive_path: Path object to archive.
-            dc_dir_path: Path object to decompression directory.
-            members: list of members of archive to extract, None if extract all.
-        """
-        archive_name = archive_path.stem.split(".")[0]
-        new_path = dc_dir_path.joinpath(archive_name)
+    #     Args:
+    #         archive_path: Path object to archive.
+    #         dc_dir_path: Path object to decompression directory.
+    #         members: list of members of archive to extract, None if extract all.
+    #     """
+    #     archive_name = archive_path.stem.split(".")[0]
+    #     new_path = dc_dir_path.joinpath(archive_name)
 
-        item = self._archive.next()
-        while item is not None and not any(
-            [pat.match(item.name)
-             for pat in self.output_files_pattern]) and not item.isfile():
-            item = self._archive.next()
-        return (self._archive.extractfile(item))
+    #     item = self._archive.next()
+    #     while item is not None and not any(
+    #         [pat.match(item.name)
+    #          for pat in self.output_files_pattern]) and not item.isfile():
+    #         item = self._archive.next()
+    #     return (self._archive.extractfile(item))
 
     def _decompress_tar(self,
                         archive_path: Optional[Path] = None,
@@ -118,6 +118,8 @@ class Decompressor():
             archive_path = self._archive_path
         if dc_dir_path is None:
             dc_dir_path = Path(self.config["extraction_directory"])
+        if self.verbose:
+            print(f'''     unpacking tarball: {archive_path.name}''')
 
         archive_name = archive_path.stem.split(".")[0]
         new_path = dc_dir_path.joinpath(archive_name)
@@ -125,8 +127,10 @@ class Decompressor():
         with tarfile.open(archive_path) as t:
             item = t.next()
             while item is not None:
+                if False:
+                    print(f'        processing file: {item.name}')
                 if any(
-                        pat.match(item.name)
+                        re.fullmatch(f'.*/{pat}', item.name)
                         for pat in self.output_files_pattern):
                     t.extract(item, path=new_path)
                 elif any(
@@ -142,7 +146,9 @@ class Decompressor():
     def files(self):
         files = []
         for pat in self.output_files_pattern:
-            files.extend(sorted(self._archive_path.glob(pat.pattern)))
+            files.extend(
+                sorted(
+                    Path(self.config['extraction_directory']).glob(
+                        f'**/{pat}')))
         files = set(files)
-        print(files)
         return files

@@ -18,6 +18,37 @@ from pathlib import Path
 from io import IOBase
 from typing import Optional
 
+DEFAULT_PARSER_SCHEMA = {
+    "$schema": "https://abc",
+    "$id": "https://abc.json",
+    "description": "A plain schema for directory structures",
+    "type": "object",
+    "properties": {
+        "name": {
+            "type": "string"
+        },
+        "children": {
+            "type": "array",
+            "items": {
+                "$ref": "#"
+            }
+        },
+        "node": {
+            "$ref": "#/$defs/node"
+        }
+    },
+    "$defs": {
+        "node": {
+            "$id": "/schemas/address",
+            "$schema": "http://abc",
+            "type": "object",
+            "properties": {
+                "anyOf": []
+            }
+        }
+    }
+}
+
 
 class AExtractor(abc.ABC):
     """
@@ -31,6 +62,7 @@ class AExtractor(abc.ABC):
     the data they process. The extraction process and
     returned structure defines the schema.
     """
+    name: str  # name of the extractor
     _input_file_pattern: str
     _extracted_metadata: dict  # JSON object as dict to be used as cache
     _schema: dict  # JSON schema as dict
@@ -129,13 +161,11 @@ class Parser():
     are used for structering the tree
     """
 
-    def __init__(self,
-                 schema: dict,
-                 extractors: Optional[list[AExtractor]] = None) -> None:
+    def __init__(self, extractors: Optional[list[AExtractor]] = None) -> None:
         self._extractors = []
-        self._schema = schema
         self._input_file_pattern = []
         self._metadata = {}
+        self._schema = DEFAULT_PARSER_SCHEMA
 
         if extractors is not None:
             for e in extractors:
@@ -157,15 +187,19 @@ class Parser():
     def add_extractor(self, extractor: AExtractor):
         self._extractors.append(extractor)
         self._input_file_pattern.append(extractor.input_file_pattern)
-        self._extend_json_schema(extractor.schema)
+        self._extend_json_schema(extractor)
 
     @property
     def schema(self):
         """return json schema of output"""
         return self._schema
 
-    def _extend_json_schema(self, schema):
-        print('some sophisticated method is missing')
+    def _extend_json_schema(self, extractor):
+        if "$defs" not in self._schema.keys():
+            self._schema["$defs"] = {}
+        self._schema["$defs"][extractor.name] = extractor.schema
+        self._schema["$defs"]["node"]["properties"]["anyOf"].append(
+            {"$ref": f"#/$defs/{extractor.name}"})
 
     @property
     def metadata(self) -> dict:

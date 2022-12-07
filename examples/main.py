@@ -10,16 +10,21 @@ Author: Jose V.
 
 from metadata_archivist import Archivist, AExtractor, Parser
 from pathlib import Path
-import re
 import f90nml
+import json
 
 
 class nml_extractor(AExtractor):
 
     def __init__(self):
+        self.name = 'nml_extractor'
         self._input_file_pattern = '*.nml'
         self._extracted_metadata = {}
-        self._schema = {}
+
+        with open('nml_schema.json') as f:
+            nml_schema = json.load(f)
+
+        self._schema = nml_schema
 
     def extract(self, data):
         parser = f90nml.Parser()
@@ -56,9 +61,14 @@ def head_rest_split_line(line: str,
 class meminfo_extractor(AExtractor):
 
     def __init__(self):
+        self.name = 'meminfo_extractor'
         self._input_file_pattern = 'meminfo.out'
         self._extracted_metadata = {}
-        self._schema = {}
+
+        with open('mem_schema.json') as f:
+            mem_schema = json.load(f)
+
+        self._schema = mem_schema
 
     def extract(self, f):
         out = {}
@@ -69,9 +79,7 @@ class meminfo_extractor(AExtractor):
         return out
 
 
-my_parser = Parser(schema={},
-                   extractors=[nml_extractor(),
-                               meminfo_extractor()])
+my_parser = Parser(extractors=[nml_extractor(), meminfo_extractor()])
 
 arch = Archivist(config='config.json',
                  archive=Path('test_namelist.tgz'),

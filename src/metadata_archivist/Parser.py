@@ -166,6 +166,7 @@ class Parser():
         self._input_file_pattern = []
         self._metadata = {}
         self._schema = DEFAULT_PARSER_SCHEMA
+        self.decompress_path = Path('./')
 
         if extractors is not None:
             for e in extractors:
@@ -206,14 +207,15 @@ class Parser():
         """return the metadata object"""
         return self._metadata
 
-    def _update_metadata_tree(self, file_path: Path) -> None:
+    def _update_metadata_tree(self, file_path: Path) -> Path:
         """update tree structure of metadata dict with file path
 
         :param file_path: path to a file
 
         """
         iter_dict = self.metadata
-        for pp in file_path.parts[:-1]:
+        rel_file_path = file_path.relative_to(self.decompress_path)
+        for pp in rel_file_path.parts[:-1]:
             if pp not in iter_dict:
                 iter_dict[pp] = {}
                 iter_dict = iter_dict[pp]
@@ -222,12 +224,14 @@ class Parser():
                     f'Trying to created nested structure in metadata object failed: {pp}'
                 )
                 sys.exit()
+        return rel_file_path
 
-    def _deep_set(self, metadata: dict, value, tree: list):
-        if len(tree) == 1:
-            metadata[tree[0]] = value
+    def _deep_set(self, metadata: dict, value, path: Path):
+        if len(path.parts) == 1:
+            metadata[path.parts[0]] = value
         else:
-            self._deep_set(metadata[tree[0]], value, tree[1:])
+            self._deep_set(metadata[path.parts[0]], value,
+                           path.relative_to(path.parts[0]))
 
     def parse_file(self, file_path: Path) -> None:
         """add metadata from input file to metadata object
@@ -237,7 +241,7 @@ class Parser():
 
         """
 
-        self._update_metadata_tree(file_path)
+        rel_file_path = self._update_metadata_tree(file_path)
 
         with file_path.open("r") as f:
             for extractor in self.extractors:
@@ -248,5 +252,4 @@ class Parser():
                     f.seek(0)
                     metadata = extractor.extract_metadata_from_file(
                         file_path, f)
-                    self._deep_set(self.metadata, metadata,
-                                   list(file_path.parts))
+                    self._deep_set(self.metadata, metadata, rel_file_path)

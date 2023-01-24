@@ -93,7 +93,7 @@ class Decompressor():
     #         members: list of members of archive to extract, None if extract all.
     #     """
     #     archive_name = archive_path.stem.split(".")[0]
-    #     new_path = dc_dir_path.joinpath(archive_name)
+    #     self.decompress_path = dc_dir_path.joinpath(archive_name)
 
     #     item = self._archive.next()
     #     while item is not None and not any(
@@ -122,7 +122,7 @@ class Decompressor():
             print(f'''     unpacking tarball: {archive_path.name}''')
 
         archive_name = archive_path.stem.split(".")[0]
-        new_path = dc_dir_path.joinpath(archive_name)
+        self.decompress_path = dc_dir_path.joinpath(archive_name)
 
         with tarfile.open(archive_path) as t:
             item = t.next()
@@ -132,12 +132,12 @@ class Decompressor():
                 if any(
                         re.fullmatch(f'.*/{pat}', item.name)
                         for pat in self.output_files_pattern):
-                    t.extract(item, path=new_path)
+                    t.extract(item, path=self.decompress_path)
                 elif any(
                         item.name.endswith(format)
                         for format in ['tgz', 'tar']):
-                    t.extract(item, path=new_path)
-                    new_archive = new_path.joinpath(item.name)
+                    t.extract(item, path=self.decompress_path)
+                    new_archive = self.decompress_path.joinpath(item.name)
                     self._decompress_tar(new_archive, new_archive.parent)
                     new_archive.unlink()
                 item = t.next()

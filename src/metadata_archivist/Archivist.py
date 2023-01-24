@@ -181,6 +181,7 @@ unpacking archive ...''')
         if self.verbose:
             print(f'''Done!
 parsing files ...''')
+        self.parser.decompress_path = self.decompressor.decompress_path
 
         for file_path in self.decompressor.files:
             if True:

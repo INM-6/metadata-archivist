@@ -171,7 +171,7 @@ Output path: {self.out_dir_path}
 Extraction path: {self.dc_dir_path}
 Remove extracted: {self.rm_dc_dir}''')
 
-        self.decompressor.output_files_pattern = self.parser.input_file_pattern
+        self.decompressor.output_files_patterns = self.parser.input_file_patterns
 
         if self.verbose:
             print(f'''
@@ -181,8 +181,12 @@ unpacking archive ...''')
         if self.verbose:
             print(f'''Done!
 parsing files ...''')
+
+        # TODO: Should the decompressor return the decompression path?
         self.parser.decompress_path = self.decompressor.decompress_path
 
+        # TODO: Improvements could be done with pattern preprocessing over the file names
+        # before the extraction loop
         for file_path in self.decompressor.files:
             if True:
                 print(f'    {file_path.name}...')

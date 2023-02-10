@@ -46,15 +46,17 @@ class Decompressor():
 
         self.config = config
 
-    @property
-    def output_files_pattern(self):
-        if not hasattr(self, '_output_files_pattern'):
-            raise RuntimeError('output_files_pattern have not been set yet!')
-        return self._output_files_pattern
+        self._output_files_patterns = None
 
-    @output_files_pattern.setter
-    def output_files_pattern(self, file_pattern: list[str]):
-        self._output_files_pattern = file_pattern
+    @property
+    def output_files_patterns(self):
+        if not hasattr(self, '_output_files_patterns'):
+            raise RuntimeError('output_files_patterns have not been set yet!')
+        return self._output_files_patterns
+
+    @output_files_patterns.setter
+    def output_files_pattern(self, file_patterns: list[str]):
+        self._output_files_patterns = file_patterns
 
     @property
     def archive(self):
@@ -75,7 +77,8 @@ class Decompressor():
             print(f'Unknown archive format: {file_path.name}')
             sys.exit()
 
-        print(f'''    archive: {file_path}''')
+        if self.verbose:
+            print(f'''    archive: {file_path}''')
         self._archive_path = file_path
 
     # def _next_tar_file(self,
@@ -127,12 +130,19 @@ class Decompressor():
         with tarfile.open(archive_path) as t:
             item = t.next()
             while item is not None:
-                if False:
+                if self.verbose:
                     print(f'        processing file: {item.name}')
+                # TODO: Add blacklist for file to not decompress even if pattern matches
+                # If a pattern ends with tgz or tar (wrongly so)
+                # there will be problems with the extraction
+                # TODO: Should we change the order of the if statements?
+                # Or do we consider tgz and tar files as proper metadata?
+                #   -> First decompress then match
                 if any(
                         re.fullmatch(f'.*/{pat}', item.name)
                         for pat in self.output_files_pattern):
                     t.extract(item, path=self.decompress_path)
+                    # TODO: generate files list here
                 elif any(
                         item.name.endswith(format)
                         for format in ['tgz', 'tar']):
@@ -145,7 +155,7 @@ class Decompressor():
     @property
     def files(self):
         files = []
-        for pat in self.output_files_pattern:
+        for pat in self.output_files_patterns:
             files.extend(
                 sorted(
                     Path(self.config['extraction_directory']).glob(

@@ -2,4 +2,8 @@
 metadata_archivist
 '''
 
-from . import decompressing_procedures, decompressor, exporter, exporting_procedures, parser, parsing_procedures
+from .Parser import Parser, AExtractor
+from .Exporter import Exporter
+
+from .Archivist import Archivist
+from .Decompressor import Decompressor

@@ -1,0 +1,22 @@
+{
+    "metadata_archive": {
+        "program_execution": {
+            "config.yml": {
+                "input_files": {
+                    "precipitation": "pre.nc",
+                    "temperature": "tavg.nc"
+                },
+                "parameters": {
+                    "a": 1.1,
+                    "b": 2.3
+                }
+            },
+            "time.txt": {
+                "real": "0m2.596s",
+                "user": "0m15.543s",
+                "sys": "0m0.632s"
+            }
+        }
+    },
+    "program_execution": {}
+}

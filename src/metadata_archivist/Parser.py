@@ -114,6 +114,9 @@ class AExtractor(abc.ABC):
 
         return self._extracted_metadata
 
+    # TODO: Think about lazy storing the extractor results in files (in case memory is information)
+    # and load it later when filtering/reshaping with schema
+
     @abc.abstractmethod
     def extract(self, data: IOBase) -> dict:
         """
@@ -270,4 +273,6 @@ class Parser():
                     #   ->  Think about reshaping/filtering function for dictionaries using schemas
                     #       add bool condition to swtich between directory hierarchy for metadata objects
                     #            or schema hierarchy
+                    #       add linking between extracted metadata object properties through schema keywords
+                    #           -> cf mattermost chat
                     self._deep_set(self.metadata, metadata, rel_file_path)

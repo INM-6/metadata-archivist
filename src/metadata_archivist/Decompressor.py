@@ -38,9 +38,7 @@ class Decompressor():
 
         self.current_file = (None, None)
 
-        self._archive = None
-
-        #self.archive = archive
+        self._archive_path, self.decompress = self.load_archive(archive)
 
         self._files = []
 
@@ -62,17 +60,14 @@ class Decompressor():
     #def archive(self):
     #    return self._archive
 
-    # Found no uses in project, but seems useful
-    # TODO: Rename to load archive?
-    def archive(self, file_path: Path):
+    def load_archive(self, file_path: Path):
 
         assert file_path.is_file(), f"Incorrect path to archive {file_path}"
 
         if zipfile.is_zipfile(file_path):
             raise NotImplementedError("ZIP decompressor not yet implemented")
         elif tarfile.is_tarfile(file_path):
-            self._archive = tarfile.open(file_path)
-            self.decompress = self._decompress_tar
+            decompressor = self._decompress_tar
             # self.next_file = self._next_tar_file
         else:
             print(f'Unknown archive format: {file_path.name}')
@@ -80,7 +75,8 @@ class Decompressor():
 
         if self.verbose:
             print(f'''    archive: {file_path}''')
-        self._archive_path = file_path
+
+        return file_path, decompressor
 
     # def _next_tar_file(self,
     #                    archive_path: Path,
@@ -146,6 +142,8 @@ class Decompressor():
                     t.extract(item, path=decompress_path)
                     self._files.append(decompress_path.joinpath(item.name))
                 item = t.next()
+
+        return decompress_path
 
     #@property
     #def files(self):

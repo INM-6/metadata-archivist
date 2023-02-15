@@ -50,6 +50,11 @@ DEFAULT_PARSER_SCHEMA = {
 }
 
 
+# TODO: think about property renaming:
+# _ prefix for properties meant for internal use
+# no prefix otherwise
+
+
 class AExtractor(abc.ABC):
     """
     Base extractor class.
@@ -67,32 +72,35 @@ class AExtractor(abc.ABC):
     _extracted_metadata: dict  # JSON object as dict to be used as cache
     _schema: dict  # JSON schema as dict
 
+    # For two way relationship update handling
+    _parsers: list
 
-    # TODO: Think about whether we stay with pure OOP getter and setter functions
-    # or we go with the pythonic way of directly accessing members where possible
-    @property
-    def input_file_pattern(self):
-        """retuns a re.pattern describing input files"""
-        return self._input_file_pattern
+    #@property
+    #def input_file_pattern(self):
+    #    """retuns a re.pattern describing input files"""
+    #    return self._input_file_pattern
 
-    @input_file_pattern.setter
-    def input_file_pattern(self, pattern: str):
-        """set pattern of input file"""
-        self._input_file_pattern = pattern
+    #@input_file_pattern.setter
+    #def input_file_pattern(self, pattern: str):
+    #    """set pattern of input file"""
+    #    self._input_file_pattern = pattern
 
-    @property
-    def schema(self):
-        """return json schema of output"""
-        return self._schema
+    #@property
+    #def schema(self):
+    #    """return json schema of output"""
+    #    return self._schema
 
-    @schema.setter
-    def schema(self, schema: dict):
-        """set schema"""
-        self._schema = schema
+    #@schema.setter
+    #def schema(self, schema: dict):
+    #    """set schema"""
+    #    self._schema = schema
+
+    def update_parsers(self):
+        for p in self._parsers:
+            self._parsers.update_extractor(self)
 
     def extract_metadata_from_file(
-            self, file_path: Path,
-            data: IOBase) -> dict:  # JSON object as dict
+            self, file_path: Path) -> dict:  # JSON object as dict
         """
         Wrapper for the user defined _extract method,
         takes care of prior file checking and applies validate
@@ -109,7 +117,7 @@ class AExtractor(abc.ABC):
             raise RuntimeError(
                 f'The inputfile {file_path.name} does not exist!')
         else:
-            self._extracted_metadata = self.extract(data)
+            self._extracted_metadata = self.extract(file_path)
         self.validate()
 
         return self._extracted_metadata
@@ -145,14 +153,17 @@ class AExtractor(abc.ABC):
 
         return False
 
+    # Considering the name of the extractor as an immutable and unique property then we should only use
+    # the name property for equality/hashing
+    # TO CHECK
     def __eq__(self, other):
-        return other and self._input_file_pattern == other._input_file_pattern and self._schema == other._schema
+        return self.name == other.name
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     def __hash__(self):
-        return hash((self._input_file_pattern, self._schema))
+        return hash(self.name)
 
 
 class Parser():
@@ -174,49 +185,79 @@ class Parser():
         self._schema = DEFAULT_PARSER_SCHEMA
         self.decompress_path = Path('./')
 
+        # Used for updating/removing extractors
+        # Shouldn't use much memory but TODO: check additional memory usage
+        # Indexing is done storing a triplet with extractors, patterns, schema indexes
+        self._indexes = {}
+
         if extractors is not None:
             for e in extractors:
                 self.add_extractor(e)
 
-    @property
-    def input_file_patterns(self) -> list[str]:
-        """
-        return list of re.pattern for input files, given by the extractors
-        The re.pattern are then used by the decompressor to select files
-        """
-        return self._input_file_patterns
+    #@property
+    #def input_file_patterns(self) -> list[str]:
+    #    """
+    #    return list of re.pattern for input files, given by the extractors
+    #    The re.pattern are then used by the decompressor to select files
+    #    """
+    #    return self._input_file_patterns
 
-    @property
-    def extractors(self) -> list[AExtractor]:
-        """return list of extractors"""
-        return self._extractors
+    #@property
+    #def extractors(self) -> list[AExtractor]:
+    #    """return list of extractors"""
+    #    return self._extractors
 
     def add_extractor(self, extractor: AExtractor):
-        # TODO: Handle duplicate extractors?
+        if extractor in self._extractors:
+            raise Exception("Extractor is already in Parser")
+        self._indexes[extractor.name] = [len(self._extractors), 0, 0]
         self._extractors.append(extractor)
-        self._input_file_patterns.append(extractor.input_file_pattern)
+        self._indexes[extractor.name][1] = len(self._input_file_patterns)
+        self._input_file_patterns.append(extractor._input_file_pattern)
         self._extend_json_schema(extractor)
+        extractor._parsers.append(self)
 
-    @property
-    def schema(self):
-        """return json schema of output"""
-        return self._schema
+    def update_extractor(self, extractor: AExtractor):
+        if extractor not in self._extractors:
+            raise Exception("Unknown Extractor")
+        self._schema["$defs"][extractor.name] = extractor._schema
 
-    def _extend_json_schema(self, extractor):
+        self._input_file_patterns.pop(self._indexes[extractor.name][1])
+        self._indexes[extractor.name][1] = len(self._input_file_patterns)
+        self._input_file_patterns.append(extractor._input_file_pattern)
+    
+        self._schema["$defs"]["node"]["properties"]["anyOf"].pop(self._indexes[extractor.name][2])
+        self._indexes[extractor.name][2] = len(self._schema["$defs"]["node"]["properties"]["anyOf"])
+        self._schema["$defs"]["node"]["properties"]["anyOf"].append(
+            {"$ref": f"#/$defs/{extractor.name}"})    
+        
+    def remove_extractor(self, extractor: AExtractor):
+        if extractor not in self._extractors:
+            raise Exception("Unknown Extractor")
+        self._extractors.pop(self._indexes[extractor.name][0])
+        self._input_file_patterns.pop(self._indexes[extractor.name][1])
+        self._schema["$defs"]["node"]["properties"]["anyOf"].pop(self._indexes[extractor.name][2])
+
+        self._schema["$defs"].pop(extractor.name, None)
+        self._indexes.pop(extractor.name, None) 
+
+    #@property
+    #def schema(self):
+    #    """return json schema of output"""
+    #    return self._schema
+
+    def _extend_json_schema(self, extractor: AExtractor):
         if "$defs" not in self._schema.keys():
             self._schema["$defs"] = {}
-        # TODO: Will generate pointer issue if extractor schema is redefined
-        # -> Create two way relationships with update triggers
-        self._schema["$defs"][extractor.name] = extractor.schema
+        self._schema["$defs"][extractor.name] = extractor._schema
+        self._indexes[extractor.name][2] = len(self._schema["$defs"]["node"]["properties"]["anyOf"])
         self._schema["$defs"]["node"]["properties"]["anyOf"].append(
             {"$ref": f"#/$defs/{extractor.name}"})
-        # TODO: we should probably create an attachement and dettachement procedures
-        # to update schema with addition and removal of extractors
 
-    @property
-    def metadata(self) -> dict:
-        """return the metadata object"""
-        return self._metadata
+    #@property
+    #def metadata(self) -> dict:
+    #    """return the metadata object"""
+    #    return self._metadata
 
     def _update_metadata_tree(self, file_path: Path) -> Path:
         """update tree structure of metadata dict with file path
@@ -224,7 +265,7 @@ class Parser():
         :param file_path: path to a file
 
         """
-        iter_dict = self.metadata
+        iter_dict = self._metadata
         rel_file_path = file_path.relative_to(self.decompress_path)
         for pp in rel_file_path.parts[:-1]:
             if pp not in iter_dict:
@@ -248,31 +289,56 @@ class Parser():
         """add metadata from input file to metadata object
         usually by sending calling all extract's linked to the file-name or regexp of file name
 
-        TODO: Think about optimization  for multiple files
-
         :param file_path: path to file (Path)
 
         """
 
         rel_file_path = self._update_metadata_tree(file_path)
 
-        # TODO: Change to explore pre compiled list of file from matches
-        # TODO: change to pass only file paths and extractor will handle file opening.
-        with file_path.open("r") as f:
-            for extractor in self.extractors:
-                pattern = extractor.input_file_pattern
+        for extractor in self._extractors:
+            pattern = extractor._input_file_pattern
+            if pattern[0] == '*':
+                pattern = '.' + pattern
+            if re.fullmatch(pattern, file_path.name):
+                metadata = extractor.extract_metadata_from_file(
+                    file_path)
+                # TODO: The metadata tree should be compiled/merged with the Parser schema
+                # We should think if this is to be done instead of the path tree structure
+                # or do it afterwards through another mechanism
+                #   ->  Think about reshaping/filtering function for dictionaries using schemas
+                #       add bool condition to swtich between directory hierarchy for metadata objects
+                #            or schema hierarchy
+                #       add linking between extracted metadata object properties through schema keywords
+                #           -> cf mattermost chat
+                self._deep_set(self._metadata, metadata, rel_file_path)
+
+
+    def parse_files(self, file_paths: list[Path]) -> None:
+        """add metadata from input files to metadata object
+        usually by sending calling all extract's linked to the file-name or regexp of file name
+
+        :param file_paths: list of file paths (Path)
+
+        """
+
+        to_extract = {}
+
+        # TODO: Think about parallelization scheme with ProcessPoolExecutor
+        # Would it be worth it in terms of performance?
+        for extractor in self._extractors:
+            to_extract[extractor.name] = [extractor, []]
+            for fp in file_paths:
+                pattern = extractor._input_file_pattern
                 if pattern[0] == '*':
                     pattern = '.' + pattern
-                if re.fullmatch(pattern, file_path.name):
-                    f.seek(0)
-                    metadata = extractor.extract_metadata_from_file(
-                        file_path, f)
-                    # TODO: The metadata tree should be compiled/merged with the Parser schema
-                    # We should think if this is to be done instead of the path tree structure
-                    # or do it afterwards through another mechanism
-                    #   ->  Think about reshaping/filtering function for dictionaries using schemas
-                    #       add bool condition to swtich between directory hierarchy for metadata objects
-                    #            or schema hierarchy
-                    #       add linking between extracted metadata object properties through schema keywords
-                    #           -> cf mattermost chat
-                    self._deep_set(self.metadata, metadata, rel_file_path)
+                if re.fullmatch(pattern, fp.name):
+                    to_extract[extractor.name][1].append(fp)
+
+        # TODO: Think about parallelization scheme with ProcessPool
+        # For instance this loop is trivially parallelizable if there is no file usage overlap
+        for job in to_extract:
+            for file_path in job[1]:
+                rel_file_path = self._update_metadata_tree(file_path)
+                metadata = job[0].extract_metadata_from_file(file_path)
+                self._deep_set(self._metadata, metadata, rel_file_path)
+

@@ -40,29 +40,30 @@ class Decompressor():
 
         self._archive = None
 
-        self.archive = archive
+        #self.archive = archive
 
-        self._files = None
+        self._files = []
 
         self.config = config
 
-        self._output_files_patterns = None
+        self._output_files_patterns = []
 
-    @property
-    def output_files_patterns(self):
-        if not hasattr(self, '_output_files_patterns'):
-            raise RuntimeError('output_files_patterns have not been set yet!')
-        return self._output_files_patterns
+    #@property
+    #def output_files_patterns(self):
+    #    if not hasattr(self, '_output_files_patterns'):
+    #        raise RuntimeError('output_files_patterns have not been set yet!')
+    #    return self._output_files_patterns
 
-    @output_files_patterns.setter
-    def output_files_pattern(self, file_patterns: list[str]):
-        self._output_files_patterns = file_patterns
+    #@output_files_patterns.setter
+    #def output_files_pattern(self, file_patterns: list[str]):
+    #    self._output_files_patterns = file_patterns
 
-    @property
-    def archive(self):
-        return self._archive
+    #@property
+    #def archive(self):
+    #    return self._archive
 
-    @archive.setter
+    # Found no uses in project, but seems useful
+    # TODO: Rename to load archive?
     def archive(self, file_path: Path):
 
         assert file_path.is_file(), f"Incorrect path to archive {file_path}"
@@ -107,7 +108,7 @@ class Decompressor():
 
     def _decompress_tar(self,
                         archive_path: Optional[Path] = None,
-                        dc_dir_path: Optional[Path] = None):
+                        extraction_path: Optional[Path] = None):
         """
         Decompresses files of archive in members list.
         If another archive is found then operation is called on it.
@@ -119,46 +120,40 @@ class Decompressor():
         """
         if archive_path is None:
             archive_path = self._archive_path
-        if dc_dir_path is None:
-            dc_dir_path = Path(self.config["extraction_directory"])
+        if extraction_path is None:
+            extraction_path = Path(self.config["extraction_directory"])
         if self.verbose:
             print(f'''     unpacking tarball: {archive_path.name}''')
 
         archive_name = archive_path.stem.split(".")[0]
-        self.decompress_path = dc_dir_path.joinpath(archive_name)
+        decompress_path = extraction_path.joinpath(archive_name)
 
         with tarfile.open(archive_path) as t:
             item = t.next()
             while item is not None:
                 if self.verbose:
                     print(f'        processing file: {item.name}')
-                # TODO: Add blacklist for file to not decompress even if pattern matches
-                # If a pattern ends with tgz or tar (wrongly so)
-                # there will be problems with the extraction
-                # TODO: Should we change the order of the if statements?
-                # Or do we consider tgz and tar files as proper metadata?
-                #   -> First decompress then match
                 if any(
-                        re.fullmatch(f'.*/{pat}', item.name)
-                        for pat in self.output_files_pattern):
-                    t.extract(item, path=self.decompress_path)
-                    # TODO: generate files list here
-                elif any(
                         item.name.endswith(format)
                         for format in ['tgz', 'tar']):
-                    t.extract(item, path=self.decompress_path)
-                    new_archive = self.decompress_path.joinpath(item.name)
-                    self._decompress_tar(new_archive, new_archive.parent)
+                    t.extract(item, path=decompress_path)
+                    new_archive = decompress_path.joinpath(item.name)
+                    self._decompress_tar(new_archive, decompress_path)
                     new_archive.unlink()
+                elif any(
+                        re.fullmatch(f'.*/{pat}', item.name)
+                        for pat in self.output_files_pattern):
+                    t.extract(item, path=decompress_path)
+                    self._files.append(decompress_path.joinpath(item.name))
                 item = t.next()
 
-    @property
-    def files(self):
-        files = []
-        for pat in self.output_files_patterns:
-            files.extend(
-                sorted(
-                    Path(self.config['extraction_directory']).glob(
-                        f'**/{pat}')))
-        files = set(files)
-        return files
+    #@property
+    #def files(self):
+    #    files = []
+    #    for pat in self.output_files_patterns:
+    #        files.extend(
+    #            sorted(
+    #                Path(self.config['extraction_directory']).glob(
+    #                    f'**/{pat}')))
+    #    files = set(files)
+    #    return files

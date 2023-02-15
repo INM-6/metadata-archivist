@@ -9,6 +9,7 @@ Author: Kelbling, M., Jose V.
 
 import json
 import sys
+import shutil
 import importlib
 
 from pathlib import Path
@@ -59,7 +60,8 @@ class Archivist():
         # check and get paths and types
         # self.archive_path, self.archive_type = dc.check_archive(archive)
         self.dc_dir_path = self._check_dir(self.config["extraction_directory"],
-                                           allow_existing=False)
+                                           allow_existing=True,
+                                           rm_existing=True)
         self.out_dir_path = self._check_dir(self.config["output_directory"],
                                             allow_existing=True)
         # self.checked_format = ex.check_format(self.config["output_format"])
@@ -129,7 +131,10 @@ class Archivist():
         with path.open() as f:
             self.config = json.load(f)
 
-    def _check_dir(self, dir_path: str, allow_existing: bool = False) -> Path:
+    def _check_dir(self,
+                   dir_path: str,
+                   allow_existing: bool = False,
+                   rm_existing: bool = False) -> Path:
         """
         Checks directory path.
         If a directory with the same name already exists then continue.
@@ -152,6 +157,9 @@ class Archivist():
                 assert not exists, f"Directory already exists: {dir_path}"
             elif exists:
                 assert path.is_dir(), f"Incorrect path to directory: {path}"
+                if rm_existing:
+                    print(f'Removing directory: {dir_path}')
+                    shutil.rmtree(dir_path)
                 return path
 
             try:

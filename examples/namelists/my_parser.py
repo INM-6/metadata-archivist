@@ -11,7 +11,7 @@ class nml_extractor(AExtractor):
         self._input_file_pattern = '*.nml'
         self._extracted_metadata = {}
 
-        self._schema = NML_SCHEMA
+        self.schema = NML_SCHEMA
 
     def extract(self, f):
         nml = f90nml.read(f)

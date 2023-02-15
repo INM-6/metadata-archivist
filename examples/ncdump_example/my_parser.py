@@ -47,7 +47,7 @@ class ncdump_hs_extractor(AExtractor):
         self._input_file_pattern = 'ncdump_hs.out'
         self._extracted_metadata = {}
 
-        self._schema = NCDUMP_HS_SCHEMA
+        self.schema = NCDUMP_HS_SCHEMA
 
     def extract(self, f):
         out = {}

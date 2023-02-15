@@ -15,7 +15,7 @@ class time_extractor(AExtractor):
         self._input_file_pattern = 'time.txt'
         self._extracted_metadata = {}
 
-        self._schema = {}
+        self.schema = {}
 
     def extract(self, data) -> dict:
         out = {}
@@ -32,7 +32,7 @@ class yml_extractor(AExtractor):
         self._input_file_pattern = '*.yml'
         self._extracted_metadata = {}
 
-        self._schema = {}
+        self.schema = {}
 
     def extract(self, data) -> dict:
         out = yaml.safe_load(data)

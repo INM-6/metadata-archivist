@@ -55,7 +55,7 @@ class Decompressor():
         return self._output_files_patterns
 
     @output_files_patterns.setter
-    def output_files_pattern(self, file_patterns: list[str]):
+    def output_files_patterns(self, file_patterns: list[str]):
         self._output_files_patterns = file_patterns
 
     @property
@@ -140,7 +140,7 @@ class Decompressor():
                 #   -> First decompress then match
                 if any(
                         re.fullmatch(f'.*/{pat}', item.name)
-                        for pat in self.output_files_pattern):
+                        for pat in self.output_files_patterns):
                     t.extract(item, path=self.decompress_path)
                     # TODO: generate files list here
                 elif any(

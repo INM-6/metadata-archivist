@@ -23,7 +23,7 @@ class time_extractor(AExtractor):
             for line in fp:
                 if line != '\n':
                     out.update(key_val_split(line, '\t'))
-            return out
+        return out
 
 
 class yml_extractor(AExtractor):
@@ -36,9 +36,10 @@ class yml_extractor(AExtractor):
         self._schema = {}
 
     def extract(self, file_path) -> dict:
+        out = {}
         with file_path.open("r") as fp:
             out = yaml.safe_load(fp)
-            return out
+        return out
 
 
-my_parser = Parser(extractors=[time_extractor(), yml_extractor()])
+my_parser = Parser(extractors=[time_extractor(), yml_extractor()], lazy_load=True)

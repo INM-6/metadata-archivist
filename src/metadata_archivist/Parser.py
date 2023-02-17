@@ -12,11 +12,12 @@ Author: Jose V., Kelbling, M.
 import jsonschema  # to validate extracted data
 import sys
 import re
-
 import abc  # Abstract class base infrastructure
+
 from pathlib import Path
 from io import IOBase
 from typing import Optional, List
+from json import dump
 
 DEFAULT_PARSER_SCHEMA = {
     "$schema": "https://abc",
@@ -186,8 +187,6 @@ class Parser():
         self._schema = DEFAULT_PARSER_SCHEMA
         self.decompress_path = Path('./')
 
-        print(lazy_load)
-
         # Use to control disk storage of extraction results
         # TODO: think of a better name...
         self._lazy_load = lazy_load
@@ -345,9 +344,9 @@ class Parser():
 
         # TODO: Think about parallelization scheme with ProcessPool
         # For instance this loop is trivially parallelizable if there is no file usage overlap
-        for exname in to_extract:
-            for file_path in to_extract[exname]:
-                metadata = self._extractors[self._indexes[exname][0]].extract_metadata_from_file(file_path)
+        for exn in to_extract:
+            for file_path in to_extract[exn]:
+                metadata = self._extractors[self._indexes[exn][0]].extract_metadata_from_file(file_path)
                 rel_file_path = self._update_metadata_tree(file_path)
                 if not self._lazy_load:
                     self._deep_set(self._metadata, metadata, rel_file_path)
@@ -356,15 +355,14 @@ class Parser():
                     if meta_path.exists():
                         raise Exception(f"Unable to save extracted metadata {meta_path} exists")
                     with meta_path.open("w") as mp:
-                        from json import dump
                         dump(metadata, mp, indent=4)
-                    self._load_indexes[extractor.name] = (meta_path, rel_file_path)
+                    self._load_indexes[exn] = (meta_path, rel_file_path)
 
     def compile_metadata(self):
         if not self._lazy_load:
             raise Exception("Unable to compile metadata, lazy loading not enabled")
-        for exname in self._load_indexes:
-            meta_file = self._load_indexes[exname]
+        for exn in self._load_indexes:
+            meta_file = self._load_indexes[exn]
             with meta_file[0].open("r") as f:
                 from json import load
                 metadata = load(f)

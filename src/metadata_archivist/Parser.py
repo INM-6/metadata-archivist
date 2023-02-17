@@ -16,7 +16,7 @@ import re
 import abc  # Abstract class base infrastructure
 from pathlib import Path
 from io import IOBase
-from typing import Optional
+from typing import Optional, List
 
 DEFAULT_PARSER_SCHEMA = {
     "$schema": "https://abc",
@@ -73,7 +73,7 @@ class AExtractor(abc.ABC):
     _schema: dict  # JSON schema as dict
 
     # For two way relationship update handling
-    _parsers: list
+    _parsers = []
 
     #@property
     #def input_file_pattern(self):
@@ -97,7 +97,7 @@ class AExtractor(abc.ABC):
 
     def update_parsers(self):
         for p in self._parsers:
-            self._parsers.update_extractor(self)
+            p.update_extractor(self)
 
     def extract_metadata_from_file(
             self, file_path: Path) -> dict:  # JSON object as dict
@@ -126,7 +126,7 @@ class AExtractor(abc.ABC):
     # and load it later when filtering/reshaping with schema
 
     @abc.abstractmethod
-    def extract(self, data: IOBase) -> dict:
+    def extract(self, file_path: Path) -> dict:
         """
         Main method of the Extractor class
         used to "extract" metadata from the files.
@@ -178,12 +178,21 @@ class Parser():
     are used for structering the tree
     """
 
-    def __init__(self, extractors: Optional[list[AExtractor]] = None) -> None:
+    def __init__(self, extractors: Optional[List[AExtractor]] = None,
+                 lazy_load: bool = False) -> None:
         self._extractors = []
         self._input_file_patterns = []
         self._metadata = {}
         self._schema = DEFAULT_PARSER_SCHEMA
         self.decompress_path = Path('./')
+
+        print(lazy_load)
+
+        # Use to control disk storage of extraction results
+        # TODO: think of a better name...
+        self._lazy_load = lazy_load
+        if lazy_load:
+            self._load_indexes = {}
 
         # Used for updating/removing extractors
         # Shouldn't use much memory but TODO: check additional memory usage
@@ -313,7 +322,7 @@ class Parser():
                 self._deep_set(self._metadata, metadata, rel_file_path)
 
 
-    def parse_files(self, file_paths: list[Path]) -> None:
+    def parse_files(self, file_paths: List[Path]) -> None:
         """add metadata from input files to metadata object
         usually by sending calling all extract's linked to the file-name or regexp of file name
 
@@ -326,19 +335,37 @@ class Parser():
         # TODO: Think about parallelization scheme with ProcessPoolExecutor
         # Would it be worth it in terms of performance?
         for extractor in self._extractors:
-            to_extract[extractor.name] = [extractor, []]
+            to_extract[extractor.name] = []
             for fp in file_paths:
                 pattern = extractor._input_file_pattern
                 if pattern[0] == '*':
                     pattern = '.' + pattern
                 if re.fullmatch(pattern, fp.name):
-                    to_extract[extractor.name][1].append(fp)
+                    to_extract[extractor.name].append(fp)
 
         # TODO: Think about parallelization scheme with ProcessPool
         # For instance this loop is trivially parallelizable if there is no file usage overlap
-        for job in to_extract:
-            for file_path in job[1]:
+        for exname in to_extract:
+            for file_path in to_extract[exname]:
+                metadata = self._extractors[self._indexes[exname][0]].extract_metadata_from_file(file_path)
                 rel_file_path = self._update_metadata_tree(file_path)
-                metadata = job[0].extract_metadata_from_file(file_path)
-                self._deep_set(self._metadata, metadata, rel_file_path)
+                if not self._lazy_load:
+                    self._deep_set(self._metadata, metadata, rel_file_path)
+                else:
+                    meta_path = Path(str(file_path) + ".meta")
+                    if meta_path.exists():
+                        raise Exception(f"Unable to save extracted metadata {meta_path} exists")
+                    with meta_path.open("w") as mp:
+                        from json import dump
+                        dump(metadata, mp, indent=4)
+                    self._load_indexes[extractor.name] = (meta_path, rel_file_path)
 
+    def compile_metadata(self):
+        if not self._lazy_load:
+            raise Exception("Unable to compile metadata, lazy loading not enabled")
+        for exname in self._load_indexes:
+            meta_file = self._load_indexes[exname]
+            with meta_file[0].open("r") as f:
+                from json import load
+                metadata = load(f)
+            self._deep_set(self._metadata, metadata, meta_file[1])

@@ -197,6 +197,6 @@ parsing files ...''')
         if self.verbose:
             print(f'''
 Exporting metadata...''')
-        self.exporter.export(self.parser.metadata,
+        self.exporter.export(self.parser._metadata,
                              self.metadata_output_file,
                              verb=True)

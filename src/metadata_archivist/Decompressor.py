@@ -138,7 +138,7 @@ class Decompressor():
                     new_archive.unlink()
                 elif any(
                         re.fullmatch(f'.*/{pat}', item.name)
-                        for pat in self.output_files_pattern):
+                        for pat in self._output_files_patterns):
                     t.extract(item, path=decompress_path)
                     self._files.append(decompress_path.joinpath(item.name))
                 item = t.next()

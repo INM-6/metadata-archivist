@@ -9,7 +9,7 @@ Author: Jose V.
 """
 
 from metadata_archivist import Archivist
-from my_parserr import my_parser
+from my_parser import my_parser
 from pathlib import Path
 
 arch = Archivist(config='config.json',

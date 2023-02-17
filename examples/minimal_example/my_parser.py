@@ -17,12 +17,13 @@ class time_extractor(AExtractor):
 
         self._schema = {}
 
-    def extract(self, data) -> dict:
+    def extract(self, file_path) -> dict:
         out = {}
-        for line in data:
-            if line != '\n':
-                out.update(key_val_split(line, '\t'))
-        return out
+        with file_path.open("r") as fp:
+            for line in fp:
+                if line != '\n':
+                    out.update(key_val_split(line, '\t'))
+            return out
 
 
 class yml_extractor(AExtractor):
@@ -34,9 +35,10 @@ class yml_extractor(AExtractor):
 
         self._schema = {}
 
-    def extract(self, data) -> dict:
-        out = yaml.safe_load(data)
-        return out
+    def extract(self, file_path) -> dict:
+        with file_path.open("r") as fp:
+            out = yaml.safe_load(fp)
+            return out
 
 
 my_parser = Parser(extractors=[time_extractor(), yml_extractor()])

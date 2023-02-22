@@ -409,12 +409,9 @@ class Parser():
                         dump(metadata, mp, indent=4)
                     self._load_indexes[exn] = (meta_path, rel_file_path)
 
-    def compile_metadata(self, auto_unlink: bool = False):
+    def compile_metadata(self):
         """
         Function to gather all metadata extracted using parsing function with lazy loading
-        
-        :param auto_unlink: enables deletion of meta files after compiling
-
         """
         if not self._lazy_load:
             raise RuntimeError("Unable to compile metadata, lazy loading not enabled")
@@ -423,6 +420,4 @@ class Parser():
             with meta_info[0].open("r") as f:
                 from json import load
                 metadata = load(f)
-            if auto_unlink:
-                meta_info[0].unlink()
             self._deep_set(self.metadata, metadata, meta_info[1])

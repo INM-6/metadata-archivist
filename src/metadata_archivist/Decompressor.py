@@ -69,6 +69,15 @@ class Decompressor():
     def output_file_patterns(self, file_patterns: List[str]):
         self._output_file_patterns = file_patterns
 
+    @property
+    def files(self) -> List[str]:
+        """Getter for _files"""
+        return self._files
+    
+    @files.setter
+    def files(self, _):
+        raise AttributeError("files list can only be generated through archive decompressing")
+
     def _check_archive(self, file_path: Path):
         """Internal method to check archive consistency"""
 

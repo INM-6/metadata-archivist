@@ -11,6 +11,8 @@ Author: Jose V., Kelbling, M.
 
 import re
 import abc  # Abstract class base infrastructure
+import warnings
+
 import jsonschema  # to validate extracted data
 
 from json import dump
@@ -268,9 +270,8 @@ class Parser():
             self._load_indexes = {}
         else:
             if len(self.metadata) > 0:
-                # TODO: Do we need a warning system, or general logging manager?
                 # TODO: Should we raise exception instead of warning?
-                print("Warning: compiling available metadata after enabling lazy loading")
+                warnings.warn("Warning: compiling available metadata after enabling lazy loading")
             self.compile_metadata()
             
 

@@ -9,14 +9,13 @@ Author: Jose V., Kelbling, M.
 
 """
 
-import jsonschema  # to validate extracted data
-import sys
 import re
 import abc  # Abstract class base infrastructure
+import jsonschema  # to validate extracted data
 
+from json import dump
 from pathlib import Path
 from typing import Optional, List
-from json import dump
 
 
 DEFAULT_PARSER_SCHEMA = {
@@ -106,7 +105,7 @@ class AExtractor(abc.ABC):
 
     @name.setter
     def name(self, _):
-        raise Exception("The name of an Extractor is an immutable attribute")
+        raise AttributeError("The name of an Extractor is an immutable attribute")
 
     def _update_parsers(self):
         """Reverse update of related parsers"""
@@ -225,7 +224,7 @@ class Parser():
 
     @extractors.setter
     def extractors(self, _):
-        raise Exception("Extractors list should be modified through add, update and remove procedures")
+        raise AttributeError("Extractors list should be modified through add, update and remove procedures")
     
     @property
     def input_file_patterns(self) -> List[str]:
@@ -237,7 +236,7 @@ class Parser():
     
     @input_file_patterns.setter
     def input_file_patterns(self, _):
-        raise Exception("Input file patterns list should be modified through add, update and remove procedures")
+        raise AttributeError("Input file patterns list should be modified through add, update and remove procedures")
     
     @property
     def schema(self) -> dict:
@@ -265,7 +264,7 @@ class Parser():
             return
         if lazy_load and not self._lazy_load:
             if len(self.metadata) > 0:
-                raise Exception("Lazy loading needs to be enabled before metadata extraction")
+                raise RuntimeError("Lazy loading needs to be enabled before metadata extraction")
             self._load_indexes = {}
         else:
             if len(self.metadata) > 0:
@@ -277,7 +276,7 @@ class Parser():
 
     def add_extractor(self, extractor: AExtractor):
         if extractor in self.extractors:
-            raise Exception("Extractor is already in Parser")
+            raise RuntimeError("Extractor is already in Parser")
         self._indexes[extractor.name] = [len(self._extractors), 0, 0]
         self._extractors.append(extractor)
         self._indexes[extractor.name][1] = len(self._input_file_patterns)
@@ -287,7 +286,7 @@ class Parser():
 
     def update_extractor(self, extractor: AExtractor):
         if extractor not in self._extractors:
-            raise Exception("Unknown Extractor")
+            raise RuntimeError("Unknown Extractor")
         self._schema["$defs"][extractor.name] = extractor.schema
 
         self._input_file_patterns.pop(self._indexes[extractor.name][1])
@@ -301,7 +300,7 @@ class Parser():
         
     def remove_extractor(self, extractor: AExtractor):
         if extractor not in self._extractors:
-            raise Exception("Unknown Extractor")
+            raise RuntimeError("Unknown Extractor")
         self._extractors.pop(self._indexes[extractor.name][0])
         self._input_file_patterns.pop(self._indexes[extractor.name][1])
         self._schema["$defs"]["node"]["properties"]["anyOf"].pop(self._indexes[extractor.name][2])
@@ -331,10 +330,9 @@ class Parser():
                 iter_dict[pp] = {}
                 iter_dict = iter_dict[pp]
             elif pp in iter_dict and not isinstance(iter_dict[pp], dict):
-                print(
+                raise RuntimeError(
                     f'Trying to created nested structure in metadata object failed: {pp}'
                 )
-                sys.exit()
         return rel_file_path
 
     def _deep_set(self, metadata: dict, value, path: Path):
@@ -406,7 +404,7 @@ class Parser():
                 else:
                     meta_path = Path(str(file_path) + ".meta")
                     if meta_path.exists():
-                        raise Exception(f"Unable to save extracted metadata: {meta_path} exists")
+                        raise FileExistsError(f"Unable to save extracted metadata: {meta_path} exists")
                     with meta_path.open("w") as mp:
                         dump(metadata, mp, indent=4)
                     self._load_indexes[exn] = (meta_path, rel_file_path)
@@ -419,7 +417,7 @@ class Parser():
 
         """
         if not self._lazy_load:
-            raise Exception("Unable to compile metadata, lazy loading not enabled")
+            raise RuntimeError("Unable to compile metadata, lazy loading not enabled")
         for exn in self._load_indexes:
             meta_info = self._load_indexes[exn]
             with meta_info[0].open("r") as f:

@@ -9,14 +9,12 @@ Tested with Python 3.8.10
 Author: Jose V., Kelbling, M.
 """
 
-import sys
-
-from typing import Optional
-from pathlib import Path
+import re
 import zipfile
 import tarfile
-import re
 
+from pathlib import Path
+from typing import Optional, List
 
 class Decompressor():
     '''
@@ -28,79 +26,63 @@ class Decompressor():
     '''
 
     def __init__(self,
-                 archive: Path,
+                 archive_path: Path,
                  config: dict,
                  verbose: Optional[bool] = True):
+        
+        # Protected
+        self._archive_path, self._decompress = self._check_archive(archive_path)
 
-        self.verbose = verbose
-        if self.verbose:
-            print('''\nDecompression:''')
-
-        self.current_file = (None, None)
-
-        self._archive_path, self.decompress = self.load_archive(archive)
-
+        # Internal handling
         self._files = []
+        self._output_file_patterns = None
 
         self.config = config
+        self.verbose = verbose
 
-        self._output_files_patterns = []
+    @property
+    def archive_path(self) -> Path:
+        """Getter for _archive_path"""
+        return self._archive_path
 
-    #@property
-    #def output_files_patterns(self):
-    #    if not hasattr(self, '_output_files_patterns'):
-    #        raise RuntimeError('output_files_patterns have not been set yet!')
-    #    return self._output_files_patterns
+    @archive_path.setter
+    def archive_path(self, archive_path: Path):
+        """Set new archive path after checking"""
+        self._archive_path, self._decompress = self._check_archive(archive_path)
 
-    #@output_files_patterns.setter
-    #def output_files_pattern(self, file_patterns: list[str]):
-    #    self._output_files_patterns = file_patterns
+    @property
+    def decompress(self) -> function:
+        """Getter for _decompress"""
+        return self._decompress
+    
+    @decompress.setter
+    def decompress(self, _):
+        raise AttributeError("decompress method can only be set through archive path checking")
+    
+    @property
+    def output_file_patterns(self):
+        if self._output_file_patterns is None:
+            raise AttributeError('output_files_patterns have not been set yet!')
+        return self._output_file_patterns
 
-    #@property
-    #def archive(self):
-    #    return self._archive
+    @output_file_patterns.setter
+    def output_file_patterns(self, file_patterns: List[str]):
+        self._output_file_patterns = file_patterns
 
-    def load_archive(self, file_path: Path):
+    def _check_archive(self, file_path: Path):
+        """Internal method to check archive consistency"""
 
-        assert file_path.is_file(), f"Incorrect path to archive {file_path}"
+        if not file_path.is_file():
+            raise FileNotFoundError(f"Incorrect path to file: {file_path}")
 
         if zipfile.is_zipfile(file_path):
             raise NotImplementedError("ZIP decompressor not yet implemented")
         elif tarfile.is_tarfile(file_path):
             decompressor = self._decompress_tar
-            # self.next_file = self._next_tar_file
         else:
-            print(f'Unknown archive format: {file_path.name}')
-            sys.exit()
-
-        if self.verbose:
-            print(f'''    archive: {file_path}''')
+            raise RuntimeError(f'Unknown archive format: {file_path.name}')
 
         return file_path, decompressor
-
-    # def _next_tar_file(self,
-    #                    archive_path: Path,
-    #                    dc_dir_path: Path,
-    #                    members: list = None):
-    #     """
-    #     Decompresses tar archive.
-    #     If no members list is given then a recursive extraction of
-    #     all files is done.
-
-    #     Args:
-    #         archive_path: Path object to archive.
-    #         dc_dir_path: Path object to decompression directory.
-    #         members: list of members of archive to extract, None if extract all.
-    #     """
-    #     archive_name = archive_path.stem.split(".")[0]
-    #     self.decompress_path = dc_dir_path.joinpath(archive_name)
-
-    #     item = self._archive.next()
-    #     while item is not None and not any(
-    #         [pat.match(item.name)
-    #          for pat in self.output_files_pattern]) and not item.isfile():
-    #         item = self._archive.next()
-    #     return (self._archive.extractfile(item))
 
     def _decompress_tar(self,
                         archive_path: Optional[Path] = None,
@@ -108,8 +90,6 @@ class Decompressor():
         """
         Decompresses files of archive in members list.
         If another archive is found then operation is called on it.
-        Members are assumed to be files, if members are archives they will
-        NOT be unpacked.
         Paths are assumed to be checked before call.
 
         Args:
@@ -119,7 +99,7 @@ class Decompressor():
         if extraction_path is None:
             extraction_path = Path(self.config["extraction_directory"])
         if self.verbose:
-            print(f'''     unpacking tarball: {archive_path.name}''')
+            print(f"Decompression of archive: {archive_path.name}")
 
         archive_name = archive_path.stem.split(".")[0]
         decompress_path = extraction_path.joinpath(archive_name)
@@ -128,30 +108,20 @@ class Decompressor():
             item = t.next()
             while item is not None:
                 if self.verbose:
-                    print(f'        processing file: {item.name}')
-                if any(
-                        item.name.endswith(format)
+                    print(f"    processing file: {item.name}")
+
+                if any(item.name.endswith(format)
                         for format in ['tgz', 'tar']):
                     t.extract(item, path=decompress_path)
-                    new_archive = decompress_path.joinpath(item.name)
+                    new_archive = decompress_path.joinpath(item.name.split(".")[0])
                     self._decompress_tar(new_archive, decompress_path)
                     new_archive.unlink()
-                elif any(
-                        re.fullmatch(f'.*/{pat}', item.name)
-                        for pat in self._output_files_patterns):
+
+                elif any(re.fullmatch(f'.*/{pat}', item.name)
+                        for pat in self.output_file_patterns):
                     t.extract(item, path=decompress_path)
                     self._files.append(decompress_path.joinpath(item.name))
+                    
                 item = t.next()
 
         return decompress_path
-
-    #@property
-    #def files(self):
-    #    files = []
-    #    for pat in self.output_files_patterns:
-    #        files.extend(
-    #            sorted(
-    #                Path(self.config['extraction_directory']).glob(
-    #                    f'**/{pat}')))
-    #    files = set(files)
-    #    return files

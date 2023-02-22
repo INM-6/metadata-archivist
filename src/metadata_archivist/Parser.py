@@ -15,9 +15,9 @@ import re
 import abc  # Abstract class base infrastructure
 
 from pathlib import Path
-from io import IOBase
 from typing import Optional, List
 from json import dump
+
 
 DEFAULT_PARSER_SCHEMA = {
     "$schema": "https://abc",
@@ -51,11 +51,6 @@ DEFAULT_PARSER_SCHEMA = {
 }
 
 
-# TODO: think about property renaming:
-# _ prefix for properties meant for internal use
-# no prefix otherwise
-
-
 class AExtractor(abc.ABC):
     """
     Base extractor class.
@@ -68,63 +63,78 @@ class AExtractor(abc.ABC):
     the data they process. The extraction process and
     returned structure defines the schema.
     """
-    name: str  # name of the extractor
+
+    # Protected
     _input_file_pattern: str
-    _extracted_metadata: dict  # JSON object as dict to be used as cache
     _schema: dict  # JSON schema as dict
 
-    # For two way relationship update handling
-    _parsers = []
+    # To be handled by Parser class
+    _parsers = [] # For two way relationship update handling
 
-    #@property
-    #def input_file_pattern(self):
-    #    """retuns a re.pattern describing input files"""
-    #    return self._input_file_pattern
+    # Immutable
+    _name: str  # name of the extractor
 
-    #@input_file_pattern.setter
-    #def input_file_pattern(self, pattern: str):
-    #    """set pattern of input file"""
-    #    self._input_file_pattern = pattern
+    extracted_metadata: dict  # JSON object as dict to be used as cache
 
-    #@property
-    #def schema(self):
-    #    """return json schema of output"""
-    #    return self._schema
+    @property
+    def input_file_pattern(self) -> str:
+        """returns a re.pattern describing input files"""
+        return self._input_file_pattern
 
-    #@schema.setter
-    #def schema(self, schema: dict):
-    #    """set schema"""
-    #    self._schema = schema
+    @input_file_pattern.setter
+    def input_file_pattern(self, pattern: str):
+        """set pattern of input file"""
+        self._input_file_pattern = pattern
+        self._update_parsers()
 
-    def update_parsers(self):
+    @property
+    def schema(self) -> dict:
+        """return json schema of output"""
+        return self._schema
+
+    # TODO: Now, schema should not be directly modified but completely replaced, is this correct?
+    @schema.setter
+    def schema(self, schema: dict):
+        """set schema"""
+        self._schema = schema
+        self._update_parsers()
+
+    @property
+    def name(self) -> dict:
+        """return json schema of output"""
+        return self.name
+
+    @name.setter
+    def name(self, _):
+        raise Exception("The name of an Extractor is an immutable attribute")
+
+    def _update_parsers(self):
+        """Reverse update of related parsers"""
         for p in self._parsers:
             p.update_extractor(self)
 
     def extract_metadata_from_file(
             self, file_path: Path) -> dict:  # JSON object as dict
         """
-        Wrapper for the user defined _extract method,
+        Wrapper for the user defined extract method,
         takes care of prior file checking and applies validate
         on extracted metadata
         """
-        pattern = self._input_file_pattern
+        pattern = self.input_file_pattern
         if pattern[0] == '*':
             pattern = '.' + pattern
         if not re.fullmatch(pattern, file_path.name):
             raise RuntimeError(
-                f'The inputfile {file_path.name} does not match the extractors pattern: {self._input_file_pattern}'
+                f'The input file {file_path.name} does not match the extractors pattern: {self.input_file_pattern}'
             )
         elif not file_path.is_file():
             raise RuntimeError(
-                f'The inputfile {file_path.name} does not exist!')
+                f'The input file {file_path.name} does not exist!')
         else:
-            self._extracted_metadata = self.extract(file_path)
+            self.extracted_metadata = self.extract(file_path)
         self.validate()
 
-        return self._extracted_metadata
-
-    # TODO: Think about lazy storing the extractor results in files (in case memory is information)
-    # and load it later when filtering/reshaping with schema
+        return self.extracted_metadata
 
     @abc.abstractmethod
     def extract(self, file_path: Path) -> dict:
@@ -146,7 +156,7 @@ class AExtractor(abc.ABC):
             - True if validation successful False otherwise
         """
         try:
-            jsonschema.validate(self._extracted_metadata, schema=self._schema)
+            jsonschema.validate(self.extracted_metadata, schema=self.schema)
             return True
         except jsonschema.ValidationError as e:
             # TODO: better exception mechanism
@@ -156,15 +166,15 @@ class AExtractor(abc.ABC):
 
     # Considering the name of the extractor as an immutable and unique property then we should only use
     # the name property for equality/hashing
-    # TO CHECK
+    # TODO: to verify for robustness and correctness
     def __eq__(self, other):
-        return self.name == other.name
+        return self._name == other.name
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     def __hash__(self):
-        return hash(self.name)
+        return hash(self._name)
 
 
 class Parser():
@@ -176,18 +186,21 @@ class Parser():
 
     all metadata for a node is put at a corresponding node in the
     metadata dict tree. the directories in the metadata archive (lake)
-    are used for structering the tree
+    are used for structuring the tree
     """
 
     def __init__(self, extractors: Optional[List[AExtractor]] = None,
                  lazy_load: bool = False) -> None:
+        
+        # Protected
+        # TODO: Same question as with Extractor.schema...
         self._extractors = []
         self._input_file_patterns = []
-        self._metadata = {}
         self._schema = DEFAULT_PARSER_SCHEMA
-        self.decompress_path = Path('./')
 
-        # Use to control disk storage of extraction results
+        # Internal handling
+
+        # Used to control disk storage of extraction results
         # TODO: think of a better name...
         self._lazy_load = lazy_load
         if lazy_load:
@@ -198,46 +211,93 @@ class Parser():
         # Indexing is done storing a triplet with extractors, patterns, schema indexes
         self._indexes = {}
 
+        self.metadata = {}
+        self.decompress_path = Path('./')
+
         if extractors is not None:
             for e in extractors:
                 self.add_extractor(e)
 
-    #@property
-    #def input_file_patterns(self) -> list[str]:
-    #    """
-    #    return list of re.pattern for input files, given by the extractors
-    #    The re.pattern are then used by the decompressor to select files
-    #    """
-    #    return self._input_file_patterns
+    @property
+    def extractors(self) -> List[AExtractor]:
+        """return list of extractors"""
+        return self._extractors
 
-    #@property
-    #def extractors(self) -> list[AExtractor]:
-    #    """return list of extractors"""
-    #    return self._extractors
+    @extractors.setter
+    def extractors(self, _):
+        raise Exception("Extractors list should be modified through add, update and remove procedures")
+    
+    @property
+    def input_file_patterns(self) -> List[str]:
+        """
+        return list of re.pattern for input files, given by the extractors
+        The re.pattern are then used by the decompressor to select files
+        """
+        return self._input_file_patterns
+    
+    @input_file_patterns.setter
+    def input_file_patterns(self, _):
+        raise Exception("Input file patterns list should be modified through add, update and remove procedures")
+    
+    @property
+    def schema(self) -> dict:
+        """returns parser schema"""
+        return self._schema
+    
+    @schema.setter
+    def schema(self, schema: dict):
+        """schema setter"""
+        self._schema = schema
+        if len(self._extractors) > 0:
+            for ex in self._extractors:
+                # TODO: Needs consistency checks
+                self._extend_json_schema(ex)
+    
+    @property
+    def lazy_load(self) -> bool:
+        """returns whether disk saving is enabled or not"""
+        return self._lazy_load
+
+    @lazy_load.setter
+    def lazy_load(self, lazy_load: bool):
+        """lazy load setter"""
+        if lazy_load == self._lazy_load:
+            return
+        if lazy_load and not self._lazy_load:
+            if len(self.metadata) > 0:
+                raise Exception("Lazy loading needs to be enabled before metadata extraction")
+            self._load_indexes = {}
+        else:
+            if len(self.metadata) > 0:
+                # TODO: Do we need a warning system, or general logging manager?
+                # TODO: Should we raise exception instead of warning?
+                print("Warning: compiling available metadata after enabling lazy loading")
+            self.compile_metadata()
+            
 
     def add_extractor(self, extractor: AExtractor):
-        if extractor in self._extractors:
+        if extractor in self.extractors:
             raise Exception("Extractor is already in Parser")
         self._indexes[extractor.name] = [len(self._extractors), 0, 0]
         self._extractors.append(extractor)
         self._indexes[extractor.name][1] = len(self._input_file_patterns)
-        self._input_file_patterns.append(extractor._input_file_pattern)
+        self._input_file_patterns.append(extractor.input_file_pattern)
         self._extend_json_schema(extractor)
         extractor._parsers.append(self)
 
     def update_extractor(self, extractor: AExtractor):
         if extractor not in self._extractors:
             raise Exception("Unknown Extractor")
-        self._schema["$defs"][extractor.name] = extractor._schema
+        self._schema["$defs"][extractor.name] = extractor.schema
 
         self._input_file_patterns.pop(self._indexes[extractor.name][1])
         self._indexes[extractor.name][1] = len(self._input_file_patterns)
-        self._input_file_patterns.append(extractor._input_file_pattern)
+        self._input_file_patterns.append(extractor.input_file_pattern)
     
         self._schema["$defs"]["node"]["properties"]["anyOf"].pop(self._indexes[extractor.name][2])
         self._indexes[extractor.name][2] = len(self._schema["$defs"]["node"]["properties"]["anyOf"])
         self._schema["$defs"]["node"]["properties"]["anyOf"].append(
-            {"$ref": f"#/$defs/{extractor.name}"})    
+            {"$ref": f"#/$defs/{extractor.name}"})
         
     def remove_extractor(self, extractor: AExtractor):
         if extractor not in self._extractors:
@@ -247,25 +307,16 @@ class Parser():
         self._schema["$defs"]["node"]["properties"]["anyOf"].pop(self._indexes[extractor.name][2])
 
         self._schema["$defs"].pop(extractor.name, None)
-        self._indexes.pop(extractor.name, None) 
-
-    #@property
-    #def schema(self):
-    #    """return json schema of output"""
-    #    return self._schema
+        self._indexes.pop(extractor.name, None)
+        extractor._parsers.remove(self)
 
     def _extend_json_schema(self, extractor: AExtractor):
         if "$defs" not in self._schema.keys():
             self._schema["$defs"] = {}
-        self._schema["$defs"][extractor.name] = extractor._schema
+        self._schema["$defs"][extractor.name] = extractor.schema
         self._indexes[extractor.name][2] = len(self._schema["$defs"]["node"]["properties"]["anyOf"])
         self._schema["$defs"]["node"]["properties"]["anyOf"].append(
             {"$ref": f"#/$defs/{extractor.name}"})
-
-    #@property
-    #def metadata(self) -> dict:
-    #    """return the metadata object"""
-    #    return self._metadata
 
     def _update_metadata_tree(self, file_path: Path) -> Path:
         """update tree structure of metadata dict with file path
@@ -273,7 +324,7 @@ class Parser():
         :param file_path: path to a file
 
         """
-        iter_dict = self._metadata
+        iter_dict = self.metadata
         rel_file_path = file_path.relative_to(self.decompress_path)
         for pp in rel_file_path.parts[:-1]:
             if pp not in iter_dict:
@@ -301,10 +352,12 @@ class Parser():
 
         """
 
+        # TODO: Should lazy loading also be implemented here?
+
         rel_file_path = self._update_metadata_tree(file_path)
 
         for extractor in self._extractors:
-            pattern = extractor._input_file_pattern
+            pattern = extractor.input_file_pattern
             if pattern[0] == '*':
                 pattern = '.' + pattern
             if re.fullmatch(pattern, file_path.name):
@@ -314,11 +367,11 @@ class Parser():
                 # We should think if this is to be done instead of the path tree structure
                 # or do it afterwards through another mechanism
                 #   ->  Think about reshaping/filtering function for dictionaries using schemas
-                #       add bool condition to swtich between directory hierarchy for metadata objects
+                #       add bool condition to switch between directory hierarchy for metadata objects
                 #            or schema hierarchy
                 #       add linking between extracted metadata object properties through schema keywords
                 #           -> cf mattermost chat
-                self._deep_set(self._metadata, metadata, rel_file_path)
+                self._deep_set(self.metadata, metadata, rel_file_path)
 
 
     def parse_files(self, file_paths: List[Path]) -> None:
@@ -336,34 +389,42 @@ class Parser():
         for extractor in self._extractors:
             to_extract[extractor.name] = []
             for fp in file_paths:
-                pattern = extractor._input_file_pattern
+                pattern = extractor.input_file_pattern
                 if pattern[0] == '*':
                     pattern = '.' + pattern
                 if re.fullmatch(pattern, fp.name):
                     to_extract[extractor.name].append(fp)
 
-        # TODO: Think about parallelization scheme with ProcessPool
+        # TODO: Think about parallelization scheme with ProcessPoolExecutor
         # For instance this loop is trivially parallelizable if there is no file usage overlap
         for exn in to_extract:
             for file_path in to_extract[exn]:
                 metadata = self._extractors[self._indexes[exn][0]].extract_metadata_from_file(file_path)
                 rel_file_path = self._update_metadata_tree(file_path)
                 if not self._lazy_load:
-                    self._deep_set(self._metadata, metadata, rel_file_path)
+                    self._deep_set(self.metadata, metadata, rel_file_path)
                 else:
                     meta_path = Path(str(file_path) + ".meta")
                     if meta_path.exists():
-                        raise Exception(f"Unable to save extracted metadata {meta_path} exists")
+                        raise Exception(f"Unable to save extracted metadata: {meta_path} exists")
                     with meta_path.open("w") as mp:
                         dump(metadata, mp, indent=4)
                     self._load_indexes[exn] = (meta_path, rel_file_path)
 
-    def compile_metadata(self):
+    def compile_metadata(self, auto_unlink: bool = False):
+        """
+        Function to gather all metadata extracted using parsing function with lazy loading
+        
+        :param auto_unlink: enables deletion of meta files after compiling
+
+        """
         if not self._lazy_load:
             raise Exception("Unable to compile metadata, lazy loading not enabled")
         for exn in self._load_indexes:
-            meta_file = self._load_indexes[exn]
-            with meta_file[0].open("r") as f:
+            meta_info = self._load_indexes[exn]
+            with meta_info[0].open("r") as f:
                 from json import load
                 metadata = load(f)
-            self._deep_set(self._metadata, metadata, meta_file[1])
+            if auto_unlink:
+                meta_info[0].unlink()
+            self._deep_set(self.metadata, metadata, meta_info[1])

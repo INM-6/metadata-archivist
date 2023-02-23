@@ -14,6 +14,7 @@ import zipfile
 import tarfile
 
 from pathlib import Path
+from collections.abc import Callable
 from typing import Optional, List
 
 class Decompressor():
@@ -47,7 +48,7 @@ class Decompressor():
         self._archive_path, self._decompress = self._check_archive(archive_path)
 
     @property
-    def decompress(self) -> function:
+    def decompress(self) -> Callable:
         """Getter for _decompress"""
         return self._decompress
     
@@ -106,7 +107,8 @@ class Decompressor():
                     _, ndd, ndf = self._decompress_tar(output_file_patterns,
                                                        archive_path=new_archive,
                                                        extraction_path=decompress_path)
-                    decompressed_dirs.extend(ndd)
+                    ndd.extend(decompressed_dirs)
+                    decompressed_dirs = ndd
                     decompressed_files.extend(ndf)
                     new_archive.unlink()
 
@@ -114,7 +116,9 @@ class Decompressor():
                         for pat in output_file_patterns):
                     t.extract(item, path=decompress_path)
                     decompressed_files.append(decompress_path.joinpath(item.name))
-                    
+                elif item.isdir():
+                    # TODO: Deal with empty dict
+                    decompressed_dirs.insert(0, decompress_path.joinpath(item.name))
                 item = t.next()
 
         return decompress_path, decompressed_dirs, decompressed_files

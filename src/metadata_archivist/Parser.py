@@ -77,7 +77,7 @@ class AExtractor(abc.ABC):
 
     extracted_metadata: dict  # JSON object as dict to be used as cache
 
-    def __init__(self, name, input_file_pattern: str, schema: dict) -> None:
+    def __init__(self, name: str, input_file_pattern: str, schema: dict) -> None:
         """
         Initialization for base AExtractor.
         Necessary due to decorators used for encapsulation of attributes.
@@ -112,8 +112,8 @@ class AExtractor(abc.ABC):
         self._update_parsers()
 
     @property
-    def name(self) -> dict:
-        """return json schema of output"""
+    def name(self) -> str:
+        """return extractor name"""
         return self._name
 
     @name.setter
@@ -202,7 +202,7 @@ class Parser():
     """
 
     def __init__(self, extractors: Optional[List[AExtractor]] = None,
-                 lazy_load: bool = False) -> None:
+                 lazy_load: Optional[bool] = False) -> None:
         
         # Protected
         # TODO: Same question as with Extractor.schema...

@@ -117,7 +117,7 @@ class Decompressor():
                     t.extract(item, path=decompress_path)
                     decompressed_files.append(decompress_path.joinpath(item.name))
                 elif item.isdir():
-                    # TODO: Deal with empty dict
+                    # TODO: Deal with empty dirs
                     decompressed_dirs.insert(0, decompress_path.joinpath(item.name))
                 item = t.next()
 

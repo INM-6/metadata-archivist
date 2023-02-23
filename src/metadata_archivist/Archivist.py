@@ -11,7 +11,7 @@ import json
 import warnings
 
 from pathlib import Path
-from typing import Optional, Union, List
+from typing import Optional, Union
 
 from .Exporter import Exporter
 from .Parser import Parser
@@ -59,7 +59,7 @@ class Archivist():
         self._out_dir_path = self._check_dir(self.config["output_directory"],
                                             allow_existing=True)
         if self._dc_dir_path == self._out_dir_path:
-            warnings.warn("Decompression directory and output directory are the same, disabling automatic cleanup.")
+            warnings.warn("Decompression directory and output directory are the same, disabling automatic cleanup.", RuntimeWarning)
             self.auto_cleanup = False
 
         # set exporter
@@ -132,7 +132,7 @@ class Archivist():
 
         path = Path(dir_path)
 
-        if dir_path != "":
+        if str(path) != '.':
             if path.exists():
                 if not allow_existing:
                     raise RuntimeError(f"Directory already exists: {path}")
@@ -172,7 +172,7 @@ parsing files ...''')
         if len(self.cache["meta_files"]) == 0:
             self._clean_up()
         else:
-            warnings.warn("Lazy loading enabled, cleanup will be executed after export call.")
+            warnings.warn("Lazy loading enabled, cleanup will be executed after export call.", RuntimeWarning)
             self.cache["compile_metadata"] = True
 
     def export(self):
@@ -197,7 +197,7 @@ Exporting metadata...''')
             errors = []
             files = self.cache["decompressed_files"] + self.cache["meta_files"]
             dirs = self.cache["decompressed_dirs"]
-            if str(self._dc_dir_path ) != "":
+            if str(self._dc_dir_path) != '.':
                 dirs.append(self._dc_dir_path)
 
             if self.verbose:

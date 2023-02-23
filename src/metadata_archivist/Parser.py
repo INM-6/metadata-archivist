@@ -281,7 +281,7 @@ class Parser():
         else:
             if len(self.metadata) > 0:
                 # TODO: Should we raise exception instead of warning?
-                warnings.warn("Warning: compiling available metadata after enabling lazy loading")
+                warnings.warn("Warning: compiling available metadata after enabling lazy loading.", RuntimeWarning)
             self.compile_metadata()
             
 

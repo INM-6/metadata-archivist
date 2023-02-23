@@ -43,11 +43,7 @@ def key_val_split_rm_prefix(string, split_char, rm_prefix):
 class ncdump_hs_extractor(AExtractor):
 
     def __init__(self):
-        self.name = 'ncdump_hs_extractor'
-        self._input_file_pattern = 'ncdump_hs.out'
-        self._extracted_metadata = {}
-
-        self._schema = NCDUMP_HS_SCHEMA
+        super().__init__(name='ncdump_hs_extractor', input_file_pattern='ncdump_hs.out', schema=NCDUMP_HS_SCHEMA)
 
     def extract(self, f):
         out = {}

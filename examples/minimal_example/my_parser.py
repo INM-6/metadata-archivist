@@ -11,11 +11,7 @@ def key_val_split(string, split_char):
 class time_extractor(AExtractor):
 
     def __init__(self) -> None:
-        self.name = 'time_extractor'
-        self._input_file_pattern = 'time.txt'
-        self._extracted_metadata = {}
-
-        self._schema = {}
+        super().__init__(name='time_extractor', input_file_pattern='time.txt', schema={})
 
     def extract(self, file_path) -> dict:
         out = {}
@@ -29,11 +25,7 @@ class time_extractor(AExtractor):
 class yml_extractor(AExtractor):
 
     def __init__(self) -> None:
-        self.name = 'yml_extractor'
-        self._input_file_pattern = '*.yml'
-        self._extracted_metadata = {}
-
-        self._schema = {}
+        super().__init__(name='yml_extractor', input_file_pattern='*.yml', schema={})
 
     def extract(self, file_path) -> dict:
         out = {}

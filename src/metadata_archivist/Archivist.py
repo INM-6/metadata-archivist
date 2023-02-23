@@ -8,12 +8,10 @@ Author: Kelbling, M., Jose V.
 """
 
 import json
-import sys
-import importlib
+import warnings
 
 from pathlib import Path
-from enum import Enum
-from typing import Optional, Union
+from typing import Optional, Union, List
 
 from .Exporter import Exporter
 from .Parser import Parser
@@ -24,10 +22,10 @@ class Archivist():
 
     def __init__(self,
                  config: Union[dict, str],
-                 archive: Path,
+                 archive_path: Path,
                  parser: Parser,
                  verbose: Optional[bool] = True,
-                 rm_dc_dir: Optional[bool] = False):
+                 auto_cleanup: Optional[bool] = True):
         """init
 
         :param config: path to config file as str or config as dict
@@ -37,9 +35,6 @@ class Archivist():
 
         """
         self.verbose = verbose
-
-        if self.verbose:
-            print('''\n----- Archivist -----''')
 
         # get config
         if isinstance(config, str):
@@ -51,65 +46,28 @@ class Archivist():
         self._check_config()
 
         # set decompressor
-        self.decompressor = Decompressor(archive, self.config)
+        self.decompressor = Decompressor(archive_path, self.config)
 
         # set parser
         self.parser = parser
 
-        # check and get paths and types
-        # self.archive_path, self.archive_type = dc.check_archive(archive)
-        self.dc_dir_path = self._check_dir(self.config["extraction_directory"],
+        self.auto_cleanup = auto_cleanup
+
+        # check and get paths for internal handling
+        self._dc_dir_path = self._check_dir(self.config["extraction_directory"],
                                            allow_existing=False)
-        self.out_dir_path = self._check_dir(self.config["output_directory"],
+        self._out_dir_path = self._check_dir(self.config["output_directory"],
                                             allow_existing=True)
-        # self.checked_format = ex.check_format(self.config["output_format"])
-
-        self.mode = self.config["parsing_rules"]["mode"].lower()
-
-        if self.mode == "standard":
-            self.module_path = None
-        else:
-            assert self.mode == "overwrite"
-            assert isinstance(self.config["parsing_rules"]["module"], str)
-            self.module_path = Path(self.config["parsing_rules"]["module"])
-            assert self.module_path.is_file(
-            ) and self.module_path.suffix == ".py"
-            # TODO: implement checksum for security check against malicious code
+        if self._dc_dir_path == self._out_dir_path:
+            warnings.warn("Decompression directory and output directory are the same, disabling automatic cleanup.")
+            self.auto_cleanup = False
 
         # set exporter
         self.exporter = Exporter()
-        self.metadata_output_file = self.out_dir_path / Path('metadata.json')
+        self.metadata_output_file = self._out_dir_path / Path('metadata.json')
 
-        self.rm_dc_dir = rm_dc_dir
-
-    def _check_config(self):
-        """
-        check if configuration contains required information
-        if not exit
-
-        :returns: None
-
-        """
-        req_config_keys_and_types = {
-            "extraction_directory": str,
-            "output_directory": str,
-            "output_format": str,
-            "metdata": str,
-            "parsing_rules": dict
-        }
-        if self.verbose:
-            print('Config:')
-        for kk, vv in req_config_keys_and_types.items():
-            if kk not in self.config.keys():
-                print(f'The config is expected to contain the key: {kk}')
-                sys.exit()
-            if not isinstance(self.config[kk], vv):
-                print(
-                    f'The value of {kk} is expected to be of type {vv.__name__}'
-                )
-                sys.exit()
-            if self.verbose:
-                print(f'    {kk}: {self.config[kk].__str__()}')
+        # Operational memory
+        self.cache = {}
 
     def _load_config(self, config_path: str):
         """
@@ -124,10 +82,38 @@ class Archivist():
 
         path = Path(config_path)
 
-        assert path.is_file and path.suffix == ".json"
+        if not (path.is_file() and path.suffix == ".json"):
+            raise RuntimeError(f"Could not load config file: {path}")
 
         with path.open() as f:
             self.config = json.load(f)
+
+    def _check_config(self):
+        """
+        check if configuration contains required information
+        if not exit
+
+        :returns: None
+
+        """
+        req_config_keys_and_types = {
+            "extraction_directory": str,
+            "output_directory": str,
+            "output_format": str,
+            "metadata": str,
+            "parsing_rules": dict
+        }
+        if self.verbose:
+            print('Config:')
+        for kk, vv in req_config_keys_and_types.items():
+            if kk not in self.config.keys():
+                raise RuntimeError(f'The config is expected to contain the key: {kk}')
+            if not isinstance(self.config[kk], vv):
+                raise RuntimeError(
+                    f'The value of {kk} is expected to be of type {vv.__name__}'
+                )
+            if self.verbose:
+                print(f'    {kk}: {self.config[kk].__str__()}')
 
     def _check_dir(self, dir_path: str, allow_existing: bool = False) -> Path:
         """
@@ -147,58 +133,82 @@ class Archivist():
         path = Path(dir_path)
 
         if dir_path != "":
-            exists = path.exists()
-            if not allow_existing:
-                assert not exists, f"Directory already exists: {dir_path}"
-            elif exists:
-                assert path.is_dir(), f"Incorrect path to directory: {path}"
-                return path
-
-            try:
-                path.mkdir()
-            except FileNotFoundError as e:
-                # This exception is raised if a nested path is given and intermediate directories do not exist
-                print(f"Incorrect path to directory: {e.args}")
-                sys.exit()
-
+            if path.exists():
+                if not allow_existing:
+                    raise RuntimeError(f"Directory already exists: {path}")
+                if not path.is_dir():
+                    raise NotADirectoryError(f"Incorrect path to directory: {path}")
+            else:
+                path.mkdir(parents=True)
         return path
 
     def extract(self):
         if self.verbose:
             print(f'''
 Extracting:
-Output path: {self.out_dir_path}
-Extraction path: {self.dc_dir_path}
-Remove extracted: {self.rm_dc_dir}''')
-
-        self.decompressor._output_files_patterns = self.parser._input_file_patterns
-
-        if self.verbose:
-            print(f'''
+Output path: {self._out_dir_path}
+Extraction path: {self._dc_dir_path}
+Remove extracted: {self.auto_cleanup}
 unpacking archive ...''')
-        self.parser.decompress_path = self.decompressor.decompress()
+                  
+        decompress_path, decompressed_dirs, decompressed_files = self.decompressor.decompress(self.parser.input_file_patterns)
 
         if self.verbose:
             print(f'''Done!
 parsing files ...''')
 
-        #for file_path in self.decompressor.files:
-        #    if True:
-        #        print(f'    {file_path.name}...')
-        #    self.parser.parse_file(file_path)
-
-        self.parser.parse_files(self.decompressor._files)
+        metadata, meta_files = self.parser.parse_files(decompress_path, decompressed_files)
 
         if self.verbose:
             print(f'''Done!
 ''')
+                  
+        self.cache["decompress_path"] = decompress_path
+        self.cache["decompressed_dirs"] = decompressed_dirs
+        self.cache["decompressed_files"] = decompressed_files
+        self.cache["metadata"] = metadata
+        self.cache["meta_files"] = meta_files
+                  
+        if len(self.cache["meta_files"]) == 0:
+            self._clean_up()
+        else:
+            warnings.warn("Lazy loading enabled, cleanup will be executed after export call.")
+            self.cache["compile_metadata"] = True
 
     def export(self):
         if self.verbose:
             print(f'''
 Exporting metadata...''')
-        if self.parser._lazy_load:
+        if self.cache["compile_metadata"]:
             self.parser.compile_metadata()
-        self.exporter.export(self.parser._metadata,
+            self._clean_up()
+        self.exporter.export(self.parser.metadata,
                              self.metadata_output_file,
-                             verb=True)
+                             verb=self.verbose)
+        
+
+
+    def _clean_up(self):
+        """Cleanup method automatically called after metadata extraction (or compilation if lazy_loading)"""
+        if self.auto_cleanup:
+            if self.verbose:
+                print("Cleaning extraction directory")
+
+            errors = []
+            files = self.cache["decompressed_files"] + self.cache["meta_files"]
+
+            for file in files:
+                try:
+                    file.unlink()
+                except Exception as e:
+                    errors.append((str(file), e.message))
+            
+            for dir in self.cache["decompressed_dirs"]:
+                try:
+                    dir.unlink()
+                except Exception as e:
+                    errors.append((str(dir), e.message))
+
+            if len(errors) > 0:
+                for e in errors:
+                    print(f"{e[0]}: {e[1]}")

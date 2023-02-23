@@ -2,7 +2,7 @@
     "extraction_directory": "",
     "output_directory": "example2",
     "output_format": "JSON",
-    "metdata":"PATH",
+    "metadata":"PATH",
     "extraction_members": [
         "env-vars.out",
         "mhm.nml",

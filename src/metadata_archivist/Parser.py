@@ -213,7 +213,6 @@ class Parser():
         self._indexes = {}
 
         self.metadata = {}
-        self.decompress_path = Path('./')
 
         if extractors is not None:
             for e in extractors:
@@ -318,14 +317,14 @@ class Parser():
         self._schema["$defs"]["node"]["properties"]["anyOf"].append(
             {"$ref": f"#/$defs/{extractor.name}"})
 
-    def _update_metadata_tree(self, file_path: Path) -> Path:
+    def _update_metadata_tree(self, decompress_path: Path, file_path: Path) -> Path:
         """update tree structure of metadata dict with file path
 
         :param file_path: path to a file
 
         """
         iter_dict = self.metadata
-        rel_file_path = file_path.relative_to(self.decompress_path)
+        rel_file_path = file_path.relative_to(decompress_path)
         for pp in rel_file_path.parts[:-1]:
             if pp not in iter_dict:
                 iter_dict[pp] = {}
@@ -373,7 +372,7 @@ class Parser():
                 self._deep_set(self.metadata, metadata, rel_file_path)
 
 
-    def parse_files(self, file_paths: List[Path]) -> None:
+    def parse_files(self, decompress_path: Path, file_paths: List[Path]) -> None:
         """add metadata from input files to metadata object
         usually by sending calling all extract's linked to the file-name or regexp of file name
 
@@ -382,6 +381,7 @@ class Parser():
         """
 
         to_extract = {}
+        meta_files = []
 
         # TODO: Think about parallelization scheme with ProcessPoolExecutor
         # Would it be worth it in terms of performance?
@@ -399,7 +399,7 @@ class Parser():
         for exn in to_extract:
             for file_path in to_extract[exn]:
                 metadata = self._extractors[self._indexes[exn][0]].extract_metadata_from_file(file_path)
-                rel_file_path = self._update_metadata_tree(file_path)
+                rel_file_path = self._update_metadata_tree(decompress_path, file_path)
                 if not self._lazy_load:
                     self._deep_set(self.metadata, metadata, rel_file_path)
                 else:
@@ -408,7 +408,10 @@ class Parser():
                         raise FileExistsError(f"Unable to save extracted metadata: {meta_path} exists")
                     with meta_path.open("w") as mp:
                         dump(metadata, mp, indent=4)
+                    meta_files.append(meta_path)
                     self._load_indexes[exn] = (meta_path, rel_file_path)
+
+        return self.metadata, meta_files
 
     def compile_metadata(self):
         """

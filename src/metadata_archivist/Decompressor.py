@@ -33,10 +33,6 @@ class Decompressor():
         # Protected
         self._archive_path, self._decompress = self._check_archive(archive_path)
 
-        # Internal handling
-        self._files = []
-        self._output_file_patterns = None
-
         self.config = config
         self.verbose = verbose
 
@@ -58,25 +54,6 @@ class Decompressor():
     @decompress.setter
     def decompress(self, _):
         raise AttributeError("decompress method can only be set through archive path checking")
-    
-    @property
-    def output_file_patterns(self):
-        if self._output_file_patterns is None:
-            raise AttributeError('output_files_patterns have not been set yet!')
-        return self._output_file_patterns
-
-    @output_file_patterns.setter
-    def output_file_patterns(self, file_patterns: List[str]):
-        self._output_file_patterns = file_patterns
-
-    @property
-    def files(self) -> List[str]:
-        """Getter for _files"""
-        return self._files
-    
-    @files.setter
-    def files(self, _):
-        raise AttributeError("files list can only be generated through archive decompressing")
 
     def _check_archive(self, file_path: Path):
         """Internal method to check archive consistency"""
@@ -94,6 +71,7 @@ class Decompressor():
         return file_path, decompressor
 
     def _decompress_tar(self,
+                        output_file_patterns: List[str],
                         archive_path: Optional[Path] = None,
                         extraction_path: Optional[Path] = None):
         """
@@ -112,6 +90,8 @@ class Decompressor():
 
         archive_name = archive_path.stem.split(".")[0]
         decompress_path = extraction_path.joinpath(archive_name)
+        decompressed_dirs = [decompress_path]
+        decompressed_files = []
 
         with tarfile.open(archive_path) as t:
             item = t.next()
@@ -122,15 +102,19 @@ class Decompressor():
                 if any(item.name.endswith(format)
                         for format in ['tgz', 'tar']):
                     t.extract(item, path=decompress_path)
-                    new_archive = decompress_path.joinpath(item.name.split(".")[0])
-                    self._decompress_tar(new_archive, decompress_path)
+                    new_archive = decompress_path.joinpath(item.name)
+                    _, ndd, ndf = self._decompress_tar(output_file_patterns,
+                                                       archive_path=new_archive,
+                                                       extraction_path=decompress_path)
+                    decompressed_dirs.extend(ndd)
+                    decompressed_files.extend(ndf)
                     new_archive.unlink()
 
                 elif any(re.fullmatch(f'.*/{pat}', item.name)
-                        for pat in self.output_file_patterns):
+                        for pat in output_file_patterns):
                     t.extract(item, path=decompress_path)
-                    self._files.append(decompress_path.joinpath(item.name))
+                    decompressed_files.append(decompress_path.joinpath(item.name))
                     
                 item = t.next()
 
-        return decompress_path
+        return decompress_path, decompressed_dirs, decompressed_files

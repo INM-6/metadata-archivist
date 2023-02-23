@@ -196,6 +196,12 @@ Exporting metadata...''')
 
             errors = []
             files = self.cache["decompressed_files"] + self.cache["meta_files"]
+            dirs = self.cache["decompressed_dirs"]
+            if str(self._dc_dir_path ) != "":
+                dirs.append(self._dc_dir_path)
+
+            if self.verbose:
+                print(f"cleaning files: {files}")
 
             for file in files:
                 try:
@@ -203,12 +209,15 @@ Exporting metadata...''')
                 except Exception as e:
                     errors.append((str(file), e.message))
             
-            for dir in self.cache["decompressed_dirs"]:
+            if self.verbose:
+                print(f"cleaning directories: {dirs}")
+
+            for dir in dirs:
                 try:
-                    dir.unlink()
+                    dir.rmdir()
                 except Exception as e:
-                    errors.append((str(dir), e.message))
+                    errors.append((str(dir), e.message if hasattr(e, "message") else str(e)))
 
             if len(errors) > 0:
                 for e in errors:
-                    print(f"{e[0]}: {e[1]}")
+                    print(f"Error cleaning: {e[0]} - {e[1]}")

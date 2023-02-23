@@ -201,7 +201,9 @@ Exporting metadata...''')
                 dirs.append(self._dc_dir_path)
 
             if self.verbose:
-                print(f"cleaning files: {files}")
+                print(f"    cleaning files:")
+                for f in files:
+                    print(f"        {str(f)}")
 
             for file in files:
                 try:
@@ -210,7 +212,9 @@ Exporting metadata...''')
                     errors.append((str(file), e.message))
             
             if self.verbose:
-                print(f"cleaning directories: {dirs}")
+                print(f"    cleaning directories:")
+                for d in dirs:
+                    print(f"        {str(d)}")
 
             for dir in dirs:
                 try:
@@ -220,4 +224,4 @@ Exporting metadata...''')
 
             if len(errors) > 0:
                 for e in errors:
-                    print(f"Error cleaning: {e[0]} - {e[1]}")
+                    print(f"    error cleaning:\n        {e[0]} -- {e[1]}")

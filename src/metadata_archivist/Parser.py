@@ -77,6 +77,17 @@ class AExtractor(abc.ABC):
 
     extracted_metadata: dict  # JSON object as dict to be used as cache
 
+    def __init__(self, name, input_file_pattern: str, schema: dict) -> None:
+        """
+        Initialization for base AExtractor.
+        Necessary due to decorators used for encapsulation of attributes.
+        """
+        super().__init__()
+        self._name = name
+        self._input_file_pattern = input_file_pattern
+        self._schema = schema
+        self.extracted_metadata = {}
+
     @property
     def input_file_pattern(self) -> str:
         """returns a re.pattern describing input files"""
@@ -103,7 +114,7 @@ class AExtractor(abc.ABC):
     @property
     def name(self) -> dict:
         """return json schema of output"""
-        return self.name
+        return self._name
 
     @name.setter
     def name(self, _):

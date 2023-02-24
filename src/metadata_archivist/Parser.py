@@ -382,6 +382,41 @@ class Parser():
                 #           -> cf mattermost chat
                 self._deep_set(self.metadata, metadata, rel_file_path)
 
+    def _update_metadata_tree_with_path_hierarchy(self,
+                                                  metadata: dict,
+                                                  decompress_path: Path,
+                                                  file_path: Path) -> None:
+        """
+        Generates and dynamically fills the metadata tree with path hierarchy.
+        The hierarchy is based on decompressed directory.
+        """
+        relative_path = file_path.relative_to(decompress_path)
+        hierarchy = list(relative_path.parents)
+        # '.' is always the root of a relative path hence parents of a relative path will always contain 1 element
+        if len(hierarchy) < 1:
+            # In case there is no hierarchy then we just add the metadata in a flat structure
+            self.metadata[file_path.name] = metadata
+        else:
+            # Else we generate the hierarchy structure in the metadata tree
+            hierarchy.reverse() # Get the hierarchy starting from root node
+            hierarchy.pop(0) # Remove '.' node
+            iterator = iter(hierarchy)
+            node = next(iterator) # Should not raise StopIteration as there is at least one element in list
+            relative_root = self.metadata
+            while node is not None:
+                node_str = str(node)
+                if node_str not in relative_root:
+                    relative_root[node_str] = {}
+                relative_root = relative_root[node_str]
+                try:
+                    node = next(iterator).relative_to(node)
+                    # If relative paths are not used then they will contain previous node name in path
+                except StopIteration:
+                    relative_root[file_path.name] = metadata
+                    break
+            else:
+                # If break point not reached
+                raise RuntimeError(f"Could not update metadata tree based on file hierarchy. File: {file_path}")
 
     def parse_files(self, decompress_path: Path, file_paths: List[Path]) -> None:
         """add metadata from input files to metadata object
@@ -410,9 +445,8 @@ class Parser():
         for exn in to_extract:
             for file_path in to_extract[exn]:
                 metadata = self._extractors[self._indexes[exn][0]].extract_metadata_from_file(file_path)
-                rel_file_path = self._update_metadata_tree(decompress_path, file_path)
                 if not self._lazy_load:
-                    self._deep_set(self.metadata, metadata, rel_file_path)
+                    self._update_metadata_tree_with_path_hierarchy(metadata, decompress_path, file_path)
                 else:
                     meta_path = Path(str(file_path) + ".meta")
                     if meta_path.exists():
@@ -420,7 +454,7 @@ class Parser():
                     with meta_path.open("w") as mp:
                         dump(metadata, mp, indent=4)
                     meta_files.append(meta_path)
-                    self._load_indexes[exn] = (meta_path, rel_file_path)
+                    self._load_indexes[exn] = (meta_path, decompress_path, file_path)
 
         return self.metadata, meta_files
 
@@ -435,4 +469,4 @@ class Parser():
             with meta_info[0].open("r") as f:
                 from json import load
                 metadata = load(f)
-            self._deep_set(self.metadata, metadata, meta_info[1])
+            self._update_metadata_tree_with_path_hierarchy(metadata, meta_info[1], meta_info[2])

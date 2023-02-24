@@ -151,7 +151,7 @@ Extraction path: {self._dc_dir_path}
 Remove extracted: {self.auto_cleanup}
 unpacking archive ...''')
                   
-        decompress_path, decompressed_dirs, decompressed_files = self.decompressor.decompress(self.parser.input_file_patterns)
+        decompress_path, decompressed_files, decompressed_dirs = self.decompressor.decompress(self.parser.input_file_patterns)
 
         if self.verbose:
             print(f'''Done!
@@ -164,8 +164,8 @@ parsing files ...''')
 ''')
                   
         self.cache["decompress_path"] = decompress_path
-        self.cache["decompressed_dirs"] = decompressed_dirs
         self.cache["decompressed_files"] = decompressed_files
+        self.cache["decompressed_dirs"] = decompressed_dirs
         self.cache["metadata"] = metadata
         self.cache["meta_files"] = meta_files
                   

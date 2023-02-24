@@ -15,49 +15,57 @@ import tarfile
 
 from pathlib import Path
 from collections.abc import Callable
-from typing import Optional, List
+from typing import Optional, List, Tuple, NoReturn
 
 class Decompressor():
-    '''
-    class containing all methods around processing compressed archives
+    """
+    Class containing all methods around processing compressed archives
 
-    main purposes in the framework:
+    Main purposes in the framework:
     - receive list of re.patterns
-    - send a list of tuples (path/to/file/in/archive, IOBase object)
-    '''
+    - send path to decompression directories and paths to decompressed files
+    """
 
     def __init__(self,
                  archive_path: Path,
                  config: dict,
-                 verbose: Optional[bool] = True):
+                 verbose: Optional[bool] = True) -> None:
         
         # Protected
         self._archive_path, self._decompress = self._check_archive(archive_path)
 
+        # Public
         self.config = config
         self.verbose = verbose
 
     @property
     def archive_path(self) -> Path:
-        """Getter for _archive_path"""
+        """Returns path to archive (Path)."""
         return self._archive_path
 
     @archive_path.setter
-    def archive_path(self, archive_path: Path):
-        """Set new archive path after checking"""
+    def archive_path(self, archive_path: Path) -> None:
+        """Sets new archive path after checking."""
         self._archive_path, self._decompress = self._check_archive(archive_path)
 
     @property
     def decompress(self) -> Callable:
-        """Getter for _decompress"""
+        """Returns appropriate decompress function wrt. archive format."""
         return self._decompress
     
     @decompress.setter
-    def decompress(self, _):
+    def decompress(self, _) -> NoReturn:
+        """
+        Forbidden setter for decompress attribute.
+        (pythonic indirection for protected attributes)
+        """
         raise AttributeError("decompress method can only be set through archive path checking")
 
-    def _check_archive(self, file_path: Path):
-        """Internal method to check archive consistency"""
+    def _check_archive(self, file_path: Path) -> Tuple[Path, Callable]:
+        """
+        Internal method to check archive format.
+        If archive is in correct format then path to archive and decompression method are returned.
+        """
 
         if not file_path.is_file():
             raise FileNotFoundError(f"Incorrect path to file: {file_path}")
@@ -69,12 +77,13 @@ class Decompressor():
         else:
             raise RuntimeError(f'Unknown archive format: {file_path.name}')
 
+        # Returning file path is used for protected set method of internal _archive_path attribute.
         return file_path, decompressor
 
     def _decompress_tar(self,
                         output_file_patterns: List[str],
                         archive_path: Optional[Path] = None,
-                        extraction_path: Optional[Path] = None):
+                        extraction_path: Optional[Path] = None) -> Tuple[Path, List[Path], List[Path]]:
         """
         Decompresses files of archive in members list.
         If another archive is found then operation is called on it.
@@ -121,4 +130,5 @@ class Decompressor():
                     decompressed_dirs.insert(0, decompress_path.joinpath(item.name))
                 item = t.next()
 
-        return decompress_path, decompressed_dirs, decompressed_files
+        # Returned paths are used for parsing and automatic clean-up.
+        return decompress_path, decompressed_files, decompressed_dirs

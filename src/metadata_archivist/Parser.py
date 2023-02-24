@@ -488,7 +488,7 @@ class Parser():
 
         return self.metadata, meta_files
 
-    def compile_metadata(self) -> None:
+    def compile_metadata(self) -> dict:
         """
         Function to gather all metadata extracted using parsing function with lazy loading.
         """
@@ -500,3 +500,5 @@ class Parser():
                 from json import load
                 metadata = load(f)
             self._update_metadata_tree_with_path_hierarchy(metadata, meta_info[1], meta_info[2])
+
+        return self.metadata

@@ -180,9 +180,10 @@ parsing files ...''')
             print(f'''
 Exporting metadata...''')
         if self.cache["compile_metadata"]:
-            self.parser.compile_metadata()
+            metadata = self.parser.compile_metadata()
+            self.cache["metadata"] = metadata
             self._clean_up()
-        self.exporter.export(self.parser.metadata,
+        self.exporter.export(self.cache["metadata"],
                              self.metadata_output_file,
                              verb=self.verbose)
         

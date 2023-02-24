@@ -213,15 +213,20 @@ class Parser():
     are used for structuring the tree.
     """
 
-    def __init__(self, extractors: Optional[List[AExtractor]] = None,
-                 lazy_load: Optional[bool] = False) -> None:
+    def __init__(self,
+                schema: Optional[dict] = None,
+                extractors: Optional[List[AExtractor]] = None,
+                lazy_load: Optional[bool] = False) -> None:
         
         # Protected
         # These attributes should only be modified through the add, update remove methods
         self._extractors = []
         self._input_file_patterns = []
         # Can also be completely replaced through set method
-        self._schema = DEFAULT_PARSER_SCHEMA
+        if schema is not None:
+            self._schema = schema
+        else:
+            self._schema = DEFAULT_PARSER_SCHEMA
 
         # Used for internal handling:
         # Shouldn't use much memory but TODO: check additional memory usage
@@ -234,6 +239,8 @@ class Parser():
 
         # Public
         self.metadata = {}
+
+        self.combine = lambda parser2, schema=None: _combine(parser1=self, parser2=parser2, schema=schema)
 
         if extractors is not None:
             for e in extractors:
@@ -503,3 +510,40 @@ class Parser():
             self._update_metadata_tree_with_path_hierarchy(metadata, meta_info[1], meta_info[2])
 
         return self.metadata
+
+def _combine(parser1: Parser, parser2: Parser, schema: Optional[dict] = None) -> Parser:
+    """
+    Function used to combine two different parsers.
+    Needs an englobing schema that will take into account the combination of extractors.
+    """
+    ll = False
+    if parser1.lazy_load !=parser2.lazy_load:
+        LOG.warning(f"Lazy load configuration mismatch. Setting to default: {ll}")
+    else:
+        ll = parser1.lazy_load
+    schema = schema if schema is not None else DEFAULT_PARSER_SCHEMA
+    combined_parser = Parser(schema=schema, extractors=parser1.extractors + parser2.extractors, lazy_load=ll)
+
+    if len(parser1.metadata) > 0 or len(parser2.metadata) > 0:
+        # Get union and disjoints sets of metadata keys
+        keys1 = list(parser1.metadata.keys())
+        keys2 = list(parser2.metadata.keys())
+        union = []
+        for key in keys1:
+            if key in keys2:
+                union.append(key)
+                keys2.remove(key)
+        for key in union:
+            keys1.remove(key)
+
+        if len(union) > 0:
+            # TODO: Need to deal with the combination of existing parser metadata.
+            LOG.critical("Combination of existing metadata is not yet implemented. Dropping mutual metadata.")
+        for key in keys1:
+            combined_parser.metadata[key] = parser1.metadata[key]
+        for key in keys2:
+            combined_parser.metadata[key] = parser2.metadata[key]
+
+    return combined_parser
+
+Parser.combine = _combine

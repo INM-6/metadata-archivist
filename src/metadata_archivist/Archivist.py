@@ -63,7 +63,7 @@ class Archivist():
             self.auto_cleanup = False
 
         # set exporter
-        self.exporter = Exporter()
+        self.exporter = Exporter(self.config["output_format"])
         self.metadata_output_file = self._out_dir_path / Path('metadata.json')
 
         # Operational memory

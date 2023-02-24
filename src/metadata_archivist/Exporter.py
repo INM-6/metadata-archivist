@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 """
 
-Metadata file saver example.
-Tested with Python 3.8.10
-Author: Jose V., Matthias K.
+Metadata to file exporter.
+Authors: Jose V., Matthias K.
 
 """
+
 import json
 from pathlib import Path
 

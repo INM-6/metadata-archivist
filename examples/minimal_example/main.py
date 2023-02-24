@@ -3,8 +3,7 @@
 """
 
 Metadata extraction, collection and save pipeline example.
-Tested with Python 3.8.10
-Author: Jose V.
+Authors: Matthias K., Jose V.
 
 """
 

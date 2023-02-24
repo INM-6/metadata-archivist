@@ -2,13 +2,14 @@
 # -*- coding: utf-8 -*-
 """
 
-Custom Formatter class.
+Log manager.
 Initializes logger from logging module
-Author: Kelbling, M., Jose V.
+Authors: Jose V., Matthias K.
 
 """
 
 import logging
+
 
 class Formatter(logging.Formatter):
     """

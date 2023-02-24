@@ -1,3 +1,12 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+
+Parser and Extractor instances examples.
+Authors: Matthias K., Jose V.
+
+"""
+
 from metadata_archivist import AExtractor, Parser
 
 NCDUMP_HS_SCHEMA = {}

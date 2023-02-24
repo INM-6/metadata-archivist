@@ -3,7 +3,7 @@
 """
 
 Metadata archive integrating class.
-Author: Kelbling, M., Jose V.
+Authors: Matthias K., Jose V.
 
 """
 

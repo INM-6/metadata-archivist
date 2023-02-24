@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 """
 
-Metadata base parser class.
+Extractor class to get metadata from file.
+Parser class for handling Extractors.
 To be specialized by custom parsers made by users.
-Tested with Python 3.8.10
-Author: Jose V., Kelbling, M.
+Authors: Jose V., Matthias K.
 
 """
 

@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Decompressor class
-Originally:
 
-Metadata archive extractor example.
-Tested with Python 3.8.10
-Author: Jose V., Kelbling, M.
+Archive decompressor.
+Authors: Jose V., Matthias K.
+
 """
 
 import re

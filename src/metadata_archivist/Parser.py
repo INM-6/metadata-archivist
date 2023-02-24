@@ -11,13 +11,14 @@ Author: Jose V., Kelbling, M.
 
 import re
 import abc  # Abstract class base infrastructure
-import warnings
 
 import jsonschema  # to validate extracted data
 
 from json import dump
 from pathlib import Path
 from typing import Optional, List, Tuple, NoReturn
+
+from .Logger import LOG
 
 
 DEFAULT_PARSER_SCHEMA = {
@@ -183,7 +184,7 @@ class AExtractor(abc.ABC):
             return True
         except jsonschema.ValidationError as e:
             # TODO: better exception mechanism
-            print(e.message)
+            LOG.warning(e.message)
 
         return False
 
@@ -298,7 +299,7 @@ class Parser():
         else:
             if len(self.metadata) > 0:
                 # TODO: Should we raise exception instead of warning?
-                warnings.warn("Warning: compiling available metadata after enabling lazy loading.", RuntimeWarning)
+                LOG.warning("Warning: compiling available metadata after enabling lazy loading.", RuntimeWarning)
             self.compile_metadata()
 
     def _extend_json_schema(self, extractor: AExtractor) -> None:

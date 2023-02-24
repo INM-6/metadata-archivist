@@ -17,6 +17,8 @@ from pathlib import Path
 from collections.abc import Callable
 from typing import Optional, List, Tuple, NoReturn
 
+from .Logger import LOG
+
 class Decompressor():
     """
     Class containing all methods around processing compressed archives
@@ -96,7 +98,7 @@ class Decompressor():
         if extraction_path is None:
             extraction_path = Path(self.config["extraction_directory"])
         if self.verbose:
-            print(f"Decompression of archive: {archive_path.name}")
+            LOG.info(f"Decompression of archive: {archive_path.name}")
 
         archive_name = archive_path.stem.split(".")[0]
         decompress_path = extraction_path.joinpath(archive_name)
@@ -107,7 +109,7 @@ class Decompressor():
             item = t.next()
             while item is not None:
                 if self.verbose:
-                    print(f"    processing file: {item.name}")
+                    LOG.info(f"    processing file: {item.name}")
 
                 if any(item.name.endswith(format)
                         for format in ['tgz', 'tar']):

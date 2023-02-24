@@ -25,14 +25,13 @@ class Archivist():
                  archive_path: Path,
                  parser: Parser,
                  verbose: Optional[bool] = True,
-                 auto_cleanup: Optional[bool] = True):
-        """init
+                 auto_cleanup: Optional[bool] = True) -> None:
+        """
+        Initialization method of Archivist class.
 
         :param config: path to config file as str or config as dict
         :param archive: path to archive (str)
         :param verbose: print verbose information (bool)
-        :returns: None
-
         """
         self.verbose = verbose
 
@@ -69,7 +68,7 @@ class Archivist():
         # Operational memory
         self.cache = {}
 
-    def _load_config(self, config_path: str):
+    def _load_config(self, config_path: str) -> None:
         """
         Checks path to configuration file and attempts to load it.
 
@@ -88,7 +87,7 @@ class Archivist():
         with path.open() as f:
             self.config = json.load(f)
 
-    def _check_config(self):
+    def _check_config(self) -> None:
         """
         check if configuration contains required information
         if not exit
@@ -119,8 +118,6 @@ class Archivist():
         """
         Checks directory path.
         If a directory with the same name already exists then continue.
-        If a directory in the specified path cannot be created then execution is
-        stopped.
 
         Args:
             dir_path: String path to output directory.
@@ -140,9 +137,16 @@ class Archivist():
                     raise NotADirectoryError(f"Incorrect path to directory: {path}")
             else:
                 path.mkdir(parents=True)
+
         return path
 
-    def extract(self):
+    def extract(self) -> dict:
+        """
+        Coordinates decompression and metadata extraction with internal
+        Parser and Decompressor objects.
+        Generates cache of returned objects by Parser and Decompressor methods.
+        Returns extracted metadata.
+        """
         if self.verbose:
             print(f'''
 Extracting:
@@ -175,7 +179,14 @@ parsing files ...''')
             warnings.warn("Lazy loading enabled, cleanup will be executed after export call.", RuntimeWarning)
             self.cache["compile_metadata"] = True
 
-    def export(self):
+        return metadata
+
+    def export(self) -> Path:
+        """
+        Exports generated metadata to file using internal Exporter object.
+        If needed, uses parser to first compile metadata.
+        Returns path to exported file.
+        """
         if self.verbose:
             print(f'''
 Exporting metadata...''')
@@ -187,9 +198,9 @@ Exporting metadata...''')
                              self.metadata_output_file,
                              verb=self.verbose)
         
+        return self.metadata_output_file
 
-
-    def _clean_up(self):
+    def _clean_up(self) -> None:
         """Cleanup method automatically called after metadata extraction (or compilation if lazy_loading)"""
         if self.auto_cleanup:
             if self.verbose:

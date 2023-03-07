@@ -3,8 +3,7 @@
 """
 
 Custom parsing rules example.
-Tested with Python 3.8.10
-Author: Jose V.
+Authors: Jose V., Matthias K.
 
 """
 

@@ -11,53 +11,55 @@ def key_val_split(string, split_char):
 class time_extractor(AExtractor):
 
     def __init__(self) -> None:
-        self.name = 'time_extractor'
-        self._input_file_pattern = 'time.txt'
-        self._extracted_metadata = {}
-        self.ref = '#/$defs/time_extractor'
-
-        self.schema = {
-            'type': 'object',
-            'properties': {
-                'real': {
-                    'type': 'string',
-                    'description': 'the time from start to finish of the call'
-                },
-                'user': {
-                    'type': 'string',
-                    'description': 'amount of CPU time spent in user mode'
-                },
-                'sys': {
-                    'type': 'string',
-                    'description': 'amount of CPU time spent in kernel mode'
-                },
-                'system': {
-                    '$ref': '#/properties/sys'
+        super().__init__(
+            name='time_extractor',
+            input_file_pattern='time.txt',
+            schema={
+                'type': 'object',
+                'properties': {
+                    'real': {
+                        'type': 'string',
+                        'description':
+                        'the time from start to finish of the call'
+                    },
+                    'user': {
+                        'type': 'string',
+                        'description': 'amount of CPU time spent in user mode'
+                    },
+                    'sys': {
+                        'type': 'string',
+                        'description':
+                        'amount of CPU time spent in kernel mode'
+                    },
+                    'system': {
+                        '$ref': '#/properties/sys'
+                    }
                 }
-            }
-        }
+            })
 
-    def extract(self, data) -> dict:
+    def extract(self, file_path) -> dict:
         out = {}
-        for line in data:
-            if line != '\n':
-                out.update(key_val_split(line, '\t'))
+        with file_path.open("r") as fp:
+            for line in fp:
+                if line != '\n':
+                    out.update(key_val_split(line, '\t'))
         return out
 
 
 class yml_extractor(AExtractor):
 
     def __init__(self) -> None:
-        self.name = 'yml_extractor'
-        self._input_file_pattern = '*.yml'
-        self._extracted_metadata = {}
-        self.ref = '#/$defs/yml_extractor'
+        super().__init__(name='yml_extractor',
+                         input_file_pattern='*.yml',
+                         schema={})
 
-        self.schema = {}
-
-    def extract(self, data) -> dict:
-        out = yaml.safe_load(data)
-        return out
+    def extract(self, file_path) -> dict:
+        with open(file_path, "r") as stream:
+            try:
+                out = yaml.safe_load(stream)
+                return out
+            except yaml.YAMLError as exc:
+                print(exc)
 
 
 my_schema = {
@@ -165,7 +167,7 @@ my_schema = {
     }
 }
 
-my_parser = Parser(extractors=[time_extractor(),
-                               yml_extractor()],
-                   metadata_tree='from_schema',
-                   schema=my_schema)
+my_parser = Parser(
+    extractors=[time_extractor(), yml_extractor()],
+    metadata_tree='from_dir_tree',  #   'from_schema'
+    schema=my_schema)

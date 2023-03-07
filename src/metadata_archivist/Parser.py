@@ -21,7 +21,7 @@ from json import dump
 from pathlib import Path
 from typing import Optional, List, Tuple, NoReturn, Literal, Union
 from .util import get_structured_metadata
-from collections import Iterable
+from collections.abc import Iterable
 
 from .Logger import LOG
 
@@ -84,8 +84,11 @@ class AExtractor(abc.ABC):
     # Public
     extracted_metadata: dict  # JSON object as dict to be used as cache
 
-    def __init__(self, name: str, input_file_pattern: str,
-                 schema: dict) -> None:
+    def __init__(self,
+                 name: str,
+                 input_file_pattern: str,
+                 schema: dict,
+                 ref: Optional[str] = None) -> None:
         """
         Initialization for base AExtractor.
         Necessary due to decorators used for encapsulation of attributes.
@@ -95,6 +98,10 @@ class AExtractor(abc.ABC):
         self._input_file_pattern = input_file_pattern
         self._schema = schema
         self.extracted_metadata = {}
+        if ref is None:
+            self.ref = f'#/$defs/{self.name}'
+        else:
+            self.ref = ref
 
     @property
     def input_file_pattern(self) -> str:
@@ -250,6 +257,9 @@ class Parser():
             self._load_indexes = {}
         # Used for updating/removing extractors
         # Indexing is done storing a triplet with extractors, patterns, schema indexes
+        # with [<index in self._extractors>,<index in self._input_file_patterns>,<len(
+        # self._schema["$defs"]["node"]["properties"]["anyOf"])>  ]
+        # the last entry being None if 'node' does not exist
         self._indexes = {}
 
         # Public
@@ -341,22 +351,20 @@ class Parser():
         Extends parser schema (dict) with a given extractor schema (dict).
         Indexes schema.
         """
-        if "$defs" not in self._schema.keys():
-            self._schema["$defs"] = {"node": {"properties": {"anyOf": []}}}
+        if "$defs" not in self.schema.keys():
+            self.schema["$defs"] = {}
         self._schema["$defs"][extractor.name] = extractor.schema
-        self._indexes[extractor.name][2] = len(
-            self._schema["$defs"]["node"]["properties"]["anyOf"])
-        self._schema["$defs"]["node"]["properties"]["anyOf"].append(
-            {"$ref": f"#/$defs/{extractor.name}"})
-        # if "$defs" not in self.schema.keys():
-        #     self.schema["$defs"] = {}
         # # TODO: Will generate pointer issue if extractor schema is redefined
         # # -> Create two way relationships with update triggers
         # if extractor.name not in self.schema["$defs"]:
         #     self.schema["$defs"][extractor.name] = extractor.schema
-        # if 'node' in self.schema["$defs"]:
-        #     self.schema["$defs"]["node"]["properties"]["anyOf"].append(
-        #         {"$ref": f"#/$defs/{extractor.name}"})
+        if 'node' in self.schema["$defs"]:
+            self._indexes[extractor.name][2] = len(
+                self._schema["$defs"]["node"]["properties"]["anyOf"])
+            self.schema["$defs"]["node"]["properties"]["anyOf"].append(
+                {"$ref": f"#/$defs/{extractor.name}"})
+        else:
+            self._indexes[extractor.name][2] = None
 
     def add_extractor(self, extractor: AExtractor) -> None:
         """
@@ -382,8 +390,9 @@ class Parser():
         self._schema["$defs"][extractor.name] = extractor.schema
         self._input_file_patterns[self._indexes[extractor.name]
                                   [1]] = extractor.input_file_pattern
-        self._schema["$defs"]["node"]["properties"]["anyOf"][self._indexes[extractor.name][2]] = \
-            {"$ref": f"#/$defs/{extractor.name}"}
+        if self._indexes[extractor.name][2] is not None:
+            self._schema["$defs"]["node"]["properties"]["anyOf"][self._indexes[extractor.name][2]] = \
+                {"$ref": f"#/$defs/{extractor.name}"}
 
     def remove_extractor(self, extractor: AExtractor) -> None:
         """
@@ -394,8 +403,9 @@ class Parser():
             raise RuntimeError("Unknown Extractor")
         self._extractors.pop(self._indexes[extractor.name][0], None)
         self._input_file_patterns.pop(self._indexes[extractor.name][1], None)
-        self._schema["$defs"]["node"]["properties"]["anyOf"].pop(
-            self._indexes[extractor.name][2], None)
+        if self._indexes[extractor.name][2] is not None:
+            self._schema["$defs"]["node"]["properties"]["anyOf"].pop(
+                self._indexes[extractor.name][2], None)
         self._schema["$defs"].pop(extractor.name, None)
         self._indexes.pop(extractor.name, None)
         extractor._parsers.remove(self)

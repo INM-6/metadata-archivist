@@ -7,14 +7,6 @@ Authors: Matthias K., Jose V.
 
 """
 
-<<<<<<< variant A
-import json
-import sys
-import shutil
-import importlib
-
->>>>>>> variant B
-======= end
 from pathlib import Path
 
 from .Exporter import Exporter
@@ -22,12 +14,10 @@ from .Parser import Parser
 from .Decompressor import Decompressor
 from .Logger import LOG, set_verbose
 
+
 class Archivist():
 
-    def __init__(self,
-                 archive_path: Path,
-                 parser: Parser,
-                 **kwargs) -> None:
+    def __init__(self, archive_path: Path, parser: Parser, **kwargs) -> None:
         """
         Initialization method of Archivist class.
 
@@ -47,23 +37,31 @@ class Archivist():
         self.parser = parser
 
         # Check and get paths for internal handling
-        self._dc_dir_path = self._check_dir(self.config["extraction_directory"],
-                                           allow_existing=False)
+        self._dc_dir_path = self._check_dir(
+            self.config["extraction_directory"], allow_existing=False)
         self._out_dir_path = self._check_dir(self.config["output_directory"],
-                                            allow_existing=True)
+                                             allow_existing=True)
 
         # Set exporter
-        f_format = self.config["output_file"][self.config["output_file"].find(".") + 1:]
+        f_format = self.config["output_file"][self.config["output_file"].
+                                              find(".") + 1:]
         self.exporter = Exporter(f_format)
-        self.metadata_output_file = self._out_dir_path / Path(self.config["output_file"])
+        self.metadata_output_file = self._out_dir_path / Path(
+            self.config["output_file"])
         if self.metadata_output_file.exists():
             if self.config["overwrite"]:
                 if self.metadata_output_file.is_file():
-                    LOG.warning(f"Metadata output file exists: '{self.metadata_output_file}' going to overwrite.")
+                    LOG.warning(
+                        f"Metadata output file exists: '{self.metadata_output_file}' going to overwrite."
+                    )
                 else:
-                    raise RuntimeError(f"Metadata output file exists: '{self.metadata_output_file}' cannot overwrite.")
+                    raise RuntimeError(
+                        f"Metadata output file exists: '{self.metadata_output_file}' cannot overwrite."
+                    )
             else:
-                raise RuntimeError(f"Metadata output file exists: '{self.metadata_output_file}' overwrite not allowed.")
+                raise RuntimeError(
+                    f"Metadata output file exists: '{self.metadata_output_file}' overwrite not allowed."
+                )
 
         # Operational memory
         self.cache = {}
@@ -77,9 +75,11 @@ class Archivist():
             "extraction_directory": ".",
             "output_directory": ".",
             "output_file": "metadata.json",
-            "overwrite": True, # TODO: change to False after development phase is done. 
+            "overwrite":
+            True,  # TODO: change to False after development phase is done. 
             "auto_cleanup": True,
-            "verbose": True # TODO: change to False after development phase is done.
+            "verbose":
+            True  # TODO: change to False after development phase is done.
         }
         key_list = list(self.config.keys())
 
@@ -90,7 +90,7 @@ class Archivist():
             self.config["verbose"] = kwargs["verbose"]
             key_list.remove("verbose")
             kwargs.pop("verbose", None)
-                
+
         if self.config["verbose"]:
             set_verbose()
 
@@ -107,7 +107,9 @@ class Archivist():
 
         if self.config["verbose"]:
             for key in key_list:
-                LOG.info(f"No argument found for: '{key}' initializing by default: '{self.config[key]}'")
+                LOG.info(
+                    f"No argument found for: '{key}' initializing by default: '{self.config[key]}'"
+                )
 
     def _check_dir(self,
                    dir_path: str,
@@ -132,7 +134,8 @@ class Archivist():
                 if not allow_existing:
                     raise RuntimeError(f"Directory already exists: {path}")
                 if not path.is_dir():
-                    raise NotADirectoryError(f"Incorrect path to directory: {path}")
+                    raise NotADirectoryError(
+                        f"Incorrect path to directory: {path}")
             else:
                 path.mkdir(parents=True)
 
@@ -150,25 +153,30 @@ Output path: {self._out_dir_path}
 Extraction path: {self._dc_dir_path}
 Remove extracted: {self.config["auto_cleanup"]}
 unpacking archive ...''')
-                  
-        decompress_path, decompressed_files, decompressed_dirs = self.decompressor.decompress(self.parser.input_file_patterns)
+
+        decompress_path, decompressed_files, decompressed_dirs = self.decompressor.decompress(
+            self.parser.input_file_patterns)
 
         LOG.info(f'''Done!\nparsing files ...''')
 
-        metadata, meta_files = self.parser.parse_files(decompress_path, decompressed_files)
+        metadata, meta_files = self.parser.parse_files(decompress_path,
+                                                       decompressed_files)
 
         LOG.info(f'''Done!''')
-                  
+
         self.cache["decompress_path"] = decompress_path
         self.cache["decompressed_files"] = decompressed_files
         self.cache["decompressed_dirs"] = decompressed_dirs
         self.cache["metadata"] = metadata
         self.cache["meta_files"] = meta_files
-                  
+
         if len(self.cache["meta_files"]) == 0:
             self._clean_up()
+            self.cache["compile_metadata"] = False
         else:
-            LOG.warning("Lazy loading enabled, cleanup will be executed after export call.")
+            LOG.warning(
+                "Lazy loading enabled, cleanup will be executed after export call."
+            )
             self.cache["compile_metadata"] = True
 
         return metadata
@@ -209,8 +217,10 @@ unpacking archive ...''')
                 try:
                     file.unlink()
                 except Exception as e:
-                    errors.append((str(file), e.message if hasattr(e, "message") else str(e)))
-            
+                    errors.append(
+                        (str(file),
+                         e.message if hasattr(e, "message") else str(e)))
+
             LOG.info(f"    cleaning directories:")
             for d in dirs:
                 LOG.info(f"        {str(d)}")
@@ -219,8 +229,11 @@ unpacking archive ...''')
                 try:
                     dir.rmdir()
                 except Exception as e:
-                    errors.append((str(dir), e.message if hasattr(e, "message") else str(e)))
+                    errors.append(
+                        (str(dir),
+                         e.message if hasattr(e, "message") else str(e)))
 
             if len(errors) > 0:
                 for e in errors:
-                    LOG.warning(f"    error cleaning:\n        {e[0]} -- {e[1]}")
+                    LOG.warning(
+                        f"    error cleaning:\n        {e[0]} -- {e[1]}")

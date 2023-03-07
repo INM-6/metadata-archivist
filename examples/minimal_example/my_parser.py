@@ -1,3 +1,12 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+
+Parser and Extractor instances examples.
+Authors: Matthias K., Jose V.
+
+"""
+
 from metadata_archivist import AExtractor, Parser
 import yaml
 
@@ -11,32 +20,33 @@ def key_val_split(string, split_char):
 class time_extractor(AExtractor):
 
     def __init__(self) -> None:
-        self.name = 'time_extractor'
-        self._input_file_pattern = 'time.txt'
-        self._extracted_metadata = {}
+        super().__init__(name='time_extractor',
+                         input_file_pattern='time.txt',
+                         schema={})
 
-        self.schema = {}
-
-    def extract(self, data) -> dict:
+    def extract(self, file_path) -> dict:
         out = {}
-        for line in data:
-            if line != '\n':
-                out.update(key_val_split(line, '\t'))
+        with file_path.open("r") as fp:
+            for line in fp:
+                if line != '\n':
+                    out.update(key_val_split(line, '\t'))
         return out
 
 
 class yml_extractor(AExtractor):
 
     def __init__(self) -> None:
-        self.name = 'yml_extractor'
-        self._input_file_pattern = '*.yml'
-        self._extracted_metadata = {}
+        super().__init__(name='yml_extractor',
+                         input_file_pattern='*.yml',
+                         schema={})
 
-        self.schema = {}
-
-    def extract(self, data) -> dict:
-        out = yaml.safe_load(data)
+    def extract(self, file_path) -> dict:
+        out = {}
+        with file_path.open("r") as fp:
+            out = yaml.safe_load(fp)
         return out
 
 
-my_parser = Parser(extractors=[time_extractor(), yml_extractor()])
+my_parser = Parser(extractors=[time_extractor(),
+                               yml_extractor()],
+                   lazy_load=True)

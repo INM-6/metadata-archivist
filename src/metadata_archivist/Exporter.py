@@ -2,21 +2,25 @@
 # -*- coding: utf-8 -*-
 """
 
-Metadata file saver example.
-Tested with Python 3.8.10
-Author: Jose V., Matthias K.
+Metadata to file exporter.
+Authors: Jose V., Matthias K.
 
 """
+
 import json
 from pathlib import Path
 
 
 class Exporter():
 
-    def __init__(self) -> None:
-        pass
+    def __init__(self, format: str) -> None:
+        if format.upper() == "JSON":
+            self.export = self._export_json
+        else:
+            raise RuntimeError("Unknown export format type.")
 
-    def export(self, metadata: dict, outfile: Path, verb: bool = False):
+
+    def _export_json(self, metadata: dict, outfile: Path, verb: bool = False) -> None:
         """
         Saves metadata to file as JSON.
 
@@ -25,12 +29,6 @@ class Exporter():
             outfile: Path object to target file.
             form: String target form.
             verb: Boolean to control verbose output.
-
-        Saves metadata to file as JSON.
-
-        Args:
-            metadata: Dictionary containing metadata.
-            outfile: Path object to target file.
         """
 
         if verb:

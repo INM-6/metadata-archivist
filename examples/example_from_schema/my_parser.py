@@ -16,7 +16,26 @@ class time_extractor(AExtractor):
         self._extracted_metadata = {}
         self.ref = '#/$defs/time_extractor'
 
-        self.schema = {}
+        self.schema = {
+            'type': 'object',
+            'properties': {
+                'real': {
+                    'type': 'string',
+                    'description': 'the time from start to finish of the call'
+                },
+                'user': {
+                    'type': 'string',
+                    'description': 'amount of CPU time spent in user mode'
+                },
+                'sys': {
+                    'type': 'string',
+                    'description': 'amount of CPU time spent in kernel mode'
+                },
+                'system': {
+                    '$ref': '#/properties/sys'
+                }
+            }
+        }
 
     def extract(self, data) -> dict:
         out = {}

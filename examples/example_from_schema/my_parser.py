@@ -169,5 +169,5 @@ my_schema = {
 
 my_parser = Parser(
     extractors=[time_extractor(), yml_extractor()],
-    metadata_tree='from_dir_tree',  #   'from_schema'
+    metadata_tree='from_schema',  #   'from_schema' 'from_dir_tree'
     schema=my_schema)

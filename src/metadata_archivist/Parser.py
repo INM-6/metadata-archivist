@@ -544,6 +544,10 @@ class Parser():
             for file_path in to_extract[exn]:
                 metadata = self._extractors[self._indexes[exn][
                     0]].extract_metadata_from_file(file_path)
+                if self.metadata_tree == 'from_schema':
+                    metadata = get_structured_metadata(
+                        self.schema,
+                        self._extractors[self._indexes[exn][0]].ref, metadata)
                 if not self._lazy_load:
                     self._update_metadata_tree_with_path_hierarchy(
                         metadata, decompress_path, file_path)

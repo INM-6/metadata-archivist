@@ -517,29 +517,45 @@ class Parser():
 
         return meta_files
     
-    def _update_metadata_tree_with_schema(self,
-                                          metadata: dict,
-                                          decompress_path: Path,
-                                          file_path: Path) -> None:
+    def _update_metadata_tree_with_schema(self) -> None:
+        if len(self._cache) == 0:
+            raise RuntimeError("Metadata needs to be parsed before updating the tree")
+        # Explore schema
+        # When reference found
+        # Get extractor id from defs
+        ex_id = None # Get extractor id from defs
+        for meta, decompress_path, file_path in self._cache[ex_id]:
+            if isinstance(meta, Path):
+                with meta.open("r") as f:
+                    metadata = load(f)
+            elif isinstance(meta, dict):
+                metadata = meta
+            else:
+                raise TypeError("Incorrect meta object type")
+                    
+        # Fill tree with metadata
+        
         raise NotImplementedError
 
     def compile_metadata(self) -> dict:
         """
         Function to gather all metadata extracted using parsing function with lazy loading.
         """
-        for ex_id in self._cache:
-            for meta, decompress_path, file_path in self._cache[ex_id]:
-                if isinstance(meta, Path):
-                    with meta.open("r") as f:
-                        metadata = load(f)
-                elif isinstance(meta, dict):
-                    metadata = meta
-                else:
-                    raise TypeError("Incorrect meta object type")
-                
-                if self._use_schema:
-                    self._update_metadata_tree_with_schema(metadata, decompress_path, file_path)
-                else:
+        if len(self._cache) == 0:
+            raise RuntimeError("Metadata needs to be parsed before updating the tree")
+        if self._use_schema:
+            self._update_metadata_tree_with_schema()
+        else:
+            for ex_id in self._cache:
+                for meta, decompress_path, file_path in self._cache[ex_id]:
+                    if isinstance(meta, Path):
+                        with meta.open("r") as f:
+                            metadata = load(f)
+                    elif isinstance(meta, dict):
+                        metadata = meta
+                    else:
+                        raise TypeError("Incorrect meta object type")
+                    
                     self._update_metadata_tree_with_path_hierarchy(metadata, decompress_path, file_path)
 
         return self.metadata

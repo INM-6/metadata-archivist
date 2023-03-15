@@ -51,7 +51,7 @@ class Archivist():
         if self.metadata_output_file.exists():
             if self.config["overwrite"]:
                 if self.metadata_output_file.is_file():
-                    LOG.warning(f"Metadata output file exists: '{self.metadata_output_file}' going to overwrite.")
+                    LOG.warning(f"Metadata output file exists: '{self.metadata_output_file}', overwriting.")
                 else:
                     raise RuntimeError(f"Metadata output file exists: '{self.metadata_output_file}' cannot overwrite.")
             else:
@@ -135,10 +135,11 @@ class Archivist():
         Returns extracted metadata.
         """
         LOG.info(f'''Extracting:
-Output path: {self._out_dir_path}
-Extraction path: {self._dc_dir_path}
-Remove extracted: {self.config["auto_cleanup"]}
-unpacking archive ...''')
+    Output path: {self._out_dir_path}
+    Extraction path: {self._dc_dir_path}
+    Remove extracted: {self.config["auto_cleanup"]}''')
+        
+        LOG.info("Unpacking archive...")
                   
         decompress_path, decompressed_files, decompressed_dirs = self.decompressor.decompress(self.parser.input_file_patterns)
 
@@ -152,31 +153,38 @@ unpacking archive ...''')
         self._cache["decompressed_files"] = decompressed_files
         self._cache["decompressed_dirs"] = decompressed_dirs
         self._cache["meta_files"] = meta_files
+        self._cache["compile_metadata"] = True
                   
         if len(self._cache["meta_files"]) == 0:
-            self._cache["compile_metadata"] = False
-            metadata = self.parser.compile_metadata()
-            self._cache["metadata"] = metadata
-            self._clean_up()
+            metadata = self.get_metadata()
         else:
-            LOG.warning("Lazy loading enabled, cleanup will be executed after export call.")
-            self._cache["compile_metadata"] = True
             metadata = None
 
         return metadata
+    
+    def get_metadata(self) -> dict:
+        """
+        Returns generated metadata as a dictionary.
+        If needed, uses parser to first compile metadata.
+        """
+        if self._cache["compile_metadata"]:
+            LOG.info(f'''Compiling metadata...''')
+            self._cache["compile_metadata"] = False
+            metadata = self.parser.compile_metadata()
+            self._cache["metadata"] = metadata
+            LOG.info("Done!")
+            self._clean_up()
+        
+        return self._cache["metadata"]
 
     def export(self) -> Path:
         """
         Exports generated metadata to file using internal Exporter object.
-        If needed, uses parser to first compile metadata.
         Returns path to exported file.
         """
+        metadata = self.get_metadata()
         LOG.info(f'''Exporting metadata...''')
-        if self._cache["compile_metadata"]:
-            metadata = self.parser.compile_metadata()
-            self._cache["metadata"] = metadata
-            self._clean_up()
-        self.exporter.export(self._cache["metadata"],
+        self.exporter.export(metadata,
                              self.metadata_output_file,
                              verb=self.config["verbose"])
         LOG.info("Done!")
@@ -186,7 +194,7 @@ unpacking archive ...''')
     def _clean_up(self) -> None:
         """Cleanup method automatically called after metadata extraction (or compilation if lazy_loading)"""
         if self.config["auto_cleanup"]:
-            LOG.info("Cleaning extraction directory")
+            LOG.info("Cleaning extraction directory...")
             errors = []
             files = self._cache["decompressed_files"] + self._cache["meta_files"]
             dirs = self._cache["decompressed_dirs"]
@@ -216,3 +224,5 @@ unpacking archive ...''')
             if len(errors) > 0:
                 for e in errors:
                     LOG.warning(f"    error cleaning:\n        {e[0]} -- {e[1]}")
+            
+            LOG.info("Done!")

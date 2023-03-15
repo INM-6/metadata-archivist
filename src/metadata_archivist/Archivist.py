@@ -58,7 +58,7 @@ class Archivist():
                 raise RuntimeError(f"Metadata output file exists: '{self.metadata_output_file}' overwrite not allowed.")
 
         # Operational memory
-        self.cache = {}
+        self._cache = {}
 
     def _init_config(self, **kwargs) -> None:
         """
@@ -144,21 +144,24 @@ unpacking archive ...''')
 
         LOG.info(f'''Done!\nparsing files ...''')
 
-        metadata, meta_files = self.parser.parse_files(decompress_path, decompressed_files)
+        meta_files = self.parser.parse_files(decompress_path, decompressed_files)
 
         LOG.info(f'''Done!''')
                   
-        self.cache["decompress_path"] = decompress_path
-        self.cache["decompressed_files"] = decompressed_files
-        self.cache["decompressed_dirs"] = decompressed_dirs
-        self.cache["metadata"] = metadata
-        self.cache["meta_files"] = meta_files
+        self._cache["decompress_path"] = decompress_path
+        self._cache["decompressed_files"] = decompressed_files
+        self._cache["decompressed_dirs"] = decompressed_dirs
+        self._cache["meta_files"] = meta_files
                   
-        if len(self.cache["meta_files"]) == 0:
+        if len(self._cache["meta_files"]) == 0:
+            self._cache["compile_metadata"] = False
+            metadata = self.parser.compile_metadata()
+            self._cache["metadata"] = metadata
             self._clean_up()
         else:
             LOG.warning("Lazy loading enabled, cleanup will be executed after export call.")
-            self.cache["compile_metadata"] = True
+            self._cache["compile_metadata"] = True
+            metadata = None
 
         return metadata
 
@@ -169,11 +172,11 @@ unpacking archive ...''')
         Returns path to exported file.
         """
         LOG.info(f'''Exporting metadata...''')
-        if self.cache["compile_metadata"]:
+        if self._cache["compile_metadata"]:
             metadata = self.parser.compile_metadata()
-            self.cache["metadata"] = metadata
+            self._cache["metadata"] = metadata
             self._clean_up()
-        self.exporter.export(self.cache["metadata"],
+        self.exporter.export(self._cache["metadata"],
                              self.metadata_output_file,
                              verb=self.config["verbose"])
         LOG.info("Done!")
@@ -185,8 +188,8 @@ unpacking archive ...''')
         if self.config["auto_cleanup"]:
             LOG.info("Cleaning extraction directory")
             errors = []
-            files = self.cache["decompressed_files"] + self.cache["meta_files"]
-            dirs = self.cache["decompressed_dirs"]
+            files = self._cache["decompressed_files"] + self._cache["meta_files"]
+            dirs = self._cache["decompressed_dirs"]
             if str(self._dc_dir_path) != '.':
                 dirs.append(self._dc_dir_path)
 

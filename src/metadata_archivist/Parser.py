@@ -89,6 +89,8 @@ class AExtractor(abc.ABC):
         self._name = name
         self._input_file_pattern = input_file_pattern
         self._schema = schema
+
+        self.ref = f"#/$defs/{self.id}"
         self.extracted_metadata = {}
 
     @property
@@ -132,6 +134,21 @@ class AExtractor(abc.ABC):
         (pythonic indirection for protected attributes)
         """
         raise AttributeError("The name of an Extractor is an immutable attribute")
+    
+    @property
+    def id(self) -> int:
+        """
+        Returns unique identifier for extractor
+        """
+        return self._name # self.__hash__() for more complex cases
+    
+    @id.setter
+    def id(self, _) -> NoReturn:
+        """
+        Forbidden setter for id attribute.
+        (pythonic indirection for protected attributes)
+        """
+        raise AttributeError("Cannot manually set the id.\nThe id of an Extractor is a computed property based on the Extractor attributes.")
 
     def _update_parsers(self) -> None:
         """Reverse update of related parsers."""
@@ -193,7 +210,7 @@ class AExtractor(abc.ABC):
     # the name property for equality/hashing
     # TODO: to verify for robustness and correctness
     def __eq__(self, other) -> bool:
-        return self.__hash__() == other.__hash__()
+        return self.id == other.id if isinstance(other, type(self)) else False
 
     def __ne__(self, other) -> bool:
         return not self.__eq__(other)
@@ -330,11 +347,12 @@ class Parser():
                     }
                 }
             }
-        ex_id = extractor.__hash__()
+        ex_id = extractor.id
+        ex_ref = extractor.ref
         self._schema["$defs"][ex_id] = extractor.schema
         self._indexes[ex_id][2] = len(self._schema["$defs"]["node"]["properties"]["anyOf"])
         self._schema["$defs"]["node"]["properties"]["anyOf"].append(
-            {"$ref": f"#/$defs/{ex_id}"}
+            {"$ref": ex_ref}
         )
 
     def add_extractor(self, extractor: AExtractor) -> None:
@@ -344,7 +362,7 @@ class Parser():
         """
         if extractor in self.extractors:
             raise RuntimeError("Extractor is already in Parser")
-        ex_id = extractor.__hash__()
+        ex_id = extractor.id
         self._indexes[ex_id] = [len(self._extractors), 0, 0]
         self._extractors.append(extractor)
         self._indexes[ex_id][1] = len(self._input_file_patterns)
@@ -359,11 +377,11 @@ class Parser():
         """
         if extractor not in self._extractors:
             raise RuntimeError("Unknown Extractor")
-        ex_id = extractor.__hash__()
+        ex_id = extractor.id
         self._schema["$defs"][ex_id] = extractor.schema
         self._input_file_patterns[self._indexes[ex_id][1]] = extractor.input_file_pattern
         self._schema["$defs"]["node"]["properties"]["anyOf"][self._indexes[ex_id][2]] = \
-            {"$ref": f"#/$defs/{ex_id}"}
+            {"$ref": extractor.ref}
         
     def remove_extractor(self, extractor: AExtractor) -> None:
         """
@@ -372,7 +390,7 @@ class Parser():
         """
         if extractor not in self._extractors:
             raise RuntimeError("Unknown Extractor")
-        ex_id = extractor.__hash__()
+        ex_id = extractor.id
         self._extractors.pop(self._indexes[ex_id][0], None)
         self._input_file_patterns.pop(self._indexes[ex_id][1], None)
         self._schema["$defs"]["node"]["properties"]["anyOf"].pop(self._indexes[ex_id][2], None)
@@ -482,7 +500,7 @@ class Parser():
         # TODO: Think about parallelization scheme with ProcessPoolExecutor
         # Would it be worth it in terms of performance?
         for extractor in self._extractors:
-            ex_id = extractor.__hash__()
+            ex_id = extractor.id
             to_extract[ex_id] = []
             for fp in file_paths:
                 pattern = extractor.input_file_pattern
@@ -522,16 +540,15 @@ class Parser():
             raise RuntimeError("Metadata needs to be parsed before updating the tree")
         # Explore schema
         # When reference found
-        # Get extractor id from defs
-        ex_id = None # Get extractor id from defs
-        for meta, decompress_path, file_path in self._cache[ex_id]:
-            if isinstance(meta, Path):
-                with meta.open("r") as f:
-                    metadata = load(f)
-            elif isinstance(meta, dict):
-                metadata = meta
-            else:
-                raise TypeError("Incorrect meta object type")
+        #ex_id = None # Get extractor id from defs
+        #for meta, decompress_path, file_path in self._cache[ex_id]:
+        #    if isinstance(meta, Path):
+        #        with meta.open("r") as f:
+        #            metadata = load(f)
+        #    elif isinstance(meta, dict):
+        #        metadata = meta
+        #    else:
+        #        raise TypeError("Incorrect meta object type")
                     
         # Fill tree with metadata
         

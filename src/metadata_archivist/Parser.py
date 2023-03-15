@@ -309,6 +309,7 @@ class Parser():
                 # TODO: Should we raise exception instead of warning?
                 LOG.warning("Warning: compiling available metadata after enabling lazy loading.", RuntimeWarning)
             self.compile_metadata()
+        self._lazy_load = lazy_load
 
     def _extend_json_schema(self, extractor: AExtractor) -> None:
         """
@@ -434,7 +435,7 @@ class Parser():
         relative_path = file_path.relative_to(decompress_path)
         hierarchy = list(relative_path.parents)
         # '.' is always the root of a relative path hence parents of a relative path will always contain 1 element
-        if len(hierarchy) < 1:
+        if len(hierarchy) < 2:
             # In case there is no hierarchy then we just add the metadata in a flat structure
             self.metadata[file_path.name] = metadata
         else:
@@ -574,6 +575,7 @@ def _combine(parser1: Parser, parser2: Parser, schema: Optional[dict] = None) ->
     combined_parser = Parser(schema=schema, extractors=parser1.extractors + parser2.extractors, lazy_load=ll)
 
     if len(parser1.metadata) > 0 or len(parser2.metadata) > 0:
+        raise NotImplementedError("Cannot yet Parser with existing metadata")
         combined_parser.metadata = _merge_dicts(parser1.metadata, parser2.metadata)
 
     return combined_parser

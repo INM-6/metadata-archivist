@@ -2,6 +2,7 @@
 functions for handling metadata tree
 '''
 from functools import reduce
+from copy import deepcopy
 
 
 def _handle_str_entry(tree, k, ref, metadata):
@@ -32,7 +33,7 @@ def _search_list(metadata_list, ref, metadata, replace):
 
 
 def _search_tree(tree, ref, metadata, replace=True):
-    for k, v in tree.copy().items():
+    for k, v in deepcopy(tree).items():
         if isinstance(v, dict):
             if '$ref' in v.keys():
                 if replace:
@@ -138,11 +139,11 @@ def delete_none(_dict):
 
 
 def get_structured_metadata(schema, ref, metadata):
-    metadata_tree = schema.copy()
+    metadata_tree = deepcopy(schema)
     _update_tree_from_defs(metadata_tree, ref, metadata)
-    # print(metadata_tree)
     if '$defs' in metadata_tree.keys():
         del metadata_tree['$defs']
+    # here we need to adjust for respecting dir structures in schema
     metadata_tree = _rm_layers(metadata_tree, 'properties')
     _search_tree(metadata_tree, ref, metadata)
     metadata_tree = delete_none(metadata_tree)

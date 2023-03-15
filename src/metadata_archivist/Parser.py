@@ -351,18 +351,15 @@ class Parser():
         Extends parser schema (dict) with a given extractor schema (dict).
         Indexes schema.
         """
-        if "$defs" not in self.schema.keys():
-            self.schema["$defs"] = {}
+        if "$defs" not in self._schema.keys():
+            self._schema["$defs"] = {}
         self._schema["$defs"][extractor.name] = extractor.schema
-        # # TODO: Will generate pointer issue if extractor schema is redefined
-        # # -> Create two way relationships with update triggers
-        # if extractor.name not in self.schema["$defs"]:
-        #     self.schema["$defs"][extractor.name] = extractor.schema
-        if 'node' in self.schema["$defs"]:
+        if 'node' in self._schema["$defs"]:
             self._indexes[extractor.name][2] = len(
                 self._schema["$defs"]["node"]["properties"]["anyOf"])
-            self.schema["$defs"]["node"]["properties"]["anyOf"].append(
+            self._schema["$defs"]["node"]["properties"]["anyOf"].append(
                 {"$ref": f"#/$defs/{extractor.name}"})
+            # {"$ref": f"{extractor.ref}"})
         else:
             self._indexes[extractor.name][2] = None
 

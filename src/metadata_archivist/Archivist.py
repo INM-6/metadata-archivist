@@ -8,6 +8,7 @@ Authors: Matthias K., Jose V.
 """
 
 from pathlib import Path
+import json
 
 from .Exporter import Exporter
 from .Parser import Parser
@@ -79,6 +80,8 @@ class Archivist():
             True,  # TODO: change to False after development phase is done. 
             "auto_cleanup": True,
             "verbose":
+            True,  # TODO: change to False after development phase is done.
+            "export_schema":
             True  # TODO: change to False after development phase is done.
         }
         key_list = list(self.config.keys())
@@ -110,6 +113,12 @@ class Archivist():
                 LOG.info(
                     f"No argument found for: '{key}' initializing by default: '{self.config[key]}'"
                 )
+
+        if 'export_schema' in kwargs:
+            if not isinstance(kwargs['export_schema'], bool):
+                raise RuntimeError(
+                    f"Incorrect value for argument: export_schema")
+            self.config['export_schema'] = kwargs['export_schema']
 
     def _check_dir(self,
                    dir_path: str,
@@ -195,6 +204,12 @@ unpacking archive ...''')
         self.exporter.export(self.cache["metadata"],
                              self.metadata_output_file,
                              verb=self.config["verbose"])
+
+        if self.config['export_schema']:
+            LOG.info(f'''Exporting schema...''')
+            schema_file = self._out_dir_path / Path('schema.json')
+            with schema_file.open('w') as f:
+                json.dump(self.parser.schema, f, indent=4)
         LOG.info("Done!")
 
         return self.metadata_output_file

@@ -17,7 +17,6 @@ from typing import Optional, List, Tuple, NoReturn
 
 from .Logger import LOG
 
-
 class Decompressor():
     """
     Class containing all methods around processing compressed archives
@@ -31,10 +30,9 @@ class Decompressor():
                  archive_path: Path,
                  config: dict,
                  verbose: Optional[bool] = True) -> None:
-
+        
         # Protected
-        self._archive_path, self._decompress = self._check_archive(
-            archive_path)
+        self._archive_path, self._decompress = self._check_archive(archive_path)
 
         # Public
         self.config = config
@@ -48,22 +46,20 @@ class Decompressor():
     @archive_path.setter
     def archive_path(self, archive_path: Path) -> None:
         """Sets new archive path after checking."""
-        self._archive_path, self._decompress = self._check_archive(
-            archive_path)
+        self._archive_path, self._decompress = self._check_archive(archive_path)
 
     @property
     def decompress(self) -> Callable:
         """Returns appropriate decompress function wrt. archive format."""
         return self._decompress
-
+    
     @decompress.setter
     def decompress(self, _) -> NoReturn:
         """
         Forbidden setter for decompress attribute.
         (pythonic indirection for protected attributes)
         """
-        raise AttributeError(
-            "decompress method can only be set through archive path checking")
+        raise AttributeError("decompress method can only be set through archive path checking")
 
     def _check_archive(self, file_path: Path) -> Tuple[Path, Callable]:
         """
@@ -84,12 +80,10 @@ class Decompressor():
         # Returning file path is used for protected set method of internal _archive_path attribute.
         return file_path, decompressor
 
-    def _decompress_tar(
-        self,
-        output_file_patterns: List[str],
-        archive_path: Optional[Path] = None,
-        extraction_path: Optional[Path] = None
-    ) -> Tuple[Path, List[Path], List[Path]]:
+    def _decompress_tar(self,
+                        output_file_patterns: List[str],
+                        archive_path: Optional[Path] = None,
+                        extraction_path: Optional[Path] = None) -> Tuple[Path, List[Path], List[Path]]:
         """
         Decompresses files of archive in members list.
         If another archive is found then operation is called on it.
@@ -115,30 +109,25 @@ class Decompressor():
                 if self.verbose:
                     LOG.info(f"    processing file: {item.name}")
 
-                if any(
-                        item.name.endswith(format)
+                if any(item.name.endswith(format)
                         for format in ['tgz', 'tar']):
                     t.extract(item, path=decompress_path)
                     new_archive = decompress_path.joinpath(item.name)
-                    _, ndd, ndf = self._decompress_tar(
-                        output_file_patterns,
-                        archive_path=new_archive,
-                        extraction_path=decompress_path)
+                    _, ndd, ndf = self._decompress_tar(output_file_patterns,
+                                                       archive_path=new_archive,
+                                                       extraction_path=decompress_path)
                     ndd.extend(decompressed_dirs)
                     decompressed_dirs = ndd
                     decompressed_files.extend(ndf)
                     new_archive.unlink()
 
-                elif any(
-                        re.fullmatch(f'.*/{pat}', item.name)
+                elif any(re.fullmatch(f'.*/{pat}', item.name)
                         for pat in output_file_patterns):
                     t.extract(item, path=decompress_path)
-                    decompressed_files.append(
-                        decompress_path.joinpath(item.name))
+                    decompressed_files.append(decompress_path.joinpath(item.name))
                 elif item.isdir():
                     # TODO: Deal with empty dirs
-                    decompressed_dirs.insert(
-                        0, decompress_path.joinpath(item.name))
+                    decompressed_dirs.insert(0, decompress_path.joinpath(item.name))
                 item = t.next()
 
         # Returned paths are used for parsing and automatic clean-up.

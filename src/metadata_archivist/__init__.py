@@ -7,6 +7,8 @@ Authors: Matthias K., Jose V.
 
 """
 
+from .util import get_structured_metadata
+
 from .Parser import Parser, AExtractor
 from .Exporter import Exporter
 

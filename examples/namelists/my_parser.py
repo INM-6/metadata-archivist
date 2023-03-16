@@ -16,9 +16,7 @@ NML_SCHEMA = {}
 class nml_extractor(AExtractor):
 
     def __init__(self):
-        super().__init__(name='nml_extractor',
-                         input_file_pattern='*.nml',
-                         schema=NML_SCHEMA)
+        super().__init__(name='nml_extractor', input_file_pattern='*.nml', schema=NML_SCHEMA)
 
     def extract(self, f):
         nml = f90nml.read(f)

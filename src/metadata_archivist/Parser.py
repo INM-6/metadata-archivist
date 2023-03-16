@@ -17,7 +17,7 @@ import abc  # Abstract class base infrastructure
 
 import jsonschema  # to validate extracted data
 
-from json import dump
+from json import dump, load
 from pathlib import Path
 from typing import Optional, List, Tuple, NoReturn, Literal, Union
 from .util import get_structured_metadata
@@ -97,6 +97,8 @@ class AExtractor(abc.ABC):
         self._name = name
         self._input_file_pattern = input_file_pattern
         self._schema = schema
+
+        self.ref = f"#/$defs/{self.id}"
         self.extracted_metadata = {}
         if ref is None:
             self.ref = f'#/$defs/{self.name}'
@@ -143,8 +145,22 @@ class AExtractor(abc.ABC):
         Forbidden setter for name attribute.
         (pythonic indirection for protected attributes)
         """
-        raise AttributeError(
-            "The name of an Extractor is an immutable attribute")
+        raise AttributeError("The name of an Extractor is an immutable attribute")
+    
+    @property
+    def id(self) -> int:
+        """
+        Returns unique identifier for extractor
+        """
+        return self._name # self.__hash__() for more complex cases
+    
+    @id.setter
+    def id(self, _) -> NoReturn:
+        """
+        Forbidden setter for id attribute.
+        (pythonic indirection for protected attributes)
+        """
+        raise AttributeError("Cannot manually set the id.\nThe id of an Extractor is a computed property based on the Extractor attributes.")
 
     def _update_parsers(self) -> None:
         """Reverse update of related parsers."""
@@ -206,7 +222,7 @@ class AExtractor(abc.ABC):
     # the name property for equality/hashing
     # TODO: to verify for robustness and correctness
     def __eq__(self, other) -> bool:
-        return self._name == other.name
+        return self.id == other.id if isinstance(other, type(self)) else False
 
     def __ne__(self, other) -> bool:
         return not self.__eq__(other)
@@ -237,9 +253,12 @@ class Parser():
         # These attributes should only be modified through the add, update remove methods
         self._extractors = []
         self._input_file_patterns = []
-
-        self._metadata = {}
-        if schema is None:
+        # Can also be completely replaced through set method
+        if schema is not None:
+            self._use_schema = True
+            self._schema = schema
+        else:
+            self._use_schema = False
             self._schema = DEFAULT_PARSER_SCHEMA
         elif isinstance(schema, (str, Path)):
             with open(schema) as f:
@@ -252,15 +271,19 @@ class Parser():
 
         # Used for internal handling:
         # Shouldn't use much memory but TODO: check additional memory usage
+
+        # Set lazy loading
         self._lazy_load = lazy_load
-        if lazy_load:
-            self._load_indexes = {}
+
         # Used for updating/removing extractors
         # Indexing is done storing a triplet with extractors, patterns, schema indexes
         # with [<index in self._extractors>,<index in self._input_file_patterns>,<len(
         # self._schema["$defs"]["node"]["properties"]["anyOf"])>  ]
         # the last entry being None if 'node' does not exist
         self._indexes = {}
+
+        # For extractor result caching
+        self._cache = {}
 
         # Public
         self.metadata = {}
@@ -317,6 +340,7 @@ class Parser():
     def schema(self, schema: dict) -> None:
         """Sets parser schema (dict)."""
         self._schema = schema
+        self._use_schema = True
         if len(self._extractors) > 0:
             for ex in self._extractors:
                 # TODO: Needs consistency checks
@@ -334,10 +358,7 @@ class Parser():
             return
         if lazy_load and not self._lazy_load:
             if len(self.metadata) > 0:
-                raise RuntimeError(
-                    "Lazy loading needs to be enabled before metadata extraction"
-                )
-            self._load_indexes = {}
+                raise RuntimeError("Lazy loading needs to be enabled before metadata extraction")
         else:
             if len(self.metadata) > 0:
                 # TODO: Should we raise exception instead of warning?
@@ -345,6 +366,7 @@ class Parser():
                     "Warning: compiling available metadata after enabling lazy loading.",
                     RuntimeWarning)
             self.compile_metadata()
+        self._lazy_load = lazy_load
 
     def _extend_json_schema(self, extractor: AExtractor) -> None:
         """
@@ -352,16 +374,20 @@ class Parser():
         Indexes schema.
         """
         if "$defs" not in self._schema.keys():
-            self._schema["$defs"] = {}
-        self._schema["$defs"][extractor.name] = extractor.schema
-        if 'node' in self._schema["$defs"]:
-            self._indexes[extractor.name][2] = len(
-                self._schema["$defs"]["node"]["properties"]["anyOf"])
-            self._schema["$defs"]["node"]["properties"]["anyOf"].append(
-                {"$ref": f"#/$defs/{extractor.name}"})
-            # {"$ref": f"{extractor.ref}"})
-        else:
-            self._indexes[extractor.name][2] = None
+            self._schema["$defs"] = {
+                "node": {
+                    "properties": {
+                        "anyOf": []
+                    }
+                }
+            }
+        ex_id = extractor.id
+        ex_ref = extractor.ref
+        self._schema["$defs"][ex_id] = extractor.schema
+        self._indexes[ex_id][2] = len(self._schema["$defs"]["node"]["properties"]["anyOf"])
+        self._schema["$defs"]["node"]["properties"]["anyOf"].append(
+            {"$ref": ex_ref}
+        )
 
     def add_extractor(self, extractor: AExtractor) -> None:
         """
@@ -370,9 +396,10 @@ class Parser():
         """
         if extractor in self.extractors:
             raise RuntimeError("Extractor is already in Parser")
-        self._indexes[extractor.name] = [len(self._extractors), 0, 0]
+        ex_id = extractor.id
+        self._indexes[ex_id] = [len(self._extractors), 0, 0]
         self._extractors.append(extractor)
-        self._indexes[extractor.name][1] = len(self._input_file_patterns)
+        self._indexes[ex_id][1] = len(self._input_file_patterns)
         self._input_file_patterns.append(extractor.input_file_pattern)
         self._extend_json_schema(extractor)
         extractor._parsers.append(self)
@@ -384,13 +411,12 @@ class Parser():
         """
         if extractor not in self._extractors:
             raise RuntimeError("Unknown Extractor")
-        self._schema["$defs"][extractor.name] = extractor.schema
-        self._input_file_patterns[self._indexes[extractor.name]
-                                  [1]] = extractor.input_file_pattern
-        if self._indexes[extractor.name][2] is not None:
-            self._schema["$defs"]["node"]["properties"]["anyOf"][self._indexes[extractor.name][2]] = \
-                {"$ref": f"#/$defs/{extractor.name}"}
-
+        ex_id = extractor.id
+        self._schema["$defs"][ex_id] = extractor.schema
+        self._input_file_patterns[self._indexes[ex_id][1]] = extractor.input_file_pattern
+        self._schema["$defs"]["node"]["properties"]["anyOf"][self._indexes[ex_id][2]] = \
+            {"$ref": extractor.ref}
+        
     def remove_extractor(self, extractor: AExtractor) -> None:
         """
         Removes extractor from extractor list.
@@ -398,13 +424,12 @@ class Parser():
         """
         if extractor not in self._extractors:
             raise RuntimeError("Unknown Extractor")
-        self._extractors.pop(self._indexes[extractor.name][0], None)
-        self._input_file_patterns.pop(self._indexes[extractor.name][1], None)
-        if self._indexes[extractor.name][2] is not None:
-            self._schema["$defs"]["node"]["properties"]["anyOf"].pop(
-                self._indexes[extractor.name][2], None)
-        self._schema["$defs"].pop(extractor.name, None)
-        self._indexes.pop(extractor.name, None)
+        ex_id = extractor.id
+        self._extractors.pop(self._indexes[ex_id][0], None)
+        self._input_file_patterns.pop(self._indexes[ex_id][1], None)
+        self._schema["$defs"]["node"]["properties"]["anyOf"].pop(self._indexes[ex_id][2], None)
+        self._schema["$defs"].pop(ex_id, None)
+        self._indexes.pop(ex_id, None)
         extractor._parsers.remove(self)
 
     def _update_metadata_tree(self, decompress_path: Path,
@@ -485,7 +510,7 @@ class Parser():
         relative_path = file_path.relative_to(decompress_path)
         hierarchy = list(relative_path.parents)
         # '.' is always the root of a relative path hence parents of a relative path will always contain 1 element
-        if len(hierarchy) < 1:
+        if len(hierarchy) < 2:
             # In case there is no hierarchy then we just add the metadata in a flat structure
             self.metadata[file_path.name] = metadata
         else:
@@ -527,27 +552,30 @@ class Parser():
         # TODO: Think about parallelization scheme with ProcessPoolExecutor
         # Would it be worth it in terms of performance?
         for extractor in self._extractors:
-            to_extract[extractor.name] = []
+            ex_id = extractor.id
+            to_extract[ex_id] = []
             for fp in file_paths:
                 pattern = extractor.input_file_pattern
                 if pattern[0] == '*':
                     pattern = '.' + pattern
                 if re.fullmatch(pattern, fp.name):
-                    to_extract[extractor.name].append(fp)
+                    to_extract[ex_id].append(fp)
 
         # TODO: Think about parallelization scheme with ProcessPoolExecutor
         # For instance this loop is trivially parallelizable if there is no file usage overlap
-        for exn in to_extract:
-            for file_path in to_extract[exn]:
-                metadata = self._extractors[self._indexes[exn][
-                    0]].extract_metadata_from_file(file_path)
-                if self.metadata_tree == 'from_schema':
-                    metadata = get_structured_metadata(
-                        self.schema,
-                        self._extractors[self._indexes[exn][0]].ref, metadata)
+        for ex_id in to_extract:
+            for file_path in to_extract[ex_id]:
+                # Get extractor and extract metadata
+                extractor = self._extractors[self._indexes[ex_id][0]]
+                metadata = extractor.extract_metadata_from_file(file_path)
+
+                # Setup cache for storing
+                if ex_id not in self._cache:
+                    self._cache[ex_id] = []
+                
                 if not self._lazy_load:
-                    self._update_metadata_tree_with_path_hierarchy(
-                        metadata, decompress_path, file_path)
+                    # self._update_metadata_tree_with_path_hierarchy(metadata, decompress_path, file_path)
+                    self._cache[ex_id].append((metadata, decompress_path, file_path))
                 else:
                     meta_path = Path(str(file_path) + ".meta")
                     if meta_path.exists():
@@ -557,25 +585,49 @@ class Parser():
                     with meta_path.open("w") as mp:
                         dump(metadata, mp, indent=4)
                     meta_files.append(meta_path)
-                    self._load_indexes[exn] = (meta_path, decompress_path,
-                                               file_path)
+                    self._cache[ex_id].append((meta_path, decompress_path, file_path))
 
-        return self.metadata, meta_files
+        return meta_files
+    
+    def _update_metadata_tree_with_schema(self) -> None:
+        if len(self._cache) == 0:
+            raise RuntimeError("Metadata needs to be parsed before updating the tree")
+        # Explore schema
+        # When reference found
+        #ex_id = None # Get extractor id from defs
+        #for meta, decompress_path, file_path in self._cache[ex_id]:
+        #    if isinstance(meta, Path):
+        #        with meta.open("r") as f:
+        #            metadata = load(f)
+        #    elif isinstance(meta, dict):
+        #        metadata = meta
+        #    else:
+        #        raise TypeError("Incorrect meta object type")
+                    
+        # Fill tree with metadata
+        
+        raise NotImplementedError
 
     def compile_metadata(self) -> dict:
         """
         Function to gather all metadata extracted using parsing function with lazy loading.
         """
-        if not self._lazy_load:
-            raise RuntimeError(
-                "Unable to compile metadata, lazy loading not enabled")
-        for exn in self._load_indexes:
-            meta_info = self._load_indexes[exn]
-            with meta_info[0].open("r") as f:
-                from json import load
-                metadata = load(f)
-            self._update_metadata_tree_with_path_hierarchy(
-                metadata, meta_info[1], meta_info[2])
+        if len(self._cache) == 0:
+            raise RuntimeError("Metadata needs to be parsed before updating the tree")
+        if self._use_schema:
+            self._update_metadata_tree_with_schema()
+        else:
+            for ex_id in self._cache:
+                for meta, decompress_path, file_path in self._cache[ex_id]:
+                    if isinstance(meta, Path):
+                        with meta.open("r") as f:
+                            metadata = load(f)
+                    elif isinstance(meta, dict):
+                        metadata = meta
+                    else:
+                        raise TypeError("Incorrect meta object type")
+                    
+                    self._update_metadata_tree_with_path_hierarchy(metadata, decompress_path, file_path)
 
         return self.metadata
 
@@ -651,8 +703,8 @@ def _combine(parser1: Parser,
                              lazy_load=ll)
 
     if len(parser1.metadata) > 0 or len(parser2.metadata) > 0:
-        combined_parser.metadata = _merge_dicts(parser1.metadata,
-                                                parser2.metadata)
+        raise NotImplementedError("Cannot yet Parser with existing metadata")
+        combined_parser.metadata = _merge_dicts(parser1.metadata, parser2.metadata)
 
     return combined_parser
 

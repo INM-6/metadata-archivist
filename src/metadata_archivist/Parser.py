@@ -616,12 +616,19 @@ class Parser():
                         if i + 1 != len(file_path_hierarchy):
                             return False
                 elif isinstance(schema_dir, re.Pattern):
-                    raise NotImplementedError()
+                    if not schema_dir.match(path_dir):
+                        return False
+                    try:
+                        schema_dir = next(schema_iterator)
+                    except StopIteration:
+                        if i + 1 != len(file_path_hierarchy):
+                            return False
             return True
 
     def _schema_iterator(self,
                          properties: Optional[dict] = None,
-                         hierachy: Optional[list] = None):
+                         hierachy: Optional[list] = None,
+                         use_regex: Optional[bool] = False):
         """
         schema iterator, returns nodes in schema.
         a node is a entry in a property that itself has no further properties
@@ -643,6 +650,10 @@ class Parser():
             # if isinstance(prop, dict) and 'properties' == prop_name:
             if 'properties' == prop_name:
                 yield from self._schema_iterator(prop, hierachy)
+            elif 'patternProperties' == prop_name:
+                yield from self._schema_iterator(prop,
+                                                 hierachy,
+                                                 use_regex=True)
             elif prop_name == '$ref':
                 matching_extractor = None
                 for ex in self.extractors:
@@ -670,6 +681,15 @@ class Parser():
                                 defs if 'type' in subschem.keys()
                                 and subschem['type'] == 'object' else None,
                             }
+                            if use_regex:
+                                node_dict['dir'] = re.compile(
+                                    defs
+                                ) if 'type' in subschem.keys(
+                                ) and subschem['type'] == 'object' else None
+                            else:
+                                node_dict[
+                                    'dir'] = defs if 'type' in subschem.keys(
+                                    ) and subschem['type'] == 'object' else None
                             yield from self._schema_iterator(
                                 subschem, hierachy + [node_dict])
                             break
@@ -682,10 +702,14 @@ class Parser():
                     'description':
                     prop['description']
                     if 'description' in prop.keys() else None,
-                    'dir':
-                    prop_name if 'type' in prop.keys()
-                    and prop['type'] == 'object' else None,
                 }
+                if use_regex:
+                    node_dict['dir'] = re.compile(
+                        prop_name) if 'type' in prop.keys(
+                        ) and prop['type'] == 'object' else None
+                else:
+                    node_dict['dir'] = prop_name if 'type' in prop.keys(
+                    ) and prop['type'] == 'object' else None
                 yield from self._schema_iterator(prop, hierachy + [node_dict])
             # do we want to include further information, e.g. static infos, description etc.? this could be possibly done here
             # else:
@@ -705,7 +729,7 @@ class Parser():
                 try:
                     _, hierarchy, extractor, prop_name = next(iterator)
                     LOG.debug(
-                        f'        working on: {"/".join(self._path_from_hierarchy(hierarchy))}/{hierarchy[-1]["name"]}'
+                        f'        working on: {self._path_from_hierarchy(hierarchy)}/{hierarchy[-1]["name"]}'
                     )
                     self._update_metadata_tree_with_schema(
                         hierarchy, extractor, prop_name)

@@ -4,6 +4,11 @@
 from metadata_archivist import Archivist
 from my_parser import my_parser
 from pathlib import Path
+import shutil
+
+tmpdir = Path('tmp')
+if tmpdir.exists():
+    shutil.rmtree(tmpdir)
 
 arch = Archivist(archive_path=Path('metadata_archive.tar'),
                  extraction_directory='tmp',
@@ -11,8 +16,9 @@ arch = Archivist(archive_path=Path('metadata_archive.tar'),
                  output_directory="./",
                  output_file="metadata.json",
                  overwrite=True,
-                 auto_cleanup=True,
+                 auto_cleanup=False,
                  verbose=True)
 
 arch.extract()
+print(arch.parser.metadata)
 arch.export()

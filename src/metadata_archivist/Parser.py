@@ -145,22 +145,25 @@ class AExtractor(abc.ABC):
         Forbidden setter for name attribute.
         (pythonic indirection for protected attributes)
         """
-        raise AttributeError("The name of an Extractor is an immutable attribute")
-    
+        raise AttributeError(
+            "The name of an Extractor is an immutable attribute")
+
     @property
     def id(self) -> int:
         """
         Returns unique identifier for extractor
         """
-        return self._name # self.__hash__() for more complex cases
-    
+        return self._name  # self.__hash__() for more complex cases
+
     @id.setter
     def id(self, _) -> NoReturn:
         """
         Forbidden setter for id attribute.
         (pythonic indirection for protected attributes)
         """
-        raise AttributeError("Cannot manually set the id.\nThe id of an Extractor is a computed property based on the Extractor attributes.")
+        raise AttributeError(
+            "Cannot manually set the id.\nThe id of an Extractor is a computed property based on the Extractor attributes."
+        )
 
     def _update_parsers(self) -> None:
         """Reverse update of related parsers."""
@@ -260,12 +263,12 @@ class Parser():
         else:
             self._use_schema = False
             self._schema = DEFAULT_PARSER_SCHEMA
-        elif isinstance(schema, (str, Path)):
-            with open(schema) as f:
-                self._schema = json.load(f)
-        elif isinstance(schema, dict):
-            # ToDo: Validate the dict as schema
-            self._schema = schema
+        # elif isinstance(schema, (str, Path)):
+        #     with open(schema) as f:
+        #         self._schema = json.load(f)
+        # elif isinstance(schema, dict):
+        #     # ToDo: Validate the dict as schema
+        #     self._schema = schema
 
         self.metadata_tree = metadata_tree
 
@@ -358,7 +361,9 @@ class Parser():
             return
         if lazy_load and not self._lazy_load:
             if len(self.metadata) > 0:
-                raise RuntimeError("Lazy loading needs to be enabled before metadata extraction")
+                raise RuntimeError(
+                    "Lazy loading needs to be enabled before metadata extraction"
+                )
         else:
             if len(self.metadata) > 0:
                 # TODO: Should we raise exception instead of warning?
@@ -374,20 +379,15 @@ class Parser():
         Indexes schema.
         """
         if "$defs" not in self._schema.keys():
-            self._schema["$defs"] = {
-                "node": {
-                    "properties": {
-                        "anyOf": []
-                    }
-                }
-            }
+            self._schema["$defs"] = {"node": {"properties": {"anyOf": []}}}
         ex_id = extractor.id
         ex_ref = extractor.ref
         self._schema["$defs"][ex_id] = extractor.schema
-        self._indexes[ex_id][2] = len(self._schema["$defs"]["node"]["properties"]["anyOf"])
-        self._schema["$defs"]["node"]["properties"]["anyOf"].append(
-            {"$ref": ex_ref}
-        )
+        if 'node' in self._schema["$defs"]:
+            self._indexes[ex_id][2] = len(
+                self._schema["$defs"]["node"]["properties"]["anyOf"])
+            self._schema["$defs"]["node"]["properties"]["anyOf"].append(
+                {"$ref": ex_ref})
 
     def add_extractor(self, extractor: AExtractor) -> None:
         """
@@ -413,10 +413,11 @@ class Parser():
             raise RuntimeError("Unknown Extractor")
         ex_id = extractor.id
         self._schema["$defs"][ex_id] = extractor.schema
-        self._input_file_patterns[self._indexes[ex_id][1]] = extractor.input_file_pattern
+        self._input_file_patterns[self._indexes[ex_id]
+                                  [1]] = extractor.input_file_pattern
         self._schema["$defs"]["node"]["properties"]["anyOf"][self._indexes[ex_id][2]] = \
             {"$ref": extractor.ref}
-        
+
     def remove_extractor(self, extractor: AExtractor) -> None:
         """
         Removes extractor from extractor list.
@@ -427,7 +428,8 @@ class Parser():
         ex_id = extractor.id
         self._extractors.pop(self._indexes[ex_id][0], None)
         self._input_file_patterns.pop(self._indexes[ex_id][1], None)
-        self._schema["$defs"]["node"]["properties"]["anyOf"].pop(self._indexes[ex_id][2], None)
+        self._schema["$defs"]["node"]["properties"]["anyOf"].pop(
+            self._indexes[ex_id][2], None)
         self._schema["$defs"].pop(ex_id, None)
         self._indexes.pop(ex_id, None)
         extractor._parsers.remove(self)
@@ -572,10 +574,11 @@ class Parser():
                 # Setup cache for storing
                 if ex_id not in self._cache:
                     self._cache[ex_id] = []
-                
+
                 if not self._lazy_load:
                     # self._update_metadata_tree_with_path_hierarchy(metadata, decompress_path, file_path)
-                    self._cache[ex_id].append((metadata, decompress_path, file_path))
+                    self._cache[ex_id].append(
+                        (metadata, decompress_path, file_path))
                 else:
                     meta_path = Path(str(file_path) + ".meta")
                     if meta_path.exists():
@@ -585,37 +588,171 @@ class Parser():
                     with meta_path.open("w") as mp:
                         dump(metadata, mp, indent=4)
                     meta_files.append(meta_path)
-                    self._cache[ex_id].append((meta_path, decompress_path, file_path))
+                    self._cache[ex_id].append(
+                        (meta_path, decompress_path, file_path))
 
         return meta_files
-    
-    def _update_metadata_tree_with_schema(self) -> None:
+
+    def _path_from_hierarchy(self, hierarchy) -> list:
+        return [x['dir'] for x in hierarchy if x['type'] == 'object']
+
+    def _update_metadata_tree_with_schema(self, hierarchy: list,
+                                          extractor: AExtractor,
+                                          prop_name: str) -> None:
         if len(self._cache) == 0:
-            raise RuntimeError("Metadata needs to be parsed before updating the tree")
-        # Explore schema
-        # When reference found
-        #ex_id = None # Get extractor id from defs
-        #for meta, decompress_path, file_path in self._cache[ex_id]:
-        #    if isinstance(meta, Path):
-        #        with meta.open("r") as f:
-        #            metadata = load(f)
-        #    elif isinstance(meta, dict):
-        #        metadata = meta
-        #    else:
-        #        raise TypeError("Incorrect meta object type")
-                    
+            raise RuntimeError(
+                "Metadata needs to be parsed before updating the tree")
         # Fill tree with metadata
-        
-        raise NotImplementedError
+
+        if 'properties' not in self.schema.keys():
+            raise RuntimeError(f'No properties found in schema')
+        # metadata = self._cache[extractor.id]
+
+        # Else we generate the hierarchy structure in the metadata tree
+        for meta_set in self._cache[extractor.id]:
+            if self._schema_node_matches_file_path(
+                    meta_set, self._path_from_hierarchy(hierarchy)):
+                iterator = iter(meta_set[2].relative_to(meta_set[1]).parts)
+                node = next(iterator)
+                relative_root = self.metadata
+                while node is not None:
+                    if node not in relative_root:
+                        relative_root[node] = {}
+                    relative_root = relative_root[node]
+                    try:
+                        node = next(iterator)
+                        # If relative paths are not used then they will contain previous node name in path
+                    except StopIteration:
+                        relative_root[node] = meta_set[0]
+                        break
+                else:
+                    # If break point not reached
+                    raise RuntimeError(
+                        "Could not update metadata tree based on file hierarchy. File: {file_path}"
+                    )
+
+    def _schema_node_matches_file_path(self, meta_tuple, schema_hierachy):
+        file_path_hierarchy = list(meta_tuple[2].relative_to(
+            meta_tuple[1]).parts[:-1])
+        file_path_hierarchy.reverse()
+        schema_hierachy.reverse()
+
+        if len(file_path_hierarchy) == len(schema_hierachy) == 0:
+            # In case there is no hierarchy then we just add the metadata in the root
+            return True
+        else:
+            schema_iterator = iter(schema_hierachy)
+            schema_dir = next(
+                schema_iterator)  # due to 'if' len(schema_hierachy) >= 1
+            for i, path_dir in enumerate(file_path_hierarchy):
+                # if len(file_path_hierarchy) < i + zz:
+                #     # file_path_hierachy at the end but schema_hierachy still going, no match
+                #     return False
+
+                if isinstance(schema_dir, str):
+                    if not schema_dir == path_dir:
+                        return False
+                    try:
+                        schema_dir = next(schema_iterator)
+                    except StopIteration:
+                        if i + 1 != len(file_path_hierarchy):
+                            return False
+                elif isinstance(schema_dir, re.Pattern):
+                    raise NotImplementedError()
+            return True
+
+    def _schema_iterator(self,
+                         properties: Optional[dict] = None,
+                         hierachy: Optional[list] = None):
+        """
+        schema iterator, returns nodes in schema.
+        a node is a entry in a property that itself has no further properties
+        TODO: handle 'pattern properties' and 'additional properties'
+        TODO: handle recursion, first detect recursion and break, second handle it
+        depending on path depth of files in corresponding extractors
+
+        if a ref entry is found
+        1. the extractors are checked, if the ref, matches any of them. if so, the metadata from
+        the extractor is placed at that point
+        2. if no extractor is found check the defs for the reference, if a match is found, put
+        the subschema from the defs in the schema and contiune searching
+        """
+        if properties is None:
+            properties = self.schema['properties']
+        if hierachy is None:
+            hierachy = []
+        for prop_name, prop in properties.items():
+            # if isinstance(prop, dict) and 'properties' == prop_name:
+            if 'properties' == prop_name:
+                yield from self._schema_iterator(prop, hierachy)
+            elif prop_name == '$ref':
+                matching_extractor = None
+                for ex in self.extractors:
+                    if ex.ref == prop[:len(ex.ref)]:
+                        matching_extractor = ex
+                if matching_extractor is not None:
+                    yield prop, hierachy, matching_extractor, prop_name
+                    break
+                else:
+                    for defs in self.schema['$defs']:
+                        defstring = f'#/$defs/{defs}'.strip()
+                        if defstring == prop[:len(defstring)]:
+                            subschem = self.schema['$defs'][defs.split('/')
+                                                            [-1]]
+                            node_dict = {
+                                'name':
+                                defs,
+                                'type':
+                                subschem['type']
+                                if 'type' in subschem.keys() else None,
+                                'description':
+                                subschem['description']
+                                if 'description' in subschem.keys() else None,
+                                'dir':
+                                defs if 'type' in subschem.keys()
+                                and subschem['type'] == 'object' else None,
+                            }
+                            yield from self._schema_iterator(
+                                subschem, hierachy + [node_dict])
+                            break
+            elif isinstance(prop, dict):
+                node_dict = {
+                    'name':
+                    prop_name,
+                    'type':
+                    prop['type'] if 'type' in prop.keys() else None,
+                    'description':
+                    prop['description']
+                    if 'description' in prop.keys() else None,
+                    'dir':
+                    prop_name if 'type' in prop.keys()
+                    and prop['type'] == 'object' else None,
+                }
+                yield from self._schema_iterator(prop, hierachy + [node_dict])
+            # do we want to include further information, e.g. static infos, description etc.? this could be possibly done here
+            # else:
+            #     yield prop, hierachy + [prop_name], matching_extractor
 
     def compile_metadata(self) -> dict:
         """
         Function to gather all metadata extracted using parsing function with lazy loading.
         """
         if len(self._cache) == 0:
-            raise RuntimeError("Metadata needs to be parsed before updating the tree")
+            raise RuntimeError(
+                "Metadata needs to be parsed before updating the tree")
         if self._use_schema:
-            self._update_metadata_tree_with_schema()
+            LOG.debug("    using schema")
+            iterator = self._schema_iterator()
+            while True:
+                try:
+                    _, hierarchy, extractor, prop_name = next(iterator)
+                    LOG.debug(
+                        f'        working on: {"/".join(self._path_from_hierarchy(hierarchy))}/{hierarchy[-1]["name"]}'
+                    )
+                    self._update_metadata_tree_with_schema(
+                        hierarchy, extractor, prop_name)
+                except StopIteration:
+                    break
         else:
             for ex_id in self._cache:
                 for meta, decompress_path, file_path in self._cache[ex_id]:
@@ -626,8 +763,9 @@ class Parser():
                         metadata = meta
                     else:
                         raise TypeError("Incorrect meta object type")
-                    
-                    self._update_metadata_tree_with_path_hierarchy(metadata, decompress_path, file_path)
+
+                    self._update_metadata_tree_with_path_hierarchy(
+                        metadata, decompress_path, file_path)
 
         return self.metadata
 
@@ -704,7 +842,8 @@ def _combine(parser1: Parser,
 
     if len(parser1.metadata) > 0 or len(parser2.metadata) > 0:
         raise NotImplementedError("Cannot yet Parser with existing metadata")
-        combined_parser.metadata = _merge_dicts(parser1.metadata, parser2.metadata)
+        combined_parser.metadata = _merge_dicts(parser1.metadata,
+                                                parser2.metadata)
 
     return combined_parser
 

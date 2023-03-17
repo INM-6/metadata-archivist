@@ -53,7 +53,7 @@ class yml_extractor(AExtractor):
                          input_file_pattern='*.yml',
                          schema={})
 
-    def extract(self, file_path) -> dict:
+    def extract(self, file_path):
         with open(file_path, "r") as stream:
             try:
                 out = yaml.safe_load(stream)
@@ -68,28 +68,22 @@ my_schema = {
     'description': 'my example schema',
     'type': 'object',
     'properties': {
-        'real_runtime': {
-            '$ref': '#/$defs/time_extractor/real'
-        },
-        'model_configuration': {
-            '$ref': '#/$defs/yml_extractor'
-        },
-        'further_info': {
+        'metadata_archive': {
             'type': 'object',
             'properties': {
-                'time_info': {
-                    '$ref': '#/$defs/time_extractor'
-                }
-            }
+                'program_execution': {
+                    'type': 'object',
+                    'properties': {
+                        'time_info': {
+                            '$ref': '#/$defs/time_extractor'
+                        },
+                        'model_configuration': {
+                            '$ref': '#/$defs/yml_extractor'
+                        },
+                    }
+                },
+            },
         },
-        'nested_other_block': {
-            'type': 'object',
-            'properties': {
-                'extended_info': {
-                    '$ref': '#/$defs/other_block'
-                }
-            }
-        }
     },
     '$defs': {
         'time_extractor': {
@@ -167,7 +161,6 @@ my_schema = {
     }
 }
 
-my_parser = Parser(
-    extractors=[time_extractor(), yml_extractor()],
-    metadata_tree='from_schema',  #   'from_schema' 'from_dir_tree'
-    schema=my_schema)
+my_parser = Parser(extractors=[time_extractor(),
+                               yml_extractor()],
+                   schema=my_schema)

@@ -654,11 +654,16 @@ class Parser():
                 yield from self._schema_iterator(prop,
                                                  hierachy,
                                                  use_regex=True)
+            elif 'unevaluatedProperties' == prop_name and prop:
+                yield from self._schema_iterator(prop, hierachy)
+            elif 'additionalProperties' == prop_name and prop:
+                yield from self._schema_iterator(prop, hierachy)
             elif prop_name == '$ref':
                 matching_extractor = None
                 for ex in self.extractors:
                     if ex.ref == prop[:len(ex.ref)]:
                         matching_extractor = ex
+                        break
                 if matching_extractor is not None:
                     yield prop, hierachy, matching_extractor, prop_name
                     break

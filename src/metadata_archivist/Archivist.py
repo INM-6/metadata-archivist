@@ -79,20 +79,25 @@ class Archivist():
             True,  # TODO: change to False after development phase is done. 
             "auto_cleanup": True,
             "verbose":
-            True  # TODO: change to False after development phase is done.
+            'debug'  # TODO: change to None after development phase is done.
         }
         key_list = list(self.config.keys())
 
         # Init logger object with verbose configuration
         if "verbose" in kwargs:
-            if not isinstance(kwargs["verbose"], bool):
-                raise RuntimeError(f"Incorrect value for argument: verbose")
+            if kwargs["verbose"] is not None and kwargs["verbose"] not in [
+                    'debug', 'info'
+            ]:
+                raise RuntimeError(
+                    f"Incorrect value for argument: verbose, expected None, debug or info"
+                )
             self.config["verbose"] = kwargs["verbose"]
             key_list.remove("verbose")
             kwargs.pop("verbose", None)
 
-        if self.config["verbose"]:
+        if self.config["verbose"] == 'info':
             set_verbose()
+        elif self.config["verbose"] == 'debug':
             set_debug()
 
         # Init rest of config params
@@ -106,7 +111,7 @@ class Archivist():
             else:
                 LOG.info(f"Unused argument: {key}")
 
-        if self.config["verbose"]:
+        if self.config["verbose"] in ['debug', 'info']:
             for key in key_list:
                 LOG.info(
                     f"No argument found for: '{key}' initializing by default: '{self.config[key]}'"
@@ -200,7 +205,8 @@ class Archivist():
         LOG.info(f'''Exporting metadata...''')
         self.exporter.export(metadata,
                              self.metadata_output_file,
-                             verb=self.config["verbose"])
+                             verb=(self.config["verbose"] in ['debug',
+                                                              'info']))
         LOG.info("Done!")
 
         return self.metadata_output_file

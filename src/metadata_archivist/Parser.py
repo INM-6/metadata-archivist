@@ -835,4 +835,18 @@ def _combine(parser1: Parser,
     return combined_parser
 
 
+# def defs2dict(defs, search_dict: Optional[dict] = None):
+#     sep = '/'
+#     if sep not in defs and search_dict is None:
+#         return defs
+#     elif sep not in defs and search_dict:
+#         return search_dict[defs]
+#     key, val = defs.split(sep, 1)
+#     if key == '#':
+#         key, val = val.split(sep, 1)
+#     if search_dict is None:
+#         return {key: defs2dict(val, None)}
+#     else:
+#         return {key: defs2dict(val, search_dict[key])}
+
 Parser.combine = _combine

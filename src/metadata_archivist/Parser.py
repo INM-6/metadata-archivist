@@ -1,10 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-
-Extractor class to get metadata from file.
-Parser class for handling Extractors.
-To be specialized by custom parsers made by users.
 Authors: Jose V., Matthias K.
 
 """

@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+
+Extractor class to get metadata from file.
+Parser class for handling Extractors.
+To be specialized by custom parsers made by users.
+
 Authors: Jose V., Matthias K.
 
 """
-
 import re
 import abc  # Abstract class base infrastructure
 
@@ -11,7 +17,7 @@ import jsonschema  # to validate extracted data
 from json import dump, load
 from pathlib import Path
 from typing import Optional, List, Tuple, NoReturn
-from collections import Iterable
+from collections.abc import Iterable
 
 from .Logger import LOG
 
@@ -258,7 +264,18 @@ class Parser():
         # Indexing is done storing a triplet with extractors, patterns, schema indexes
         self._indexes = {}
 
+        # Set lazy loading
+        self._lazy_load = lazy_load
+
+        # Used for updating/removing extractors
+        # Indexing is done storing a triplet with extractors, patterns, schema indexes
+        self._indexes = {}
+
         # For extractor result caching
+        self._cache = {}
+
+        # Public
+        self.metadata = {}
 
         self.combine = lambda parser2, schema=None: _combine(
             parser1=self, parser2=parser2, schema=schema)

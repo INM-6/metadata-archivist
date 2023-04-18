@@ -177,7 +177,8 @@ class Archivist():
         if len(self._cache["meta_files"]) == 0:
             metadata = self.get_metadata()
         else:
-            metadata = None
+            raise NotImplementedError()
+            # metadata = None
 
         return metadata
 

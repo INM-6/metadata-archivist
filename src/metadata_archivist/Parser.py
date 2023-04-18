@@ -511,7 +511,7 @@ class Parser():
                 )
 
     def parse_files(self, decompress_path: Path,
-                    file_paths: List[Path]) -> Tuple[dict, List[Path]]:
+                    file_paths: List[Path]) -> List[Path]:
         """
         Add metadata from input files to metadata object,
         usually by sending calling all extract's linked to the file-name or regexp of files names.
@@ -563,14 +563,14 @@ class Parser():
         return meta_files
 
     def _path_from_hierarchy(self, hierarchy) -> list:
-        return [x['dir'] for x in hierarchy if x['type'] == 'object']
+        return [
+            x['dir'] for x in hierarchy
+            if x['type'] == 'object' and x['dir'] is not None
+        ]
 
     def _update_metadata_tree_with_schema(self, hierarchy: list,
-                                          extractor: AExtractor,
+                                          extractor_list: List[AExtractor],
                                           prop_name: str) -> None:
-        if len(self._cache) == 0:
-            raise RuntimeError(
-                "Metadata needs to be parsed before updating the tree")
         # Fill tree with metadata
 
         if 'properties' not in self.schema.keys():
@@ -578,29 +578,39 @@ class Parser():
         # metadata = self._cache[extractor.id]
 
         # Else we generate the hierarchy structure in the metadata tree
-        for meta_set in self._cache[extractor.id]:
-            if self._schema_node_matches_file_path(
-                    meta_set, self._path_from_hierarchy(hierarchy)):
-                iterator = iter(meta_set[2].relative_to(meta_set[1]).parts)
-                node = next(iterator)
-                relative_root = self.metadata
-                while node is not None:
-                    if node not in relative_root:
-                        relative_root[node] = {}
-                    relative_root = relative_root[node]
-                    try:
-                        node = next(iterator)
-                        # If relative paths are not used then they will contain previous node name in path
-                    except StopIteration:
-                        relative_root[node] = meta_set[0]
-                        break
-                else:
-                    # If break point not reached
-                    raise RuntimeError(
-                        "Could not update metadata tree based on file hierarchy. File: {file_path}"
-                    )
+        for extractor in extractor_list:
+            for meta_set in self._cache[extractor.id]:
+                # check which metadata sets extracted by the extractor match the path in the metadata tree
+                if self._schema_node_matches_file_path(
+                        meta_set, self._path_from_hierarchy(hierarchy)):
+                    iterator = iter(meta_set[2].relative_to(meta_set[1]).parts)
+                    node = next(iterator)
+                    relative_root = self.metadata
+                    while node is not None:
+                        if node not in relative_root:
+                            relative_root[node] = {}
+                        relative_root = relative_root[node]
+                        try:
+                            node = next(iterator)
+                            # If relative paths are not used then they will contain previous node name in path
+                        except StopIteration:
+                            relative_root[node] = meta_set[0]
+                            break
+                    else:
+                        # If break point not reached
+                        raise RuntimeError(
+                            "Could not update metadata tree based on file hierarchy. File: {file_path}"
+                        )
 
-    def _schema_node_matches_file_path(self, meta_tuple, schema_hierachy):
+    def _schema_node_matches_file_path(self, meta_tuple,
+                                       schema_hierachy) -> bool:
+        """TODO describe function
+
+        :param meta_tuple: (metadata, decompress_path, file_path)
+        :param schema_hierachy: list representing the path in the metadata schema
+        :returns: bool
+
+        """
         file_path_hierarchy = list(meta_tuple[2].relative_to(
             meta_tuple[1]).parts[:-1])
         file_path_hierarchy.reverse()
@@ -642,9 +652,9 @@ class Parser():
                          use_regex: Optional[bool] = False):
         """
         schema iterator, returns nodes in schema.
-        a node is a entry in a property that itself has no further properties
         TODO: handle 'pattern properties' and 'additional properties'
         TODO: handle recursion, first detect recursion and break, second handle it
+        TODO: do we want statick entries in the schema to be parsed? likely yes, we need to include those here then
         depending on path depth of files in corresponding extractors
 
         if a ref entry is found
@@ -670,66 +680,82 @@ class Parser():
             elif 'additionalProperties' == prop_name and prop:
                 yield from self._schema_iterator(prop, hierachy)
             elif prop_name == '$ref':
-                matching_extractor = None
-                for ex in self.extractors:
-                    if ex.ref == prop[:len(ex.ref)]:
-                        matching_extractor = ex
-                        break
-                if matching_extractor is not None:
+                # search for extractor via reference
+                # TODO: are multiple extracors possible here???
+                matching_extractor = [
+                    ex for ex in self.extractors
+                    if ex.ref == prop[:len(ex.ref)]
+                ]
+                if matching_extractor:
+                    # for ex in matching_extractor:
+                    #     yield prop, hierachy, matching_extractor, prop_name
+                    # break
                     yield prop, hierachy, matching_extractor, prop_name
-                    break
-                else:
+                elif prop[:8] == '#/$defs/':
+                    # TODO: check if this elif leads to the extracotrs defs being used instead of
+                    # the ones in the parsers schema. what should be prefered? likely the parsers schema
                     for defs in self.schema['$defs']:
                         defstring = f'#/$defs/{defs}'.strip()
                         if defstring == prop[:len(defstring)]:
                             subschem = self.schema['$defs'][defs.split('/')
                                                             [-1]]
-                            node_dict = {
-                                'name':
-                                defs,
-                                'type':
-                                subschem['type']
-                                if 'type' in subschem.keys() else None,
-                                'description':
-                                subschem['description']
-                                if 'description' in subschem.keys() else None,
-                                'dir':
-                                defs if 'type' in subschem.keys()
-                                and subschem['type'] == 'object' else None,
-                            }
-                            if use_regex:
-                                node_dict['dir'] = re.compile(
-                                    defs
-                                ) if 'type' in subschem.keys(
-                                ) and subschem['type'] == 'object' else None
-                            else:
-                                node_dict[
-                                    'dir'] = defs if 'type' in subschem.keys(
-                                    ) and subschem['type'] == 'object' else None
+                            node_dict = self._get_node_dict(
+                                defs, subschem, use_regex)
                             yield from self._schema_iterator(
                                 subschem, hierachy + [node_dict])
                             break
-            elif isinstance(prop, dict):
-                node_dict = {
-                    'name':
-                    prop_name,
-                    'type':
-                    prop['type'] if 'type' in prop.keys() else None,
-                    'description':
-                    prop['description']
-                    if 'description' in prop.keys() else None,
-                }
-                if use_regex:
-                    node_dict['dir'] = re.compile(
-                        prop_name) if 'type' in prop.keys(
-                        ) and prop['type'] == 'object' else None
+                elif prop[:13] == '#/properties/':
+                    # for referencing other properties, basically links
+                    # find extractor via path
+                    nodes = prop.split('/')
+                    if not nodes:
+                        raise RuntimeError(f'unknown ref: {prop}')
+                    path_hierachy = [
+                        self._get_node_dict(xx, self.schema,
+                                            xx == 'patternProperties')
+                        for xx in nodes
+                    ]
+                    self._path_from_hierarchy(path_hierachy)
                 else:
-                    node_dict['dir'] = prop_name if 'type' in prop.keys(
-                    ) and prop['type'] == 'object' else None
+                    raise NotImplementedError(
+                        f'unkown reference, please open an issue: {prop}')
+            elif isinstance(prop, dict):
+                node_dict = self._get_node_dict(prop_name, prop, use_regex)
                 yield from self._schema_iterator(prop, hierachy + [node_dict])
             # do we want to include further information, e.g. static infos, description etc.? this could be possibly done here
             # else:
             #     yield prop, hierachy + [prop_name], matching_extractor
+
+    def _get_node_dict(self, name: str, schem: dict, use_regexp: bool) -> dict:
+        """the node dict is a standardized dict used in the hierachy list.
+        the hierachy list describes the path to a node in the metadata dict.
+        each entry in that path list is a node dict
+        create dict describing the node. contains information taken from the schema
+
+        :param name: node name in the schema
+        :param schem: schema
+        :param use_regexp: bool, use re for directory information
+        :returns: 
+
+        """
+        node_dict = {
+            'name':
+            name,
+            'type':
+            schem['type'] if 'type' in schem.keys() else None,
+            'description':
+            schem['description'] if 'description' in schem.keys() else None,
+            # 'dir':
+            # name
+            # if 'type' in schem.keys() and schem['type'] == 'object' else None,
+        }
+        if use_regexp:
+            node_dict['dir'] = re.compile(name) if 'type' in schem.keys(
+            ) and schem['type'] == 'object' else None
+        else:
+            node_dict['dir'] = name if 'type' in schem.keys(
+            ) and schem['type'] == 'object' else None
+        return node_dict
 
     def compile_metadata(self) -> dict:
         """
@@ -846,18 +872,17 @@ def _combine(parser1: Parser,
     return combined_parser
 
 
-# def defs2dict(defs, search_dict: Optional[dict] = None):
-#     sep = '/'
-#     if sep not in defs and search_dict is None:
-#         return defs
-#     elif sep not in defs and search_dict:
-#         return search_dict[defs]
-#     key, val = defs.split(sep, 1)
-#     if key == '#':
-#         key, val = val.split(sep, 1)
-#     if search_dict is None:
-#         return {key: defs2dict(val, None)}
-#     else:
-#         return {key: defs2dict(val, search_dict[key])}
+def defs2dict(defs, search_dict: Optional[dict] = None):
+    sep = '/'
+    if sep not in defs and search_dict is None:
+        return defs
+    elif sep not in defs and search_dict:
+        return search_dict[defs]
+    key, val = defs.split(sep, 1)
+    if search_dict is None:
+        return {key: defs2dict(val, None)}
+    else:
+        return {key: defs2dict(val, search_dict[key])}
+
 
 Parser.combine = _combine

@@ -102,47 +102,47 @@ my_schema = {
     'properties': {
         'metadata_archive': {
             'type': 'object',
-            'patternProperties': {
-                "^basin_": {
-                    "type": "object",
-                    "properties": {
-                        "basin_characteristics": {
-                            "$ref": "#/$defs/basin_character_extractor"
-                        },
-                        "simulation": {
-                            'type': 'object',
-                            'properties': {
-                                'time_info': {
-                                    '$ref': '#/$defs/time_extractor'
-                                },
-                                'model_configuration': {
-                                    '$ref': '#/$defs/yml_extractor'
-                                },
-                            }
+            'pattern': {
+                'type': 'object',
+                'patternProperties': {
+                    "^basin_": {
+                        "!varname": 'basin',
+                        "type": "object",
+                        'description': 'some description',
+                        "properties": {
+                            "basin_name": {
+                                "!extractor": {
+                                    'name': 'basin_character_extractor',
+                                    'path': '*/{basin}/basin.yml',
+                                    'keys': ['real', 'nested/sys']
+                                }
+                            },
+                            "$ref": "#/$defs/some_subschema"
+                        }
+                    },
+            "^station_": {
+                "type": "object",
+                "properties": {
+                    "basin_characteristics": {
+                        "$ref": "#/$defs/station_character_extractor"
+                    },
+                    "simulation": {
+                        'type': 'object',
+                        'properties': {
+                            'time_info': {
+                                '$ref': '#/$defs/time_extractor'
+                            },
+                            'model_configuration': {
+                                '$ref': '#/$defs/yml_extractor'
+                            },
                         }
                     }
-                },
-                "^station_": {
-                    "type": "object",
-                    "properties": {
-                        "basin_characteristics": {
-                            "$ref": "#/$defs/station_character_extractor"
-                        },
-                        "simulation": {
-                            'type': 'object',
-                            'properties': {
-                                'time_info': {
-                                    '$ref': '#/$defs/time_extractor'
-                                },
-                                'model_configuration': {
-                                    '$ref': '#/$defs/yml_extractor'
-                                },
-                            }
-                        }
-                    }
+
+            },
                 }
             }
-        },
+            },
+        }
     },
     '$defs': {
         'time_extractor': {
@@ -202,6 +202,19 @@ my_schema = {
                     'type': 'string',
                     'description': 'this as well'
                 }
+            }
+        },
+        'a_extractor': {
+            'type': 'object',
+            'patternProperties': {
+                '^I': {
+                    'type': 'integer',
+                    'description': 'a parameter'
+                },
+                '^S': {
+                    'type': 'string',
+                    'description': 'a description'
+                },
             }
         },
         'basin_character_extractor': {

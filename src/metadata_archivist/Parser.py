@@ -551,59 +551,73 @@ class Parser():
 
                 if not self._lazy_load:
                     # self._update_metadata_tree_with_path_hierarchy(metadata, decompress_path, file_path)
-                    self._cache[ex_id] = {'metadata': metadata,
-                                          'decompress_path': decompress_path,
-                                          'file_path': file_path}
+                    self._cache[ex_id] = {
+                        'metadata': metadata,
+                        'decompress_path': decompress_path,
+                        'file_path': file_path
+                    }
                 else:
-                    self._cache[ex_id] = {'decompress_path': decompress_path,
-                                          'file_path': file_path}
+                    self._cache[ex_id] = {
+                        'decompress_path': decompress_path,
+                        'file_path': file_path
+                    }
                     with self._cache[ex_id][-1].meta_path.open("w") as mp:
                         dump(metadata, mp, indent=4)
                     meta_files.append(self._cache[ex_id][-1].meta_path)
 
         return meta_files
 
-    def _path_from_hierarchy(self, hierarchy) -> list:
-        return [
-            x['dir'] for x in hierarchy
-            if x['type'] == 'object' and x['dir'] is not None
-        ]
+    # def _path_from_hierarchy(self, hierarchy) -> list:
+    # TODO: still needed? currently dir is not in hierachy
+    #     return [
+    #         x['dir'] for x in hierarchy
+    #         if x['type'] == 'object' and x['dir'] is not None
+    #     ]
 
-    def _update_metadata_tree_with_schema(self, hierarchy: list,
-                                          mf_path_regexp) -> None:
+    def _update_metadata_tree_with_schema(self, hierarchy) -> None:
         # Fill tree with metadata
 
-        if 'properties' not in self.schema.keys():
-            raise RuntimeError(f'No properties found in schema')
-        # metadata = self._cache[extractor.id]
-
         # Else we generate the hierarchy structure in the metadata tree
-        if isinstance(hierarchy[-1], ExtractorDirective):
-            extractor_directive = hierarchy.pop(-1)
-            extractor = self.get_extractor(extractor_directive.name)
+        if hierarchy.extractor_name is not None:
+            LOG.debug(f'        working on extractor: {hierarchy.extractor_name}')
+            LOG.debug(f'        with path: {hierarchy._hierachy[-1].path} and re`s: {hierarchy.regexps} ')
+        # if isinstance(hierarchy[-1], ExtractorDirective):
+            extractor = self.get_extractor(
+                hierarchy.extractor_name
+            )  # TODO: reconcider: we should use id here
             for meta_set in self._cache[extractor.id]:
+                LOG.debug(f'            checking available metadata: {meta_set.rel_path}')
                 # check which metadata sets extracted by the extractor match the path in the metadata tree
-                if mf_path_regexp.fullmatch(meta_set.rel_path):
+                # if dir_names_dict.fullmatch(extractor_directive, meta_set.rel_path):
+                if hierarchy.match_path(meta_set.rel_path):
+                    LOG.debug(f'            found metadata: {meta_set.metadata}')
                     # if self._schema_node_matches_file_path(
                     #         meta_set, self._path_from_hierarchy(hierarchy)):
-                    iterator = iter(meta_set.rel_path.parts)
-                    node = next(iterator)
                     relative_root = self.metadata
-                    while node is not None:
-                        if node not in relative_root:
-                            relative_root[node] = {}
-                        relative_root = relative_root[node]
-                        try:
-                            node = next(iterator)
-                            # If relative paths are not used then they will contain previous node name in path
-                        except StopIteration:
-                            relative_root[node] = meta_set.metadata
-                            break
-                    else:
-                        # If break point not reached
-                        raise RuntimeError(
-                            "Could not update metadata tree based on file hierarchy. File: {file_path}"
-                        )
+                    for node in hierarchy._hierachy:
+                        if node.add_to_metadata:
+                            if node.name not in relative_root.keys():
+                                relative_root[node.name] = {}
+                            relative_root = relative_root[node.name]
+                    relative_root[hierarchy.extractor_name] = meta_set.metadata
+                    # iterator = iter(meta_set.rel_path.parts)
+                    # node = next(iterator)
+                    # while node is not None:
+                    #     if node not in relative_root:
+                    #         relative_root[node] = {}
+                    #     relative_root = relative_root[node]
+
+                    #     try:
+                    #         node = next(iterator)
+                    #         # If relative paths are not used then they will contain previous node name in path
+                    #     except StopIteration:
+                    #         relative_root[node] = meta_set.metadata
+                    #         break
+                    # else:
+                    #     # If break point not reached
+                    #     raise RuntimeError(
+                    #         "Could not update metadata tree based on file hierarchy. File: {file_path}"
+                    #     )
         else:
             raise NotImplementedError(
                 'currently only metadata from extractors can be added to the schema'
@@ -656,24 +670,30 @@ class Parser():
 
     def _schema_iterator(self,
                          properties: Optional[dict] = None,
-                         hierachy: Optional[list] = None,
+                         hierachy = None,
                          prop_type: Optional[str] = None,
-                         prop_name: Optional[str] = None,
-                         mf_path_regexp: Optional[list] = None):
+                         prop_name: Optional[str] = None):
         """
         schema iterator, returns nodes in schema.
         """
+        if self.schema is None:
+            raise RuntimeError(
+                f'A schema must be specified before starting the _schema_iterator'
+            )
         # --- initialize variables if none are given
         if properties is None:
+            if 'properties' not in self.schema.keys() or not isinstance(
+                    self.schema['properties'], dict):
+                raise RuntimeError(
+                    f'The root schema is expected to contain a dict properites: {self.schema}'
+                )
             properties = self.schema['properties']
             prop_name = 'properties'
         if hierachy is None:
-            hierachy = []
-        if mf_path_regexp is None:
-            mf_path_regexp = {}
+            hierachy = Hierachy()
         # --- check for archivist directives
         if '!varname' in properties.keys():
-            mf_path_regexp[properties['!varname']] = prop_name
+            hierachy.add(DirectoryDirective(varname=properties['!varname'], regexp=prop_name))
         for prop_name, prop in properties.items():
             if prop_name in [
                     'properties', 'unevaluatedProperties',
@@ -684,10 +704,10 @@ class Parser():
                 # patternprotperties: are matched for dirname only, * is allows at beginning of path only
                 # path is split on / and each component is matched in revesed order.
                 yield from self._schema_iterator(prop, hierachy, prop_type,
-                                                 prop_name, mf_path_regexp)
+                                                 prop_name)
             elif prop_name == '!extractor':
-                hierachy.appen(ExtractorDirective(**prop))
-                yield prop, hierarchy, mf_path_regexp
+                hierachy.add(ExtractorDirective(**prop))
+                yield prop, hierachy
             elif prop_name == '$ref':
                 if prop[:8] == '#/$defs/':
                     # search defs for corresponding schema and apply it
@@ -696,61 +716,55 @@ class Parser():
                         if defstring == prop[:len(defstring)]:
                             subschem = self.schema['$defs'][defs.split('/')
                                                             [-1]]
-                            node_dict = self._get_node_dict(defs, subschem)
                             yield from self._schema_iterator(
-                                subschem, hierachy + [node_dict], prop_type,
-                                prop_name, mf_path_regexp)
+                                subschem, hierachy, prop_type,
+                                prop_name)
                             break
                 elif prop[:13] == '#/properties/':
                     # for referencing other properties, basically links
                     nodes = prop.split('/')
                     if not nodes:
                         raise RuntimeError(f'unknown ref: {prop}')
-                    path_hierachy = [
-                        self._get_node_dict(xx, self.schema,
-                                            xx == 'patternProperties')
-                        for xx in nodes
-                    ]
-                    self._path_from_hierarchy(path_hierachy)
+                    # path_hierachy = [
+                    #     self._get_node_dict(xx, self.schema) for xx in nodes
+                    # ]
+                    # self._path_from_hierarchy(path_hierachy)
                 else:
                     raise NotImplementedError(
                         f'unkown reference, please open an issue: {prop}')
             elif isinstance(prop, dict) and prop_name != '!extractor':
-                node_dict = self._get_node_dict(prop_name, prop)
-                yield from self._schema_iterator(prop, hierachy + [node_dict],
-                                                 prop_type, prop_name,
-                                                 mf_path_regexp)
+                yield from self._schema_iterator(prop, hierachy,
+                                                 prop_type, prop_name)
 
-    def _get_node_dict(self, name: str, schem: dict, use_regexp: bool) -> dict:
-        """the node dict is a standardized dict used in the hierachy list.
-        the hierachy list describes the path to a node in the metadata dict.
-        each entry in that path list is a node dict
-        create dict describing the node. contains information taken from the schema
+    # def _get_node_dict(self,
+    #                    name: str,
+    #                    schem: dict,
+    #                    add_to_tree: Optional[bool] = False,
+    #                    **kwargs) -> dict:
+    #     """the node dict is a standardized dict used in the hierachy list.
+    #     the hierachy list describes the path to a node in the metadata dict.
+    #     each entry in that path list is a node dict
+    #     create dict describing the node. contains information taken from the schema
 
-        :param name: node name in the schema
-        :param schem: schema
-        :param use_regexp: bool, use re for directory information
-        :returns: 
+    #     :param name: node name in the schema
+    #     :param schem: schema
+    #     :param use_regexp: bool, use re for directory information
+    #     :returns: 
 
-        """
-        node_dict = {
-            'name':
-            name,
-            'type':
-            schem['type'] if 'type' in schem.keys() else None,
-            'description':
-            schem['description'] if 'description' in schem.keys() else None,
-            # 'dir':
-            # name
-            # if 'type' in schem.keys() and schem['type'] == 'object' else None,
-        }
-        if use_regexp:
-            node_dict['dir'] = re.compile(name) if 'type' in schem.keys(
-            ) and schem['type'] == 'object' else None
-        else:
-            node_dict['dir'] = name if 'type' in schem.keys(
-            ) and schem['type'] == 'object' else None
-        return node_dict
+    #     """
+    #     node_dict = {
+    #         'name':
+    #         name,
+    #         'add_to_tree':
+    #         add_to_tree,
+    #         'type':
+    #         schem['type'] if 'type' in schem.keys() else None,
+    #         'description':
+    #         schem['description'] if 'description' in schem.keys() else None,
+    #     }
+    #     for k, v in kwargs.items():
+    #         node_dict[k] = v
+    #     return node_dict
 
     def compile_metadata(self) -> dict:
         """
@@ -764,26 +778,125 @@ class Parser():
             iterator = self._schema_iterator()
             while True:
                 try:
-                    _, hierarchy, mf_path_regexp = next(iterator)
-                    LOG.debug(
-                        f'        working on: {self._path_from_hierarchy(hierarchy)}/{hierarchy[-1]["name"]}'
-                    )
+                    _, hierarchy = next(iterator)
+                    # LOG.debug(
+                    #     f'        working on: {self._path_from_hierarchy(hierarchy)}/{hierarchy[-1]["name"]}'
+                    # )
                     self._update_metadata_tree_with_schema(
-                        hierarchy, mf_path_regexp)
+                        hierarchy)
                 except StopIteration:
                     break
         else:
             for extractor in self._cache:
                 for meta_set in extractor:
-                # for meta, decompress_path, file_path in self._cache[ex_id]:
+                    # for meta, decompress_path, file_path in self._cache[ex_id]:
                     if meta_set.metadata is None:
                         with meta_set.meta_path.open("r") as f:
                             meta_set.add_metadata(load(f))
 
                     self._update_metadata_tree_with_path_hierarchy(
-                        meta_set.metadata, meta_set.decompress_path, meta_set.file_path)
+                        meta_set.metadata, meta_set.decompress_path,
+                        meta_set.file_path)
 
         return self.metadata
+
+class Hierachy:
+    """
+    helperclass, representing the hierachy in the schema
+    """
+    def __init__(self):
+        self._hierachy = []
+
+    def add(self, entry):
+        self._hierachy.append(entry)
+
+    @property
+    def extractor_name(self):
+        if isinstance(self._hierachy[-1], ExtractorDirective):
+            return self._hierachy[-1].name
+        else:
+            return None
+
+    @property
+    def regexps(self):
+        return_list = []
+        for y in self._hierachy[:-1]:
+            if isinstance(y, DirectoryDirective):
+                return_list.append(y.regexp)
+        return return_list
+
+    def match_path(self, file_path: Path):
+        '''
+        check if given file_path matches the file path of the directive by:
+        - matching directory by directory in reverse order
+        - if the Directive has not path it always matches
+        '''
+        if isinstance(self._hierachy[-1], ExtractorDirective):
+            directive = self._hierachy[-1]
+            if not directive.path:
+                return True
+            else:
+                directive_path_list = list(
+                    Path(directive.path).parts)
+                directive_path_list.reverse()
+                file_path_list = list(file_path.parts)
+                file_path_list.reverse()
+                for i, x in enumerate(directive_path_list):
+                    if x == '*' and (i + 1) == len(directive_path_list):
+                        return True
+                    elif x == '*' and not re.match('.*', file_path_list[i]):
+                        return False
+                    elif re.fullmatch('.*{[a-zA-Z0-9_]*}.*', x):
+                        for j, y in enumerate( self._hierachy[:-1] ):
+                            if isinstance(y, DirectoryDirective) and x.find('{' + f'{y.varname}' + '}') != -1:
+                                # TODO: add multiple regexp for x
+                                if not re.match(x.format(**{ y.varname:y.regexp }), file_path_list[i]):
+                                    return False
+                                else:
+                                    self._hierachy[j].name = file_path_list[i]
+                    elif not re.match(x, file_path_list[i]):
+                        return False
+                return True
+        else:
+            raise NotImplementedError(
+                'currently only metadata from extractors can be added to the schema'
+            )
+
+
+class HierachyEntry:
+    """
+    entry in the Hierachy
+    """
+    def __init__(self, add_to_metadata: Optional[bool]= False, **kwargs):
+        self._add_to_metadata = add_to_metadata
+        if 'name' in kwargs.keys():
+            self.name = kwargs['name']
+        else:
+            self.name = None
+
+    @property
+    def add_to_metadata(self):
+        if self.name is None:
+            raise RuntimeError(f'add_to_metadata is set to True but name is None')
+        else:
+            return self.name
+
+class DirectoryDirective(HierachyEntry):
+    def __init__(self, varname, regexp, add_to_metadata: Optional[bool] = True, **kwargs):
+        super().__init__(add_to_metadata, **kwargs)
+        self.varname = varname
+        self.regexp = regexp
+
+class ExtractorDirective(HierachyEntry):
+    """
+    helperclass to handle extractor directives in archivist schema
+    """
+
+    def __init__(self,name,  add_to_metadata: Optional[bool] = False, **kwargs):
+        super().__init__(add_to_metadata, **kwargs)
+        self.name = name
+        self.path = kwargs.pop('path', None)
+
 
 
 class Cache:
@@ -818,6 +931,7 @@ class Cache:
 
     def is_empty(self):
         return len(self._cache) == 0
+
 
 class _CacheExtractor:
     """
@@ -854,7 +968,7 @@ class _CacheEntry:
         self.metadata = metadata
 
     @property
-    def rel_path(self):
+    def rel_path(self) -> Path:
         return self.file_path.relative_to(self.decompress_path)
 
     @property
@@ -867,36 +981,6 @@ class _CacheEntry:
                 raise FileExistsError(
                     f"Unable to save extracted metadata: {_meta_path} exists")
             return _meta_path
-
-
-class ExtractorDirective:
-    """
-    helperclass to handle extractor directives in archivist schema
-    """
-
-    def __init__(self, name, **kwargs):
-        self.name = name
-        self.kwargs = kwargs
-        if 'path' in kwargs.keys():
-            path = kwargs['path'].count('*')
-            if not ((1 == path.count('*') and '*' == path[0])
-                    or 0 == path.count('*')):
-                raise RuntimeError(
-                    f'''A path passed to a extractor directive may only use "*"
-                at the beginning of the path, not:
-                {path}''')
-
-    def match_path(self, file_path: Path, format_dict: dict):
-        '''
-        check if given file_path matches the file path of the directive by:
-        - matching directory by directory in reverse order
-        - if the Directive has not path it always matches
-        '''
-        if not 'path' in self.kwargs:
-            return True
-        else:
-            directive_path_string = self.kwargs['path'].format(**format_dict)
-            return file_path.match(directive_path_string)
 
 
 def _merge_dicts(dict1: dict, dict2: dict) -> dict:

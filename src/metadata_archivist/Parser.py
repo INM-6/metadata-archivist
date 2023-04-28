@@ -222,6 +222,31 @@ class AExtractor(abc.ABC):
     def __hash__(self) -> int:
         return hash(self._name)
 
+    def filter_metadata(self, metadata, keys, **kwargs):
+        if 'add_description' in kwargs.keys():
+            add_description = kwargs['add_description']
+        else:
+            add_description = False
+        metadata_copy = metadata.copy()
+        if keys is None:
+            return metadata_copy
+        else:
+            return_dict = {}
+            for kk in keys:
+                kk_list = kk.split('/')
+                dd = return_dict
+                if len(kk_list) > 1:
+                    for node in kk_list[:-1]:
+                        if node not in dd.keys():
+                            dd[node] = {}
+                if add_description:
+                    schem_entry = deep_get(self._schema['properties'], *kk.split('/'))
+                    if schem_entry is not None and 'description' in schem_entry.keys():
+                        dd[kk_list[-1]] = {'value': deep_get(metadata_copy, *kk.split('/')),
+                                           'description' : schem_entry['description']}
+                else:
+                    dd[kk_list[-1]] = deep_get(metadata_copy, *kk.split('/'))
+            return return_dict
 
 class Parser():
     """Parser
@@ -593,13 +618,16 @@ class Parser():
                     LOG.debug(f'            found metadata: {meta_set.metadata}')
                     # build dict-structure following the structure passed by the hierachy
                     relative_root = self.metadata
-                    for node in hierarchy._hierachy:
+                    for node in hierarchy._hierachy[:-1]:
                         if node.add_to_metadata:
                             if node.name not in relative_root.keys():
                                 relative_root[node.name] = {}
+                                if node.description is not None:
+                                    relative_root[node.name]['description'] = node.description
                             relative_root = relative_root[node.name]
-                    # relative_root[hierarchy.extractor_name] = meta_set.metadata
-                    relative_root[hierarchy.extractor_name] = hierarchy.extractor_directive.parse_metadata(meta_set.metadata)
+                    relative_root.update(extractor.filter_metadata(meta_set.metadata,
+                                                                   hierarchy.extractor_directive.keys,
+                                                                   add_description = False) )
         else:
             raise NotImplementedError(
                 'currently only metadata from extractors can be added to the schema'
@@ -789,6 +817,10 @@ class HierachyEntry:
             self.name = kwargs['name']
         else:
             self.name = None
+        if 'description' in kwargs.keys():
+            self.description = kwargs['description']
+        else:
+            self.description = None
 
     @property
     def add_to_metadata(self):
@@ -814,20 +846,20 @@ class ExtractorDirective(HierachyEntry):
         self.path = kwargs.pop('path', None)
         self.keys = kwargs.pop('keys', None)
 
-    def parse_metadata(self, metadata):
-        if self.keys is None:
-            return metadata
-        else:
-            return_dict = {}
-            for kk in self.keys:
-                kk_list = kk.split('/')
-                dd = return_dict
-                if len(kk_list) > 1:
-                    for node in kk_list[:-1]:
-                        if node not in dd.keys():
-                            dd[node] = {}
-                dd[kk_list[-1]] = deep_get(metadata, *kk.split('/'))
-            return return_dict
+    # def parse_metadata(self, metadata):
+    #     if self.keys is None:
+    #         return metadata
+    #     else:
+    #         return_dict = {}
+    #         for kk in self.keys:
+    #             kk_list = kk.split('/')
+    #             dd = return_dict
+    #             if len(kk_list) > 1:
+    #                 for node in kk_list[:-1]:
+    #                     if node not in dd.keys():
+    #                         dd[node] = {}
+    #             dd[kk_list[-1]] = deep_get(metadata, *kk.split('/'))
+    #         return return_dict
 
 
 class Cache:

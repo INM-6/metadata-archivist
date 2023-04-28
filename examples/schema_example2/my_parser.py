@@ -67,7 +67,26 @@ class basin_character_extractor(AExtractor):
     def __init__(self) -> None:
         super().__init__(name='basin_character_extractor',
                          input_file_pattern='basin.yml',
-                         schema={})
+                         schema={'type': 'object',
+                                'properties': {
+                                    'river': {
+                                        'type': 'string',
+                                        'description': 'name of the river'
+                                    },
+                                    'length': {
+                                        'type': 'integer',
+                                        'description': 'length in km'
+                                    },
+                                    'size': {
+                                        'type': 'integer',
+                                        'description': 'flow accumulation in km^2'
+                                    },
+                                    'max_depth': {
+                                        'type': 'integer',
+                                        'description': 'maximum depth in m'
+                                    }
+                                }
+                         })
 
     def extract(self, file_path):
         with open(file_path, "r") as stream:
@@ -83,7 +102,23 @@ class station_character_extractor(AExtractor):
     def __init__(self) -> None:
         super().__init__(name='station_character_extractor',
                          input_file_pattern='station.yml',
-                         schema={})
+                         schema={'type': 'object',
+                                'properties': {
+                                    'river': {
+                                        'type': 'string',
+                                        'description': 'name of the river'
+                                    },
+                                    'grdc_id': {
+                                        'type': 'string',
+                                        'description': 'grdc id'
+                                    },
+                                    'mean_disch': {
+                                        'type': 'number',
+                                        'description': 'mean annual discharge in m^3s^-1'
+                                    }
+                                }
+                            }
+                         )
 
     def extract(self, file_path):
         with open(file_path, "r") as stream:
@@ -110,35 +145,28 @@ my_schema = {
                         "type": "object",
                         'description': 'some description',
                         "properties": {
-                            "basin_name": {
+                            "basin_information": {
                                 "!extractor": {
                                     'name': 'basin_character_extractor',
                                     'path': '*/{basin}/basin.yml',
-                                    'keys': ['real', 'nested/sys']
+                                    'keys': ['river', 'size']
                                 }
                             },
-                            "$ref": "#/$defs/some_subschema"
                         }
                     },
-            "^station_": {
-                "type": "object",
-                "properties": {
-                    "basin_characteristics": {
-                        "$ref": "#/$defs/station_character_extractor"
-                    },
-                    "simulation": {
-                        'type': 'object',
-                        'properties': {
-                            'time_info': {
-                                '$ref': '#/$defs/time_extractor'
+                    "^station_": {
+                        "!varname": 'station',
+                        "type": "object",
+                        "properties": {
+                            "station_information": {
+                                "!extractor": {
+                                    'name': 'station_character_extractor',
+                                    'path': '*/{station}/station.yml',
+                                    'keys': ['river', 'mean_disch']
+                                }
                             },
-                            'model_configuration': {
-                                '$ref': '#/$defs/yml_extractor'
-                            },
-                        }
-                    }
 
-            },
+                    },
                 }
             }
             },
@@ -203,60 +231,8 @@ my_schema = {
                     'description': 'this as well'
                 }
             }
-        },
-        'a_extractor': {
-            'type': 'object',
-            'patternProperties': {
-                '^I': {
-                    'type': 'integer',
-                    'description': 'a parameter'
-                },
-                '^S': {
-                    'type': 'string',
-                    'description': 'a description'
-                },
-            }
-        },
-        'basin_character_extractor': {
-            'type': 'object',
-            'properties': {
-                'river': {
-                    'type': 'string',
-                    'description': 'name of the river'
-                },
-                'length': {
-                    'type': 'integer',
-                    'description': 'length in km'
-                },
-                'size': {
-                    'type': 'integer',
-                    'description': 'flow accumulation in km^2'
-                },
-                'max_depth': {
-                    'type': 'integer',
-                    'description': 'maximum depth in m'
-                }
-            }
-        },
-        'station_character_extractor': {
-            'type': 'object',
-            'properties': {
-                'river': {
-                    'type': 'string',
-                    'description': 'name of the river'
-                },
-                'grdc_id': {
-                    'type': 'string',
-                    'description': 'grdc id'
-                },
-                'mean_disch': {
-                    'type': 'number',
-                    'description': 'mean annual discharge in m^3s^-1'
-                }
-            }
         }
-    }
-}
+}}
 
 my_parser = Parser(extractors=[
     time_extractor(),

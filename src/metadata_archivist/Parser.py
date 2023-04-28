@@ -18,6 +18,7 @@ from json import dump, load
 from pathlib import Path
 from typing import Optional, List, Tuple, NoReturn
 from collections.abc import Iterable
+from functools import reduce
 
 from .Logger import LOG
 
@@ -597,7 +598,8 @@ class Parser():
                             if node.name not in relative_root.keys():
                                 relative_root[node.name] = {}
                             relative_root = relative_root[node.name]
-                    relative_root[hierarchy.extractor_name] = meta_set.metadata
+                    # relative_root[hierarchy.extractor_name] = meta_set.metadata
+                    relative_root[hierarchy.extractor_name] = hierarchy.extractor_directive.parse_metadata(meta_set.metadata)
         else:
             raise NotImplementedError(
                 'currently only metadata from extractors can be added to the schema'
@@ -725,6 +727,13 @@ class Hierachy:
             return None
 
     @property
+    def extractor_directive(self):
+        if isinstance(self._hierachy[-1], ExtractorDirective):
+            return self._hierachy[-1]
+        else:
+            return None
+
+    @property
     def regexps(self):
         return_list = []
         for y in self._hierachy[:-1]:
@@ -803,7 +812,22 @@ class ExtractorDirective(HierachyEntry):
         super().__init__(add_to_metadata, **kwargs)
         self.name = name
         self.path = kwargs.pop('path', None)
+        self.keys = kwargs.pop('keys', None)
 
+    def parse_metadata(self, metadata):
+        if self.keys is None:
+            return metadata
+        else:
+            return_dict = {}
+            for kk in self.keys:
+                kk_list = kk.split('/')
+                dd = return_dict
+                if len(kk_list) > 1:
+                    for node in kk_list[:-1]:
+                        if node not in dd.keys():
+                            dd[node] = {}
+                dd[kk_list[-1]] = deep_get(metadata, *kk.split('/'))
+            return return_dict
 
 
 class Cache:
@@ -980,5 +1004,7 @@ def defs2dict(defs, search_dict: Optional[dict] = None):
     else:
         return {key: defs2dict(val, search_dict[key])}
 
+def deep_get(dictionary, *keys):
+    return reduce(lambda d, key: d.get(key) if d else None, keys, dictionary)
 
 Parser.combine = _combine

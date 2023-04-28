@@ -671,11 +671,13 @@ class Parser():
     def _schema_iterator(self,
                          properties: Optional[dict] = None,
                          hierachy = None,
+                         level = 0,
                          prop_type: Optional[str] = None,
-                         prop_name: Optional[str] = None):
+                         parent_prop_name: Optional[str] = None):
         """
         schema iterator, returns nodes in schema.
         """
+        # index_dirdirective = None
         if self.schema is None:
             raise RuntimeError(
                 f'A schema must be specified before starting the _schema_iterator'
@@ -691,22 +693,21 @@ class Parser():
             prop_name = 'properties'
         if hierachy is None:
             hierachy = Hierachy()
-        # --- check for archivist directives
-        if '!varname' in properties.keys():
-            hierachy.add(DirectoryDirective(varname=properties['!varname'], regexp=prop_name))
         for prop_name, prop in properties.items():
+            # --- check for archivist directives
             if prop_name in [
                     'properties', 'unevaluatedProperties',
                     'additionalProperties', 'patternProperties'
             ]:
                 prop_type = prop_name
-                # TODO:
-                # patternprotperties: are matched for dirname only, * is allows at beginning of path only
-                # path is split on / and each component is matched in revesed order.
-                yield from self._schema_iterator(prop, hierachy, prop_type,
+                yield from self._schema_iterator(prop, hierachy, level, prop_type,
                                                  prop_name)
+            elif prop_name == '!varname':
+                hierachy.add(DirectoryDirective(varname=properties['!varname'], regexp=parent_prop_name), level = level)
+                level += 1
             elif prop_name == '!extractor':
-                hierachy.add(ExtractorDirective(**prop))
+                hierachy.add(ExtractorDirective(**prop), level = level)
+                level += 1
                 yield prop, hierachy
             elif prop_name == '$ref':
                 if prop[:8] == '#/$defs/':
@@ -717,7 +718,7 @@ class Parser():
                             subschem = self.schema['$defs'][defs.split('/')
                                                             [-1]]
                             yield from self._schema_iterator(
-                                subschem, hierachy, prop_type,
+                                subschem, hierachy, level, prop_type,
                                 prop_name)
                             break
                 elif prop[:13] == '#/properties/':
@@ -733,8 +734,12 @@ class Parser():
                     raise NotImplementedError(
                         f'unkown reference, please open an issue: {prop}')
             elif isinstance(prop, dict) and prop_name != '!extractor':
-                yield from self._schema_iterator(prop, hierachy,
+                yield from self._schema_iterator(prop, hierachy, level,
                                                  prop_type, prop_name)
+            # if index_dirdirective is not None:
+            #     hierachy._hierachy.pop(index_dirdirective)
+            #     index_dirdirective = None
+
 
     # def _get_node_dict(self,
     #                    name: str,
@@ -807,8 +812,17 @@ class Hierachy:
     def __init__(self):
         self._hierachy = []
 
-    def add(self, entry):
-        self._hierachy.append(entry)
+    def add(self, entry, level):
+        try:
+            self._hierachy[level] = entry
+        except IndexError:
+            if len(self._hierachy) == level:
+                self._hierachy.append(entry)
+            else:
+                raise RuntimeError(f'''Hierachy list corrupted, cannot append {entry} at index: {level}
+                Hierachy list:
+                {self._hierachy}
+                ''')
 
     @property
     def extractor_name(self):
@@ -824,6 +838,17 @@ class Hierachy:
             if isinstance(y, DirectoryDirective):
                 return_list.append(y.regexp)
         return return_list
+
+    # def reset(self):
+    #     '''
+    #     reset hierachy after a entry was added.
+    #     - set DirectoryDirectives name to None if they have a regexp
+    #     '''
+    #     for node in self._hierachy:
+    #         if isinstance(node, DirectoryDirective) and node.regexp is not None:
+    #             node.name = None
+
+
 
     def match_path(self, file_path: Path):
         '''

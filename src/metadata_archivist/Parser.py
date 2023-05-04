@@ -226,7 +226,11 @@ class AExtractor(abc.ABC):
         if 'add_description' in kwargs.keys():
             add_description = kwargs['add_description']
         else:
-            add_description = False
+            add_description = True
+        if 'add_type' in kwargs.keys():
+            add_type = kwargs['add_type']
+        else:
+            add_type = True
         metadata_copy = metadata.copy()
         if keys is None:
             return metadata_copy
@@ -239,14 +243,24 @@ class AExtractor(abc.ABC):
                     for node in kk_list[:-1]:
                         if node not in dd.keys():
                             dd[node] = {}
-                if add_description:
-                    schem_entry = deep_get(self._schema['properties'], *kk.split('/'))
-                    if schem_entry is not None and 'description' in schem_entry.keys():
-                        dd[kk_list[-1]] = {'value': deep_get(metadata_copy, *kk.split('/')),
-                                           'description' : schem_entry['description']}
+                if add_description or add_type:
+                    dd[kk_list[-1]] = {
+                        'value': deep_get(metadata_copy, *kk.split('/'))
+                    }
+                    schem_entry = deep_get(self._schema['properties'],
+                                           *kk.split('/'))
+                    if schem_entry is not None:
+                        if add_description and 'description' in schem_entry.keys(
+                        ):
+                            dd[kk_list[-1]].update(
+                                {'description': schem_entry['description']})
+                        if add_type and 'type' in schem_entry.keys():
+                            dd[kk_list[-1]].update(
+                                {'type': schem_entry['type']})
                 else:
                     dd[kk_list[-1]] = deep_get(metadata_copy, *kk.split('/'))
             return return_dict
+
 
 class Parser():
     """Parser
@@ -593,7 +607,7 @@ class Parser():
 
         return meta_files
 
-    def _update_metadata_tree_with_schema(self, hierarchy) -> None:
+    def _update_metadata_tree_with_schema(self, hierarchy, **kwargs) -> None:
         """add metadata from a Hierachy object to the metadata dict
         currently the metadata is only taken from a !extractor object located at the last
         entry in the list provided by the hierachy class. this can be extended in the future
@@ -605,17 +619,23 @@ class Parser():
 
         # If there is an extractor passed by the Hierachy (i.e. at the last entry in the list)
         if hierarchy.extractor_name is not None:
-            LOG.debug(f'        working on extractor: {hierarchy.extractor_name}')
-            LOG.debug(f'        with path: {hierarchy._hierachy[-1].path} and re`s: {hierarchy.regexps} ')
+            LOG.debug(
+                f'        working on extractor: {hierarchy.extractor_name}')
+            LOG.debug(
+                f'        with path: {hierarchy._hierachy[-1].path} and re`s: {hierarchy.regexps} '
+            )
 
             extractor = self.get_extractor(
                 hierarchy.extractor_name
             )  # TODO: reconcider: we should use id here
             for meta_set in self._cache[extractor.id]:
-                LOG.debug(f'            checking available metadata: {meta_set.rel_path}')
+                LOG.debug(
+                    f'            checking available metadata: {meta_set.rel_path}'
+                )
                 # check which metadata sets read by the extractor match the path in the metadata tree
                 if hierarchy.match_path(meta_set.rel_path):
-                    LOG.debug(f'            found metadata: {meta_set.metadata}')
+                    LOG.debug(
+                        f'            found metadata: {meta_set.metadata}')
                     # build dict-structure following the structure passed by the hierachy
                     relative_root = self.metadata
                     for node in hierarchy._hierachy[:-1]:
@@ -623,11 +643,13 @@ class Parser():
                             if node.name not in relative_root.keys():
                                 relative_root[node.name] = {}
                                 if node.description is not None:
-                                    relative_root[node.name]['description'] = node.description
+                                    relative_root[node.name][
+                                        'description'] = node.description
                             relative_root = relative_root[node.name]
-                    relative_root.update(extractor.filter_metadata(meta_set.metadata,
-                                                                   hierarchy.extractor_directive.keys,
-                                                                   add_description = False) )
+                    relative_root.update(
+                        extractor.filter_metadata(
+                            meta_set.metadata,
+                            hierarchy.extractor_directive.keys, **kwargs))
         else:
             raise NotImplementedError(
                 'currently only metadata from extractors can be added to the schema'
@@ -635,8 +657,8 @@ class Parser():
 
     def _schema_iterator(self,
                          properties: Optional[dict] = None,
-                         hierachy = None,
-                         level = 0,
+                         hierachy=None,
+                         level=0,
                          prop_type: Optional[str] = None,
                          parent_prop_name: Optional[str] = None):
         """
@@ -665,12 +687,14 @@ class Parser():
                     'additionalProperties', 'patternProperties'
             ]:
                 prop_type = prop_name
-                yield from self._schema_iterator(prop, hierachy, level, prop_type,
-                                                 prop_name)
+                yield from self._schema_iterator(prop, hierachy, level,
+                                                 prop_type, prop_name)
             elif prop_name == '!varname':
-                level = hierachy.add(DirectoryDirective(varname=properties['!varname'], regexp=parent_prop_name), level = level)
+                level = hierachy.add(DirectoryDirective(
+                    varname=properties['!varname'], regexp=parent_prop_name),
+                                     level=level)
             elif prop_name == '!extractor':
-                level = hierachy.add(ExtractorDirective(**prop), level = level)
+                level = hierachy.add(ExtractorDirective(**prop), level=level)
                 yield prop, hierachy
             elif prop_name == '$ref':
                 if prop[:8] == '#/$defs/':
@@ -696,7 +720,7 @@ class Parser():
                 yield from self._schema_iterator(prop, hierachy, level,
                                                  prop_type, prop_name)
 
-    def compile_metadata(self) -> dict:
+    def compile_metadata(self, **kwargs) -> dict:
         """
         Function to gather all metadata extracted using parsing function with lazy loading.
         """
@@ -709,8 +733,7 @@ class Parser():
             while True:
                 try:
                     _, hierarchy = next(iterator)
-                    self._update_metadata_tree_with_schema(
-                        hierarchy)
+                    self._update_metadata_tree_with_schema(hierarchy, **kwargs)
                 except StopIteration:
                     break
         else:
@@ -726,10 +749,12 @@ class Parser():
 
         return self.metadata
 
+
 class Hierachy:
     """
     helperclass, representing the hierachy in the schema
     """
+
     def __init__(self):
         self._hierachy = []
 
@@ -742,7 +767,8 @@ class Hierachy:
                 self._hierachy.append(entry)
                 return level + 1
             else:
-                raise RuntimeError(f'''Hierachy list corrupted, cannot append {entry} at index: {level}
+                raise RuntimeError(
+                    f'''Hierachy list corrupted, cannot append {entry} at index: {level}
                 Hierachy list:
                 {self._hierachy}
                 ''')
@@ -780,8 +806,7 @@ class Hierachy:
             if not directive.path:
                 return True
             else:
-                directive_path_list = list(
-                    Path(directive.path).parts)
+                directive_path_list = list(Path(directive.path).parts)
                 directive_path_list.reverse()
                 file_path_list = list(file_path.parts)
                 file_path_list.reverse()
@@ -791,10 +816,13 @@ class Hierachy:
                     elif x == '*' and not re.match('.*', file_path_list[i]):
                         return False
                     elif re.fullmatch('.*{[a-zA-Z0-9_]*}.*', x):
-                        for j, y in enumerate( self._hierachy[:-1] ):
-                            if isinstance(y, DirectoryDirective) and x.find('{' + f'{y.varname}' + '}') != -1:
+                        for j, y in enumerate(self._hierachy[:-1]):
+                            if isinstance(y, DirectoryDirective) and x.find(
+                                    '{' + f'{y.varname}' + '}') != -1:
                                 # TODO: add multiple regexp for x
-                                if not re.match(x.format(**{ y.varname:y.regexp }), file_path_list[i]):
+                                if not re.match(
+                                        x.format(**{y.varname: y.regexp}),
+                                        file_path_list[i]):
                                     return False
                                 else:
                                     self._hierachy[j].name = file_path_list[i]
@@ -811,7 +839,8 @@ class HierachyEntry:
     """
     entry in the Hierachy
     """
-    def __init__(self, add_to_metadata: Optional[bool]= False, **kwargs):
+
+    def __init__(self, add_to_metadata: Optional[bool] = False, **kwargs):
         self._add_to_metadata = add_to_metadata
         if 'name' in kwargs.keys():
             self.name = kwargs['name']
@@ -825,22 +854,33 @@ class HierachyEntry:
     @property
     def add_to_metadata(self):
         if self.name is None:
-            raise RuntimeError(f'add_to_metadata is set to True but name is None')
+            raise RuntimeError(
+                f'add_to_metadata is set to True but name is None')
         else:
             return self.name
 
+
 class DirectoryDirective(HierachyEntry):
-    def __init__(self, varname, regexp, add_to_metadata: Optional[bool] = True, **kwargs):
+
+    def __init__(self,
+                 varname,
+                 regexp,
+                 add_to_metadata: Optional[bool] = True,
+                 **kwargs):
         super().__init__(add_to_metadata, **kwargs)
         self.varname = varname
         self.regexp = regexp
+
 
 class ExtractorDirective(HierachyEntry):
     """
     helperclass to handle extractor directives in archivist schema
     """
 
-    def __init__(self,name,  add_to_metadata: Optional[bool] = False, **kwargs):
+    def __init__(self,
+                 name,
+                 add_to_metadata: Optional[bool] = False,
+                 **kwargs):
         super().__init__(add_to_metadata, **kwargs)
         self.name = name
         self.path = kwargs.pop('path', None)
@@ -1036,7 +1076,9 @@ def defs2dict(defs, search_dict: Optional[dict] = None):
     else:
         return {key: defs2dict(val, search_dict[key])}
 
+
 def deep_get(dictionary, *keys):
     return reduce(lambda d, key: d.get(key) if d else None, keys, dictionary)
+
 
 Parser.combine = _combine

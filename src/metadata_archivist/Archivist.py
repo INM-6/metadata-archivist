@@ -79,7 +79,9 @@ class Archivist():
             True,  # TODO: change to False after development phase is done. 
             "auto_cleanup": True,
             "verbose":
-            'debug'  # TODO: change to None after development phase is done.
+            'debug',  # TODO: change to None after development phase is done.
+            'add_description': True,
+            'add_type': False
         }
         key_list = list(self.config.keys())
 
@@ -182,7 +184,7 @@ class Archivist():
 
         return metadata
 
-    def get_metadata(self) -> dict:
+    def get_metadata(self, **kwargs) -> dict:
         """
         Returns generated metadata as a dictionary.
         If needed, uses parser to first compile metadata.
@@ -190,7 +192,7 @@ class Archivist():
         if self._cache["compile_metadata"]:
             LOG.info(f'''Compiling metadata...''')
             self._cache["compile_metadata"] = False
-            metadata = self.parser.compile_metadata()
+            metadata = self.parser.compile_metadata(**kwargs)
             self._cache["metadata"] = metadata
             LOG.info("Done!")
             self._clean_up()

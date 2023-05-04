@@ -17,7 +17,9 @@ arch = Archivist(archive_path=Path('metadata_archive.tar'),
                  output_file="metadata.json",
                  overwrite=True,
                  auto_cleanup=False,
-                 verbose='debug')
+                 verbose='debug',
+                 add_description=True,
+                 add_type=True)
 
 arch.extract()
 print(arch.parser.metadata)

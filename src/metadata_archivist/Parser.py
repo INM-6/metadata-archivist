@@ -15,8 +15,9 @@ import abc  # Abstract class base infrastructure
 import jsonschema  # to validate extracted data
 
 from json import dump, load
+import json
 from pathlib import Path
-from typing import Optional, List, Tuple, NoReturn
+from typing import Optional, List, Tuple, NoReturn, Union
 from collections.abc import Iterable
 from functools import reduce
 
@@ -275,7 +276,7 @@ class Parser():
     """
 
     def __init__(self,
-                 schema: Optional[dict] = None,
+                 schema: Optional[Union[dict, Path]] = None,
                  extractors: Optional[List[AExtractor]] = None,
                  lazy_load: Optional[bool] = False) -> None:
 
@@ -286,7 +287,16 @@ class Parser():
         # Can also be completely replaced through set method
         if schema is not None:
             self._use_schema = True
-            self._schema = schema
+            if isinstance(schema, dict):
+                self._schema = schema
+            elif isinstance(schema, Path):
+                if schema.suffix in ['.json']:
+                    with open(schema) as f:
+                        self._schema = json.load(f)
+                else:
+                    raise RuntimeError(f'schema can only be read from json files not from {schema.suffix}')
+            else:
+                raise TypeError('schema must be dict or Path')
         else:
             self._use_schema = False
             self._schema = DEFAULT_PARSER_SCHEMA
@@ -815,7 +825,8 @@ class Hierachy:
                         return True
                     elif x == '*' and not re.match('.*', file_path_list[i]):
                         return False
-                    elif re.fullmatch('.*{[a-zA-Z0-9_]*}.*', x):
+                    # for the varname match
+                    elif re.fullmatch('.*{[a-zA-Z0-9_]+}.*', x):
                         for j, y in enumerate(self._hierachy[:-1]):
                             if isinstance(y, DirectoryDirective) and x.find(
                                     '{' + f'{y.varname}' + '}') != -1:

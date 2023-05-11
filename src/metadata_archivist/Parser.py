@@ -680,9 +680,8 @@ class Parser():
                     filtered_metadata = extractor.filter_metadata(
                         meta_set.metadata, hierarchy.extractor_directive.keys,
                         **kwargs)
-                    meta_name = filtered_metadata.pop('name',
-                                                      meta_set.file_path.name)
-                    relative_root[meta_name] = filtered_metadata
+                    relative_root[
+                        meta_set.rel_path.as_posix()] = filtered_metadata
         else:
             raise NotImplementedError(
                 'currently only metadata from extractors can be added to the schema'

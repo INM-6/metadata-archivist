@@ -673,10 +673,16 @@ class Parser():
                                     relative_root[node.name][
                                         'description'] = node.description
                             relative_root = relative_root[node.name]
-                    relative_root.update(
-                        extractor.filter_metadata(
-                            meta_set.metadata,
-                            hierarchy.extractor_directive.keys, **kwargs))
+                    # relative_root.update(
+                    #     extractor.filter_metadata(
+                    #         meta_set.metadata,
+                    #         hierarchy.extractor_directive.keys, **kwargs))
+                    filtered_metadata = extractor.filter_metadata(
+                        meta_set.metadata, hierarchy.extractor_directive.keys,
+                        **kwargs)
+                    meta_name = filtered_metadata.pop('name',
+                                                      meta_set.file_path.name)
+                    relative_root[meta_name] = filtered_metadata
         else:
             raise NotImplementedError(
                 'currently only metadata from extractors can be added to the schema'

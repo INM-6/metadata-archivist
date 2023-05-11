@@ -227,11 +227,11 @@ class AExtractor(abc.ABC):
         if 'add_description' in kwargs.keys():
             add_description = kwargs['add_description']
         else:
-            add_description = True
+            add_description = False
         if 'add_type' in kwargs.keys():
             add_type = kwargs['add_type']
         else:
-            add_type = True
+            add_type = False
         metadata_copy = metadata.copy()
         if keys is None:
             return metadata_copy
@@ -240,7 +240,8 @@ class AExtractor(abc.ABC):
             for k in keys:
                 new_dict = _merge_dicts(
                     new_dict, self._filter_dict(metadata, k.split('/')))
-            # self._add_info_from_schema(new_dict)
+            if add_description or add_type:
+                self._add_info_from_schema(new_dict, add_description, add_type)
             return new_dict
 
     def _filter_dict(self,
@@ -268,13 +269,41 @@ class AExtractor(abc.ABC):
                         new_dict[k] = metadata[k]
         return new_dict
 
-    def _add_info_from_schema(self, metadata, **kwargs):
+    def _add_info_from_schema(self,
+                              metadata,
+                              add_description,
+                              add_type,
+                              key_list=[]):
         """TODO: add a function that enriches the metadata with information from the schema
+        NOT WORKING YET
 
         :returns: None
 
         """
-        pass
+        for kk in metadata.keys():
+            if isinstance(metadata[kk], dict):
+                self._add_info_from_schema(metadata[kk], add_description,
+                                           add_type, key_list + [kk])
+            else:
+                print(key_list)
+                val = metadata[kk]
+                metadata[kk] = {'value': val}
+                schem_entry = deep_get_from_schema(self._schema['properties'],
+                                                   *key_list)
+                if schem_entry is None and 'additionalProperties' in self._schema.keys(
+                ):
+                    schem_entry = deep_get_from_schema(
+                        self._schema['additionalProperties'], *key_list)
+                if schem_entry is None and 'patternProperties' in self._schema.keys(
+                ):
+                    schem_entry = deep_get_from_schema(
+                        self._schema['patternProperties'], *key_list)
+                if schem_entry is not None:
+                    if add_description and 'description' in schem_entry.keys():
+                        metadata[kk].update(
+                            {'description': schem_entry['description']})
+                    if add_type and 'type' in schem_entry.keys():
+                        metadata[kk].update({'type': schem_entry['type']})
 
 
 class Parser():

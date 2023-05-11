@@ -178,7 +178,7 @@ class Archivist():
         self._cache["compile_metadata"] = True
 
         if len(self._cache["meta_files"]) == 0:
-            metadata = self.get_metadata()
+            metadata = self.get_metadata(**self.config)
         else:
             raise NotImplementedError()
             # metadata = None

@@ -236,31 +236,45 @@ class AExtractor(abc.ABC):
         if keys is None:
             return metadata_copy
         else:
-            return_dict = {}
-            for kk in keys:
-                kk_list = kk.split('/')
-                dd = return_dict
-                if len(kk_list) > 1:
-                    for node in kk_list[:-1]:
-                        if node not in dd.keys():
-                            dd[node] = {}
-                if add_description or add_type:
-                    dd[kk_list[-1]] = {
-                        'value': deep_get(metadata_copy, *kk.split('/'))
-                    }
-                    schem_entry = deep_get(self._schema['properties'],
-                                           *kk.split('/'))
-                    if schem_entry is not None:
-                        if add_description and 'description' in schem_entry.keys(
-                        ):
-                            dd[kk_list[-1]].update(
-                                {'description': schem_entry['description']})
-                        if add_type and 'type' in schem_entry.keys():
-                            dd[kk_list[-1]].update(
-                                {'type': schem_entry['type']})
-                else:
-                    dd[kk_list[-1]] = deep_get(metadata_copy, *kk.split('/'))
-            return return_dict
+            new_dict = {}
+            for k in keys:
+                new_dict = _merge_dicts(
+                    new_dict, self._filter_dict(metadata, k.split('/')))
+            # self._add_info_from_schema(new_dict)
+            return new_dict
+
+    def _filter_dict(self,
+                     metadata: dict,
+                     filter: list,
+                     level: int = 0) -> dict:
+        """filter a dict using a filter (ordered list of re's)
+
+        :param metadata: dict to filter
+        :param filter: a list of re's
+        :param level: index of re in filter to use
+        :returns: a filtered dict
+
+        """
+        new_dict = {}
+        if level >= len(filter):
+            new_dict = metadata.copy()
+        else:
+            for k in metadata.keys():
+                if re.fullmatch(filter[level], k):
+                    if isinstance(metadata[k], dict):
+                        new_dict[k] = self._filter_dict(
+                            metadata[k], filter, level + 1)
+                    else:
+                        new_dict[k] = metadata[k]
+        return new_dict
+
+    def _add_info_from_schema(self, metadata, **kwargs):
+        """TODO: add a function that enriches the metadata with information from the schema
+
+        :returns: None
+
+        """
+        pass
 
 
 class Parser():
@@ -294,7 +308,9 @@ class Parser():
                     with open(schema) as f:
                         self._schema = json.load(f)
                 else:
-                    raise RuntimeError(f'schema can only be read from json files not from {schema.suffix}')
+                    raise RuntimeError(
+                        f'schema can only be read from json files not from {schema.suffix}'
+                    )
             else:
                 raise TypeError('schema must be dict or Path')
         else:
@@ -584,6 +600,7 @@ class Parser():
         for extractor in self._extractors:
             ex_id = extractor.id
             to_extract[ex_id] = []
+            LOG.debug(f'    prearing extractor: {ex_id}')
             for fp in file_paths:
                 pattern = extractor.input_file_pattern
                 if pattern[0] == '*':
@@ -644,8 +661,8 @@ class Parser():
                 )
                 # check which metadata sets read by the extractor match the path in the metadata tree
                 if hierarchy.match_path(meta_set.rel_path):
-                    LOG.debug(
-                        f'            found metadata: {meta_set.metadata}')
+                    # LOG.debug(
+                    #     f'            found metadata: {meta_set.metadata}')
                     # build dict-structure following the structure passed by the hierachy
                     relative_root = self.metadata
                     for node in hierarchy._hierachy[:-1]:

@@ -159,6 +159,7 @@ class Archivist():
     Remove extracted: {self.config["auto_cleanup"]}''')
 
         LOG.info("Unpacking archive...")
+        LOG.debug(f'    using patterns: {self.parser.input_file_patterns}')
 
         decompress_path, decompressed_files, decompressed_dirs = self.decompressor.decompress(
             self.parser.input_file_patterns)

@@ -108,7 +108,6 @@ class Decompressor():
             while item is not None:
                 if self.verbose:
                     LOG.info(f"    processing file: {item.name}")
-
                 if any(item.name.endswith(format)
                         for format in ['tgz', 'tar']):
                     t.extract(item, path=decompress_path)

@@ -286,19 +286,20 @@ class AExtractor(abc.ABC):
                 self._add_info_from_schema(metadata[kk], add_description,
                                            add_type, key_list + [kk])
             else:
-                print(key_list)
                 val = metadata[kk]
                 metadata[kk] = {'value': val}
-                schem_entry = deep_get_from_schema(self._schema['properties'],
-                                                   *key_list)
+                print(key_list + [kk])
+                schem_entry = deep_get_from_schema(
+                    self._schema['properties'].copy(), key_list + [kk])
                 if schem_entry is None and 'additionalProperties' in self._schema.keys(
                 ):
                     schem_entry = deep_get_from_schema(
-                        self._schema['additionalProperties'], *key_list)
+                        self._schema['additionalProperties'].copy(), *key_list)
                 if schem_entry is None and 'patternProperties' in self._schema.keys(
                 ):
                     schem_entry = deep_get_from_schema(
-                        self._schema['patternProperties'], *key_list)
+                        self._schema['patternProperties'].copy(), *key_list)
+                print(schem_entry)
                 if schem_entry is not None:
                     if add_description and 'description' in schem_entry.keys():
                         metadata[kk].update(
@@ -1142,6 +1143,34 @@ def defs2dict(defs, search_dict: Optional[dict] = None):
 
 def deep_get(dictionary, *keys):
     return reduce(lambda d, key: d.get(key) if d else None, keys, dictionary)
+
+
+def deep_get_from_schema(schema, keys: list):
+    # if len(keys) > 0:
+    k = keys.pop(0)
+    if len(keys) > 0:
+        if k in schema.keys():
+            deep_get_from_schema(schema[k], keys)
+        elif 'properties' in schema.keys() and keys[0] in schema['properties']:
+            deep_get_from_schema(schema['properties'][k], keys)
+        elif 'additionalProperties' in schema.keys(
+        ) and keys[0] in schema['additionalProperties']:
+            deep_get_from_schema(schema['additionalProperties'], keys)
+        elif 'additionalProperties' in schema.keys(
+        ) and 'properties' in schema['additionalProperties'] and keys[
+                0] in schema['additionalProperties']['properties']:
+            deep_get_from_schema(schema['additionalProperties']['properties'],
+                                 keys)
+        elif 'patternProperties' in schema.keys() and any(
+                re.fullmatch(x, k)
+                for x in schema['patternProperties'].keys()):
+            for kk in schema['patternProperties'].keys():
+                if re.fullmatch(kk, k):
+                    deep_get_from_schema(schema['patternProperties'][kk], keys)
+                    break
+    else:
+        print(schema[k])
+        return schema[k]
 
 
 Parser.combine = _combine

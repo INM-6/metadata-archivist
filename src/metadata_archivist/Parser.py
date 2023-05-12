@@ -223,7 +223,7 @@ class AExtractor(abc.ABC):
     def __hash__(self) -> int:
         return hash(self._name)
 
-    def filter_metadata(self, metadata, keys, **kwargs):
+    def filter_metadata(self, metadata: dict, keys: list, **kwargs):
         if 'add_description' in kwargs.keys():
             add_description = kwargs['add_description']
         else:
@@ -238,6 +238,7 @@ class AExtractor(abc.ABC):
         else:
             new_dict = {}
             for k in keys:
+                print(k)
                 new_dict = _merge_dicts(
                     new_dict, self._filter_dict(metadata, k.split('/')))
             if add_description or add_type:
@@ -1065,7 +1066,7 @@ def _merge_dicts(dict1: dict, dict2: dict) -> dict:
                 if type(val1) == type(val2):
                     if isinstance(val1, Iterable):
                         if isinstance(val1, dict):
-                            merged_dict[key] = _merge_dicts(dict1, dict2)
+                            merged_dict[key] = _merge_dicts(val1, val2)
                         elif isinstance(val1, list):
                             merged_dict[key] = val1 + val2
                         elif isinstance(val1, set):

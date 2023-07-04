@@ -152,7 +152,7 @@ class AExtractor(abc.ABC):
         (pythonic indirection for protected attributes)
         """
         raise AttributeError(
-            "Cannot manually set the id.\nThe id of an Extractor is a computed property based on the Extractor attributes."
+            "Cannot manually set the id.\nThe id of an Extractor is a computed property based on the Extractor attributes"
         )
 
     def _update_parsers(self) -> None:
@@ -176,7 +176,7 @@ class AExtractor(abc.ABC):
             )
         elif not file_path.is_file():
             raise RuntimeError(
-                f'The input file {file_path.name} does not exist!')
+                f'The input file {file_path.name} is incorrect')
         else:
             self.extracted_metadata = self.extract(file_path)
         self.validate()
@@ -238,7 +238,7 @@ class AExtractor(abc.ABC):
         else:
             new_dict = {}
             for k in keys:
-                print(k)
+                LOG.debug(k)
                 new_dict = _merge_dicts(
                     new_dict, self._filter_dict(metadata, k.split('/')))
             if add_description or add_type:
@@ -340,7 +340,7 @@ class Parser():
                         self._schema = json.load(f)
                 else:
                     raise RuntimeError(
-                        f'schema can only be read from json files not from {schema.suffix}'
+                        f'Incorrect format for schema: {schema.suffix}, expected JSON format'
                     )
             else:
                 raise TypeError('schema must be dict or Path')
@@ -448,7 +448,7 @@ class Parser():
             if len(self.metadata) > 0:
                 # TODO: Should we raise exception instead of warning?
                 LOG.warning(
-                    "Warning: compiling available metadata after enabling lazy loading.",
+                    "Warning: compiling available metadata after disabling lazy loading.",
                     RuntimeWarning)
             self.compile_metadata()
         self._lazy_load = lazy_load

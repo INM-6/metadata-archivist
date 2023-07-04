@@ -28,8 +28,7 @@ class Decompressor():
 
     def __init__(self,
                  archive_path: Path,
-                 config: dict,
-                 verbose: Optional[bool] = True) -> None:
+                 config: dict) -> None:
         
         # Protected
         self._archive_path, self._decompress = self._check_archive(archive_path)

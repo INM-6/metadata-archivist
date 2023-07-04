@@ -57,11 +57,11 @@ class Archivist():
                     )
                 else:
                     raise RuntimeError(
-                        f"Metadata output file exists: '{self.metadata_output_file}', overwriting not allowed."
+                        f"Metadata output file exists: '{self.metadata_output_file}', overwriting not allowed"
                     )
             else:
                 raise RuntimeError(
-                    f"'{self.metadata_output_file}' exists and is not a file, cannot overwrite."
+                    f"'{self.metadata_output_file}' exists and is not a file, cannot overwrite"
                 )
 
         # Operational memory

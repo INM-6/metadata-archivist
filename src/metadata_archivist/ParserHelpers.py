@@ -7,10 +7,11 @@ Collection of helper classes for Parser module.
 Authors: Jose V., Matthias K.
 
 """
+
 import re
 
 from pathlib import Path
-from typing import Optional, List, Tuple, NoReturn, Union
+from typing import Optional
 
 class Hierachy:
     """

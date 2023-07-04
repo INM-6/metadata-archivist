@@ -9,11 +9,12 @@ To be specialized by custom parsers made by users.
 Authors: Jose V., Matthias K.
 
 """
+
 import re
 
 from json import dump, load
 from pathlib import Path
-from typing import Optional, List, Tuple, NoReturn, Union
+from typing import Optional, List, NoReturn, Union
 from collections.abc import Iterable
 
 from .Logger import LOG

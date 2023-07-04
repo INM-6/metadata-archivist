@@ -8,13 +8,14 @@ To be specialized by custom extractors made by users.
 Authors: Jose V., Matthias K.
 
 """
+
 import re
 import abc  # Abstract class base infrastructure
 
 import jsonschema  # to validate extracted data
 
 from pathlib import Path
-from typing import Optional, List, Tuple, NoReturn, Union
+from typing import NoReturn
 
 from .Parser import _merge_dicts
 from .Logger import LOG

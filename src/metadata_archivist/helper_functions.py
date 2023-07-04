@@ -7,6 +7,7 @@ Additional helper functions.
 Authors: Jose V., Matthias K.
 
 """
+
 from typing import Optional
 from functools import reduce
 

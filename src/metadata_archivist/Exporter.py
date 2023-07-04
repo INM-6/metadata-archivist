@@ -7,7 +7,7 @@ Authors: Jose V., Matthias K.
 
 """
 
-import json
+from json import dump
 from pathlib import Path
 
 
@@ -35,7 +35,7 @@ class Exporter():
             print(f"Saving metadata to file: {outfile}")
 
         with outfile.open("w") as f:
-            json.dump(metadata, f, indent=4)
+            dump(metadata, f, indent=4)
 
         if verb:
             print("Saved metadata file.")

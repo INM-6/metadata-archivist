@@ -105,26 +105,28 @@ class Decompressor():
             item = t.next()
             while item is not None:
                 LOG.info(f"    processing file: {item.name}")
+                item_path = decompress_path.joinpath(item.name)
                 if any(item.name.endswith(format)
                         for format in ['tgz', 'tar']):
                     t.extract(item, path=decompress_path)
-                    new_archive = decompress_path.joinpath(item.name)
-                    _, ndd, ndf = self._decompress_tar(output_file_patterns,
-                                                       archive_path=new_archive,
+                    _, new_decompressed_dirs, new_decompressed_files = self._decompress_tar(output_file_patterns,
+                                                       archive_path=item_path,
                                                        extraction_path=decompress_path)
-                    ndd.extend(decompressed_dirs)
-                    decompressed_dirs = ndd
-                    decompressed_files.extend(ndf)
-                    new_archive.unlink()
+                    # Reverse ordering of dirs to correctly remove them
+                    new_decompressed_dirs.extend(decompressed_dirs)
+                    decompressed_dirs = new_decompressed_dirs
+                    decompressed_files.extend(new_decompressed_files)
+                    item_path.unlink()
 
+                # TODO: think about precompiling patterns to optimize regex match time
                 elif any(re.fullmatch(f'.*/{pat}', item.name)
                         for pat in output_file_patterns):
                     t.extract(item, path=decompress_path)
-                    decompressed_files.append(decompress_path.joinpath(item.name))
+                    decompressed_files.append(item_path)
                 elif item.isdir():
                     # TODO: Deal with empty dirs
-                    decompressed_dirs.insert(0, decompress_path.joinpath(item.name))
+                    decompressed_dirs.insert(0, item_path)
                 item = t.next()
 
         # Returned paths are used for parsing and automatic clean-up.
-        return decompress_path, decompressed_files, decompressed_dirs
+        return decompress_path, decompressed_dirs, decompressed_files

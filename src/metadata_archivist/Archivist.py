@@ -161,7 +161,7 @@ class Archivist():
         LOG.info("Unpacking archive...")
         LOG.debug(f'    using patterns: {self.parser.input_file_patterns}')
 
-        decompress_path, decompressed_files, decompressed_dirs = self.decompressor.decompress(
+        decompress_path, decompressed_dirs, decompressed_files = self.decompressor.decompress(
             self.parser.input_file_patterns)
 
         LOG.info(f'''Done!\nparsing files ...''')

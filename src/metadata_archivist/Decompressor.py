@@ -36,7 +36,6 @@ class Decompressor():
 
         # Public
         self.config = config
-        self.verbose = verbose
 
     @property
     def archive_path(self) -> Path:
@@ -95,8 +94,7 @@ class Decompressor():
             archive_path = self._archive_path
         if extraction_path is None:
             extraction_path = Path(self.config["extraction_directory"])
-        if self.verbose:
-            LOG.info(f"Decompression of archive: {archive_path.name}")
+        LOG.info(f"Decompression of archive: {archive_path.name}")
 
         archive_name = archive_path.stem.split(".")[0]
         decompress_path = extraction_path.joinpath(archive_name)
@@ -106,8 +104,7 @@ class Decompressor():
         with tarfile.open(archive_path) as t:
             item = t.next()
             while item is not None:
-                if self.verbose:
-                    LOG.info(f"    processing file: {item.name}")
+                LOG.info(f"    processing file: {item.name}")
                 if any(item.name.endswith(format)
                         for format in ['tgz', 'tar']):
                     t.extract(item, path=decompress_path)

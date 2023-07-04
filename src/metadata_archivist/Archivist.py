@@ -43,24 +43,25 @@ class Archivist():
                                              allow_existing=True)
 
         # Set exporter
+        # TODO: use output format for better handling?
         f_format = self.config["output_file"][self.config["output_file"].
                                               find(".") + 1:]
         self.exporter = Exporter(f_format)
         self.metadata_output_file = self._out_dir_path / Path(
             self.config["output_file"])
         if self.metadata_output_file.exists():
-            if self.config["overwrite"]:
-                if self.metadata_output_file.is_file():
+            if self.metadata_output_file.is_file():
+                if self.config["overwrite"]:
                     LOG.warning(
                         f"Metadata output file exists: '{self.metadata_output_file}', overwriting."
                     )
                 else:
                     raise RuntimeError(
-                        f"Metadata output file exists: '{self.metadata_output_file}' cannot overwrite."
+                        f"Metadata output file exists: '{self.metadata_output_file}', overwriting not allowed."
                     )
             else:
                 raise RuntimeError(
-                    f"Metadata output file exists: '{self.metadata_output_file}' overwrite not allowed."
+                    f"'{self.metadata_output_file}' exists and is not a file, cannot overwrite."
                 )
 
         # Operational memory
@@ -208,9 +209,7 @@ class Archivist():
         metadata = self.get_metadata()
         LOG.info(f'''Exporting metadata...''')
         self.exporter.export(metadata,
-                             self.metadata_output_file,
-                             verb=(self.config["verbose"] in ['debug',
-                                                              'info']))
+                             self.metadata_output_file)
         LOG.info("Done!")
 
         return self.metadata_output_file
@@ -229,25 +228,21 @@ class Archivist():
             LOG.info(f"    cleaning files:")
             for f in files:
                 LOG.info(f"        {str(f)}")
-
-            for file in files:
                 try:
-                    file.unlink()
+                    f.unlink()
                 except Exception as e:
                     errors.append(
-                        (str(file),
+                        (str(f),
                          e.message if hasattr(e, "message") else str(e)))
 
             LOG.info(f"    cleaning directories:")
             for d in dirs:
                 LOG.info(f"        {str(d)}")
-
-            for dir in dirs:
                 try:
-                    dir.rmdir()
+                    d.rmdir()
                 except Exception as e:
                     errors.append(
-                        (str(dir),
+                        (str(d),
                          e.message if hasattr(e, "message") else str(e)))
 
             if len(errors) > 0:

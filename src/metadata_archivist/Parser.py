@@ -15,7 +15,6 @@ from json import dump, load
 from pathlib import Path
 from typing import Optional, List, Tuple, NoReturn, Union
 from collections.abc import Iterable
-from functools import reduce
 
 from .Logger import LOG
 from .Extractor import AExtractor
@@ -635,23 +634,6 @@ def _combine(parser1: Parser,
                                                 parser2.metadata)
 
     return combined_parser
-
-
-def defs2dict(defs, search_dict: Optional[dict] = None):
-    sep = '/'
-    if sep not in defs and search_dict is None:
-        return defs
-    elif sep not in defs and search_dict:
-        return search_dict[defs]
-    key, val = defs.split(sep, 1)
-    if search_dict is None:
-        return {key: defs2dict(val, None)}
-    else:
-        return {key: defs2dict(val, search_dict[key])}
-
-
-def deep_get(dictionary, *keys):
-    return reduce(lambda d, key: d.get(key) if d else None, keys, dictionary)
 
 
 Parser.combine = _combine

@@ -397,13 +397,13 @@ class Parser():
 
                 if not self._lazy_load:
                     # self._update_metadata_tree_with_path_hierarchy(metadata, decompress_path, file_path)
-                    self._cache[ex_id].add({
+                    self._cache[ex_id].add(**{
                         'decompress_path': decompress_path,
                         'file_path': file_path,
                         'metadata': metadata
                     })
                 else:
-                    entry = self._cache[ex_id].add({
+                    entry = self._cache[ex_id].add(**{
                         'decompress_path': decompress_path,
                         'file_path': file_path
                     })

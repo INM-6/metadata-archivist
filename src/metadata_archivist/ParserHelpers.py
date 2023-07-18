@@ -227,7 +227,7 @@ class _CacheExtractor:
         self._entries = list()
         self._iterator = None
 
-    def add(self, kwargs: dict):
+    def add(self, **kwargs):
         entry = _CacheEntry(**kwargs)
         self._entries.append(entry)
         return entry

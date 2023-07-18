@@ -15,7 +15,6 @@ import re
 from json import dump, load
 from pathlib import Path
 from typing import Optional, List, NoReturn, Union
-from collections.abc import Iterable
 
 from .Logger import LOG
 from .Extractor import AExtractor
@@ -546,6 +545,8 @@ class Parser():
             raise RuntimeError(
                 "Metadata needs to be parsed before updating the tree")
         if self._use_schema:
+            if self.lazy_load:
+                raise NotImplementedError()
             LOG.debug("    using schema")
             iterator = self._schema_iterator()
             while True:
@@ -566,56 +567,6 @@ class Parser():
                         cache_entry.file_path)
 
         return self.metadata
-
-
-def _merge_dicts(dict1: dict, dict2: dict) -> dict:
-    """
-    Recursively merges dictionaries going in depth for nested structures.
-    """
-    keys1 = list(dict1.keys())
-    keys2 = list(dict2.keys())
-    merged_dict = {}
-    for key in keys1:
-        if key in keys2:
-            keys2.remove(key)
-            val1 = dict1[key]
-            val2 = dict2[key]
-            try:
-                # TODO: behavior needs to be validated
-                if type(val1) == type(val2):
-                    if isinstance(val1, Iterable):
-                        if isinstance(val1, dict):
-                            merged_dict[key] = _merge_dicts(val1, val2)
-                        elif isinstance(val1, list):
-                            merged_dict[key] = val1 + val2
-                        elif isinstance(val1, set):
-                            merged_dict[key] = val1 | val2
-                        elif isinstance(val1, tuple):
-                            merged_dict[key] = tuple(list(val1) + list(val2))
-                        elif isinstance(val1, frozenset):
-                            merged_dict[key] = frozenset(
-                                list(val1) + list(val2))
-                        else:
-                            raise RuntimeError(
-                                f"Unknown Iterable type: {type(val1)}")
-                    else:
-                        if val1 == val2:
-                            merged_dict[key] = val1
-                        else:
-                            merged_dict[key] = [val1, val2]
-                else:
-                    raise TypeError
-            except TypeError:
-                # TODO: Need to deal with the combination of shared parser metadata.
-                LOG.critical(
-                    f"Combination of heterogeneous metadata is not yet implemented.\n          Dropping mutual metadata {key}."
-                )
-        else:
-            merged_dict[key] = dict1[key]
-    for key in keys2:
-        merged_dict[key] = dict2[key]
-
-    return merged_dict
 
 
 def _combine(parser1: Parser,

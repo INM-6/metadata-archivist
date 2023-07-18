@@ -82,7 +82,7 @@ class Parser():
                 self._schema = schema
             elif isinstance(schema, Path):
                 if schema.suffix in ['.json']:
-                    with open(schema) as f:
+                    with schema.open() as f:
                         self._schema = load(f)
                 else:
                     raise RuntimeError(
@@ -92,13 +92,8 @@ class Parser():
                 raise TypeError('schema must be dict or Path')
         else:
             self._use_schema = False
+            # TODO: wouldn't it better to copy it to avoid losing the default after modifications in an interactive session?
             self._schema = DEFAULT_PARSER_SCHEMA
-        # elif isinstance(schema, (str, Path)):
-        #     with open(schema) as f:
-        #         self._schema = json.load(f)
-        # elif isinstance(schema, dict):
-        #     # ToDo: Validate the dict as schema
-        #     self._schema = schema
 
         # Used for internal handling:
         # Shouldn't use much memory but TODO: check additional memory usage
@@ -109,10 +104,6 @@ class Parser():
 
         # Set lazy loading
         self._lazy_load = lazy_load
-
-        # Used for updating/removing extractors
-        # Indexing is done storing a triplet with extractors, patterns, schema indexes
-        self._indexes = {}
 
         # For extractor result caching
         self._cache = helpers.Cache()
@@ -599,7 +590,7 @@ def _merge_dicts(dict1: dict, dict2: dict) -> dict:
             except TypeError:
                 # TODO: Need to deal with the combination of shared parser metadata.
                 LOG.critical(
-                    f"Combination of heterogeneous metadata is not yet implemented.\n          Dropping mutual metadata {key}"
+                    f"Combination of heterogeneous metadata is not yet implemented.\n          Dropping mutual metadata {key}."
                 )
         else:
             merged_dict[key] = dict1[key]
@@ -623,16 +614,14 @@ def _combine(parser1: Parser,
             f"Lazy load configuration mismatch. Setting to default: {ll}")
     else:
         ll = parser1.lazy_load
-    schema = schema if schema is not None else DEFAULT_PARSER_SCHEMA
     combined_parser = Parser(schema=schema,
                              extractors=parser1.extractors +
                              parser2.extractors,
                              lazy_load=ll)
 
     if len(parser1.metadata) > 0 or len(parser2.metadata) > 0:
-        raise NotImplementedError("Cannot yet Parser with existing metadata")
-        combined_parser.metadata = _merge_dicts(parser1.metadata,
-                                                parser2.metadata)
+        #combined_parser.metadata = _merge_dicts(parser1.metadata, parser2.metadata)
+        raise NotImplementedError("Combining Parsers with existing metadata is not yet implemented.")
 
     return combined_parser
 

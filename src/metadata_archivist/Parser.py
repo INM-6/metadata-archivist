@@ -364,7 +364,8 @@ class Parser():
                 )
 
     def parse_files(self, decompress_path: Path,
-                    file_paths: List[Path]) -> List[Path]:
+                    file_paths: List[Path],
+                    override_meta_files: bool = True) -> List[Path]:
         """
         Add metadata from input files to metadata object,
         usually by sending calling all extract's linked to the file-name or regexp of files names.
@@ -398,19 +399,24 @@ class Parser():
                 if not self._lazy_load:
                     # self._update_metadata_tree_with_path_hierarchy(metadata, decompress_path, file_path)
                     self._cache[ex_id].add({
-                        'metadata': metadata,
                         'decompress_path': decompress_path,
-                        'file_path': file_path
+                        'file_path': file_path,
+                        'metadata': metadata
                     })
                 else:
-                    self._cache[ex_id].add({
+                    entry = self._cache[ex_id].add({
                         'decompress_path': decompress_path,
                         'file_path': file_path
                     })
-                    # TODO: functionally the -1 is correct but it bugs my mind, can we have something more readable?
-                    with self._cache[ex_id][-1].meta_path.open("w") as mp:
+                    if entry.meta_path.exists():
+                        if override_meta_files:
+                            LOG.warning(f"Metadata file {entry.meta_path} exists, overriding.")
+                        else:
+                            raise FileExistsError(
+                                f"Unable to save extracted metadata: {entry.meta_path} exists")
+                    with entry.meta_path.open("w") as mp:
                         dump(metadata, mp, indent=4)
-                    meta_files.append(self._cache[ex_id][-1].meta_path)
+                    meta_files.append(entry.meta_path)
 
         return meta_files
 
@@ -549,15 +555,15 @@ class Parser():
                 except StopIteration:
                     break
         else:
-            for extractor in self._cache:
-                for meta_set in extractor:
-                    if meta_set.metadata is None:
-                        with meta_set.meta_path.open("r") as f:
-                            meta_set.add_metadata(load(f))
+            for extractor_cache in self._cache:
+                for cache_entry in extractor_cache:
+                    if cache_entry.metadata is None:
+                        with cache_entry.meta_path.open("r") as f:
+                            cache_entry.add_metadata(load(f))
 
                     self._update_metadata_tree_with_path_hierarchy(
-                        meta_set.metadata, meta_set.decompress_path,
-                        meta_set.file_path)
+                        cache_entry.metadata, cache_entry.decompress_path,
+                        cache_entry.file_path)
 
         return self.metadata
 

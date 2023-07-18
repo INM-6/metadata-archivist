@@ -17,8 +17,8 @@ import jsonschema  # to validate extracted data
 from pathlib import Path
 from typing import NoReturn
 
-from .Parser import _merge_dicts
 from .Logger import LOG
+from .helper_functions import _merge_dicts
 
 
 class AExtractor(abc.ABC):

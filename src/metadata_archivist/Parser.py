@@ -74,7 +74,7 @@ class Parser():
         # Protected
         # These attributes should only be modified through the add, update remove methods
         self._extractors = []
-        self._input_file_patterns = []
+        self._input_file_patterns = [] # TODO: Check if this list can/may become a 1D - 2D hybrid list if an extractor accepts multiple patterns
         # Can also be completely replaced through set method
         if schema is not None:
             self._use_schema = True
@@ -100,7 +100,7 @@ class Parser():
 
         # Used for updating/removing extractors
         # Indexing is done storing a triplet with extractors, patterns, schema indexes
-        self._indexes = {}
+        self._indexes = helpers._Indexes()
 
         # Set lazy loading
         self._lazy_load = lazy_load
@@ -195,16 +195,23 @@ class Parser():
         Extends parser schema (dict) with a given extractor schema (dict).
         Indexes schema.
         """
-        if "$defs" not in self._schema.keys():
+        if "$defs" not in self._schema:
             self._schema["$defs"] = {"node": {"properties": {"anyOf": []}}}
+        elif not isinstance(self._schema["$defs"], dict):
+            raise TypeError(
+                f"Incorrect schema format, $defs property should be a dictionary, got {type(self._schema['$defs'])}")
+        
         ex_id = extractor.id
         ex_ref = extractor.ref
         self._schema["$defs"][ex_id] = extractor.schema
-        if 'node' in self._schema["$defs"]:
-            self._indexes[ex_id][2] = len(
-                self._schema["$defs"]["node"]["properties"]["anyOf"])
-            self._schema["$defs"]["node"]["properties"]["anyOf"].append(
-                {"$ref": ex_ref})
+
+        if 'node' not in self._schema["$defs"]:
+            self._schema["$defs"].update({"node": {"properties": {"anyOf": []}}})
+
+        self._indexes.set_index(ex_id, "sp",
+                                len(self._schema["$defs"]["node"]["properties"]["anyOf"]))
+        self._schema["$defs"]["node"]["properties"]["anyOf"].append(
+            {"$ref": ex_ref})
 
     def add_extractor(self, extractor: AExtractor) -> None:
         """
@@ -214,9 +221,10 @@ class Parser():
         if extractor in self.extractors:
             raise RuntimeError("Extractor is already in Parser")
         ex_id = extractor.id
-        self._indexes[ex_id] = [len(self._extractors), 0, 0]
+        self._cache.add(ex_id)
+        self._indexes.set_index(ex_id, "ex", len(self._extractors))
         self._extractors.append(extractor)
-        self._indexes[ex_id][1] = len(self._input_file_patterns)
+        self._indexes.set_index(ex_id, "ifp", len(self._input_file_patterns))
         self._input_file_patterns.append(extractor.input_file_pattern)
         self._extend_json_schema(extractor)
         extractor._parsers.append(self)
@@ -230,9 +238,10 @@ class Parser():
             raise RuntimeError("Unknown Extractor")
         ex_id = extractor.id
         self._schema["$defs"][ex_id] = extractor.schema
-        self._input_file_patterns[self._indexes[ex_id]
-                                  [1]] = extractor.input_file_pattern
-        self._schema["$defs"]["node"]["properties"]["anyOf"][self._indexes[ex_id][2]] = \
+        ifp_index = self._indexes.get_index(ex_id, "ifp")
+        self._input_file_patterns[ifp_index] = extractor.input_file_pattern
+        sp_index = self._indexes.get_index(ex_id, "sp")
+        self._schema["$defs"]["node"]["properties"]["anyOf"][sp_index] = \
             {"$ref": extractor.ref}
 
     def remove_extractor(self, extractor: AExtractor) -> None:
@@ -243,17 +252,18 @@ class Parser():
         if extractor not in self._extractors:
             raise RuntimeError("Unknown Extractor")
         ex_id = extractor.id
-        self._extractors.pop(self._indexes[ex_id][0], None)
-        self._input_file_patterns.pop(self._indexes[ex_id][1], None)
-        self._schema["$defs"]["node"]["properties"]["anyOf"].pop(
-            self._indexes[ex_id][2], None)
+        indexes = self._indexes.get_index(ex_id)
+        self._extractors.pop(indexes["ex"], None)
+        self._input_file_patterns.pop(indexes["ifp"], None)
+        self._schema["$defs"]["node"]["properties"]["anyOf"].pop(indexes["sp"], None)
         self._schema["$defs"].pop(ex_id, None)
-        self._indexes.pop(ex_id, None)
+        self._indexes.drop_indexes(ex_id)
+        self._cache.drop(ex_id)
         extractor._parsers.remove(self)
 
     def get_extractor(self, extractor_name: str) -> AExtractor:
         """
-        helper method returns extractor given a extactor name
+        helper method returns extractor given a extractor name
         """
         for ex in self.extractors:
             if ex.name == extractor_name:
@@ -368,7 +378,7 @@ class Parser():
         for extractor in self._extractors:
             ex_id = extractor.id
             to_extract[ex_id] = []
-            LOG.debug(f'    prearing extractor: {ex_id}')
+            LOG.debug(f'    preparing extractor: {ex_id}')
             for fp in file_paths:
                 pattern = extractor.input_file_pattern
                 if pattern[0] == '*':
@@ -381,21 +391,23 @@ class Parser():
         for ex_id in to_extract:
             for file_path in to_extract[ex_id]:
                 # Get extractor and extract metadata
-                extractor = self._extractors[self._indexes[ex_id][0]]
+                ex_index = self._indexes.get_index(ex_id, "ex")
+                extractor = self._extractors[ex_index]
                 metadata = extractor.extract_metadata_from_file(file_path)
 
                 if not self._lazy_load:
                     # self._update_metadata_tree_with_path_hierarchy(metadata, decompress_path, file_path)
-                    self._cache[ex_id] = {
+                    self._cache[ex_id].add({
                         'metadata': metadata,
                         'decompress_path': decompress_path,
                         'file_path': file_path
-                    }
+                    })
                 else:
-                    self._cache[ex_id] = {
+                    self._cache[ex_id].add({
                         'decompress_path': decompress_path,
                         'file_path': file_path
-                    }
+                    })
+                    # TODO: functionally the -1 is correct but it bugs my mind, can we have something more readable?
                     with self._cache[ex_id][-1].meta_path.open("w") as mp:
                         dump(metadata, mp, indent=4)
                     meta_files.append(self._cache[ex_id][-1].meta_path)

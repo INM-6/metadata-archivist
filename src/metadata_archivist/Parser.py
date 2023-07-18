@@ -99,7 +99,7 @@ class Parser():
 
         # Used for updating/removing extractors
         # Indexing is done storing a triplet with extractors, patterns, schema indexes
-        self._indexes = helpers._Indexes()
+        self._indexes = helpers.Indexes()
 
         # Set lazy loading
         self._lazy_load = lazy_load

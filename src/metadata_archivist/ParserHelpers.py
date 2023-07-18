@@ -289,7 +289,7 @@ class _CacheEntry:
         return self.file_path.relative_to(self.decompress_path)
 
 
-class _Indexes:
+class Indexes:
     """
     Class to be handled only by Parser class.
     Indexing class for storing per extractor:

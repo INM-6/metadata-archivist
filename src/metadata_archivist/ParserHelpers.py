@@ -227,7 +227,7 @@ class _CacheExtractor:
         self._entries = list()
         self._iterator = None
 
-    def add(self, **kwargs):
+    def add(self, kwargs: dict):
         entry = _CacheEntry(**kwargs)
         self._entries.append(entry)
         return entry
@@ -274,7 +274,7 @@ class _CacheEntry:
         self.file_path = file_path
         self.metadata = metadata
         if metadata is None:
-            self.meta_path = file_path.joinpath(".meta")
+            self.meta_path = Path(str(file_path) + ".meta")
         else:
             self.meta_path = None
 

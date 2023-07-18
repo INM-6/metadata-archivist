@@ -224,7 +224,7 @@ class _CacheExtractor:
     _entries: list
 
     def __init__(self):
-        self._entries = []
+        self._entries = list()
         self._iterator = None
 
     def add(self, **kwargs):

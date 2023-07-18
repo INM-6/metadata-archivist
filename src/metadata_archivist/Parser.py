@@ -540,7 +540,7 @@ class Parser():
 
     def compile_metadata(self, **kwargs) -> dict:
         """
-        Function to gather all metadata extracted using parsing function with lazy loading.
+        Method to build full metadata tree from cached metadata.
         """
         if self._cache.is_empty():
             raise RuntimeError(

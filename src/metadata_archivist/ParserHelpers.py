@@ -11,7 +11,7 @@ Authors: Jose V., Matthias K.
 import re
 
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any, Dict
 
 class Hierachy:
     """
@@ -248,3 +248,73 @@ class _CacheEntry:
                 raise FileExistsError(
                     f"Unable to save extracted metadata: {_meta_path} exists")
             return _meta_path
+
+
+class _Indexes:
+    """
+    Class to be handled only by Parser class.
+    Indexing class for storing per extractor:
+        - extractors list index
+        - input file patterns list index
+        - schema properties list index
+    """
+    ex_indexes: dict
+    ifp_indexes: dict
+    sp_indexes: dict
+
+    def __init__(self) -> None:
+        self.ex_indexes = {}
+        self.ifp_indexes = {}
+        self.sp_indexes = {}
+
+    def _get_storage(self, storage) -> dict:
+        """
+        Private method for getting specific storage based on storage name string:
+        To determine which storage should the index go to:
+            - 'ex' or 'extractors' for extractor index list
+            - 'ifp' or 'input_file_patterns' for input file pattern index list
+            - 'sp' or 'schema_properties' for schema property list
+        """
+        ex_patterns = ["ex", "extractors"]
+        ifp_patterns = ["ifp", "input_file_patterns"]
+        sp_patterns = ["sp", "schema_properties"]
+        if storage in ex_patterns:
+            return self.ex_indexes
+        elif storage in ifp_patterns:
+            return self.ifp_indexes
+        elif storage in sp_patterns:
+            return self.sp_indexes
+
+        raise ValueError(f"Incorrect value for storage name, got {storage}, accepted {ex_patterns + ifp_patterns + sp_patterns}")
+        
+    
+    def set_index(self, extractor_id, storage: str, index: int) -> None:
+        """
+        Generic set index method for all storages.
+        """
+        self._get_storage(storage)[extractor_id] = index
+
+    def get_index(self, extractor_id, storage: Optional[str] = None) -> Any[int, Dict[str, int]]:
+        """
+        Generic get index method for all storages.
+        If no storage specified, all stored indexes are returned as a dictionary.
+        """
+        if storage is None:
+            # TODO: Should we raise an error if the id is not in any/all dictionaries?
+            return {
+                "ex": self.ex_indexes.get(extractor_id, None),
+                "ifp": self.ifp_indexes.get(extractor_id, None),
+                "sp": self.sp_indexes.get(extractor_id, None),
+                }
+        else:
+            return self._get_storage(storage)[extractor_id]
+        
+    def drop_indexes(self, extractor_id) -> None:
+        """
+        Remove method for an extractor_id in all storages.
+        TODO: Should we return values?
+        TODO: Should we raise if id is not known?
+        """
+        self.ex_indexes.pop(extractor_id, None)
+        self.ifp_indexes.pop(extractor_id, None)
+        self.sp_indexes.pop(extractor_id, None)

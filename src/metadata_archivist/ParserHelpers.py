@@ -11,7 +11,7 @@ Authors: Jose V., Matthias K.
 import re
 
 from pathlib import Path
-from typing import Optional, Any, Dict
+from typing import Optional, Any, Dict, Union
 
 class Hierachy:
     """
@@ -169,7 +169,9 @@ class ExtractorDirective(HierachyEntry):
 class Cache:
     """
     Convenience class for caching extraction results.
-    Extractors have to be added through corresponding method before adding CacheEntries.
+    For each extractor a _CacheExtractor object is created which will store all extraction results.
+    To this end, extractors have to be added through corresponding method.
+    Then _CacheExtractor is obtained through index access i.e. ```[key]``` and used to add _CacheEntry objects.
     Iteration is possible by using dictionary iterator on the actual cache storage.
     """
 
@@ -181,7 +183,7 @@ class Cache:
 
     def add(self, extractor_id) -> None:
         if extractor_id not in self._cache:
-            self._cache[extractor_id] = _CacheExtractor(extractor_id)
+            self._cache[extractor_id] = _CacheExtractor()
         else:
             raise KeyError(f"Extractor {extractor_id} already exists in cache")
         
@@ -213,18 +215,44 @@ class Cache:
 
 class _CacheExtractor:
     """
-    a Extrctor representation in the cache
+    Convenience class for caching extraction results.
+    For each extractor a _CacheExtractor object is created which will store all extraction results.
+    _CacheExtractor objects can contain any amount of _CacheEntry objects.
+    Iteration is possible by using list iterator on the actual entry storage.
     """
 
-    def __init__(self, id: str):
-        self.id = id
-        self._entries = []
+    _entries: list
 
-    def __getitem__(self, ind):
-        return self._entries[ind]
+    def __init__(self):
+        self._entries = []
+        self._iterator = None
 
     def add(self, **kwargs):
-        self._entries.append(_CacheEntry(**kwargs))
+        entry = _CacheEntry(**kwargs)
+        self._entries.append(entry)
+        return entry
+
+    def __getitem__(self, index: int):
+        return self._entries[index]
+
+    def __iter__(self):
+        """
+        Iteration is done by iterating over the storage dictionary.
+        """
+        self._iterator = iter(self._entries)
+        return self
+
+    def __next__(self):
+        """
+        When iterating over a dictionary keys are returned,
+        here we return the corresponding _CacheExtractor objects.
+        """
+        if self._iterator is None:
+            raise StopIteration
+        return next(self._iterator)
+
+    def is_empty(self):
+        return len(self._entries) == 0
 
 
 class _CacheEntry:
@@ -232,33 +260,33 @@ class _CacheEntry:
     a CacheEntries has metadata the path to the decompression roo and a file path
     """
 
+    decompress_path: Path
+    file_path: Path
+    metadata: dict
+    meta_path: Path
+
+
     def __init__(self,
                  decompress_path: Path,
                  file_path: Path,
                  metadata: Optional[dict] = None):
-        self.metadata = metadata
-        self.file_path = file_path
         self.decompress_path = decompress_path
+        self.file_path = file_path
+        self.metadata = metadata
+        if metadata is None:
+            self.meta_path = file_path.joinpath(".meta")
+        else:
+            self.meta_path = None
 
     def add_metadata(self, metadata: dict):
         if self.metadata is not None:
             raise RuntimeError('metadata already exists')
         self.metadata = metadata
+        self.meta_path = None
 
     @property
     def rel_path(self) -> Path:
         return self.file_path.relative_to(self.decompress_path)
-
-    @property
-    def meta_path(self):
-        if self.metadata is not None:
-            return None
-        else:
-            _meta_path = Path(str(self.file_path) + ".meta")
-            if _meta_path.exists():
-                raise FileExistsError(
-                    f"Unable to save extracted metadata: {_meta_path} exists")
-            return _meta_path
 
 
 class _Indexes:
@@ -278,7 +306,7 @@ class _Indexes:
         self.ifp_indexes = {}
         self.sp_indexes = {}
 
-    def _get_storage(self, storage) -> dict:
+    def _get_storage(self, storage: str) -> dict:
         """
         Private method for getting specific storage based on storage name string:
         To determine which storage should the index go to:
@@ -299,13 +327,13 @@ class _Indexes:
         raise ValueError(f"Incorrect value for storage name, got {storage}, accepted {ex_patterns + ifp_patterns + sp_patterns}")
         
     
-    def set_index(self, extractor_id, storage: str, index: int) -> None:
+    def set_index(self, extractor_id: Any, storage: str, index: int) -> None:
         """
         Generic set index method for all storages.
         """
         self._get_storage(storage)[extractor_id] = index
 
-    def get_index(self, extractor_id, storage: Optional[str] = None) -> Any[int, Dict[str, int]]:
+    def get_index(self, extractor_id: Any, storage: Optional[str] = None) -> Union[int, Dict[str, int]]:
         """
         Generic get index method for all storages.
         If no storage specified, all stored indexes are returned as a dictionary.
@@ -320,7 +348,7 @@ class _Indexes:
         else:
             return self._get_storage(storage)[extractor_id]
         
-    def drop_indexes(self, extractor_id) -> None:
+    def drop_indexes(self, extractor_id: Any) -> None:
         """
         Remove method for an extractor_id in all storages.
         TODO: Should we return values?

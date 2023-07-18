@@ -168,33 +168,44 @@ class ExtractorDirective(HierachyEntry):
 
 class Cache:
     """
-    our cache is a dict, containing a key for each extractor (named with extractor id)
-    and a list of corresponding CacheEntries
+    Convenience class for caching extraction results.
+    Extractors have to be added through corresponding method before adding CacheEntries.
+    Iteration is possible by using dictionary iterator on the actual cache storage.
     """
 
+    _cache: dict
+
     def __init__(self):
-        self._cache = {}
+        self._cache = dict()
+        self._iterator = None
 
-    def __getitem__(self, key):
-        return self._cache[key]
+    def add(self, extractor_id) -> None:
+        if extractor_id not in self._cache:
+            self._cache[extractor_id] = _CacheExtractor(extractor_id)
+        else:
+            raise KeyError(f"Extractor {extractor_id} already exists in cache")
+        
+    def drop(self, extractor_id) -> None:
+        self._cache.pop(extractor_id, None)
 
-    def __setitem__(self, key, kwargs: dict):
-        if key not in self._cache.keys():
-            self._cache[key] = _CacheExtractor(key)
-        self._cache[key].add(**kwargs)
+    def __getitem__(self, extractor_id):
+        return self._cache[extractor_id]
 
     def __iter__(self):
-        self.__i = 0
-        self.__keys = list(self._cache.keys())
+        """
+        Iteration is done by iterating over the storage dictionary.
+        """
+        self._iterator = iter(self._cache)
         return self
 
     def __next__(self):
-        if self.__i >= len(self._cache):
+        """
+        When iterating over a dictionary keys are returned,
+        here we return the corresponding _CacheExtractor objects.
+        """
+        if self._iterator is None:
             raise StopIteration
-        else:
-            i = self.__i
-            self.__i += 1
-            return self[self.__keys[i]]
+        return self._cache[next(self._iterator)]
 
     def is_empty(self):
         return len(self._cache) == 0

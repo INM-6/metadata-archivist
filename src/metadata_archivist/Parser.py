@@ -269,59 +269,60 @@ class Parser():
                 return ex
         raise RuntimeWarning(f'no extractor with name: {extractor_name} exist')
 
-    def _update_metadata_tree(self, decompress_path: Path,
-                              file_path: Path) -> Path:
-        """
-        Update tree structure of metadata dict with file path.
+    # TODO: Check whether we want to keep this or not:
+    # def _update_metadata_tree(self, decompress_path: Path,
+    #                           file_path: Path) -> Path:
+    #     """
+    #     Update tree structure of metadata dict with file path.
 
-        :param file_path: path to a file
-        """
-        iter_dict = self.metadata
-        rel_file_path = file_path.relative_to(decompress_path)
-        for pp in rel_file_path.parts[:-1]:
-            if pp not in iter_dict:
-                iter_dict[pp] = {}
-                iter_dict = iter_dict[pp]
-            elif pp in iter_dict and not isinstance(iter_dict[pp], dict):
-                raise RuntimeError(
-                    f'Trying to created nested structure in metadata object failed: {pp}'
-                )
-        return rel_file_path
+    #     :param file_path: path to a file
+    #     """
+    #     iter_dict = self.metadata
+    #     rel_file_path = file_path.relative_to(decompress_path)
+    #     for pp in rel_file_path.parts[:-1]:
+    #         if pp not in iter_dict:
+    #             iter_dict[pp] = {}
+    #             iter_dict = iter_dict[pp]
+    #         elif pp in iter_dict and not isinstance(iter_dict[pp], dict):
+    #             raise RuntimeError(
+    #                 f'Trying to created nested structure in metadata object failed: {pp}'
+    #             )
+    #     return rel_file_path
 
-    def _deep_set(self, metadata: dict, value, path: Path) -> None:
-        if len(path.parts) == 1:
-            metadata[path.parts[0]] = value
-        else:
-            self._deep_set(metadata[path.parts[0]], value,
-                           path.relative_to(path.parts[0]))
+    # def _deep_set(self, metadata: dict, value, path: Path) -> None:
+    #     if len(path.parts) == 1:
+    #         metadata[path.parts[0]] = value
+    #     else:
+    #         self._deep_set(metadata[path.parts[0]], value,
+    #                        path.relative_to(path.parts[0]))
 
-    def parse_file(self, file_path: Path) -> None:
-        """
-        Add metadata from input file to metadata object,
-        usually by sending calling all extract's linked to the file-name or regexp of file name.
+    # def parse_file(self, file_path: Path) -> None:
+    #     """
+    #     Add metadata from input file to metadata object,
+    #     usually by sending calling all extract's linked to the file-name or regexp of file name.
 
-        :param file_path: path to file (Path)
-        """
+    #     :param file_path: path to file (Path)
+    #     """
 
-        # TODO: Should lazy loading also be implemented here?
+    #     # TODO: Should lazy loading also be implemented here?
 
-        rel_file_path = self._update_metadata_tree(file_path)
+    #     rel_file_path = self._update_metadata_tree(file_path)
 
-        for extractor in self._extractors:
-            pattern = extractor.input_file_pattern
-            if pattern[0] == '*':
-                pattern = '.' + pattern
-            if re.fullmatch(pattern, file_path.name):
-                metadata = extractor.extract_metadata_from_file(file_path)
-                # TODO: The metadata tree should be compiled/merged with the Parser schema
-                # We should think if this is to be done instead of the path tree structure
-                # or do it afterwards through another mechanism
-                #   ->  Think about reshaping/filtering function for dictionaries using schemas
-                #       add bool condition to switch between directory hierarchy for metadata objects
-                #            or schema hierarchy
-                #       add linking between extracted metadata object properties through schema keywords
-                #           -> cf mattermost chat
-                self._deep_set(self.metadata, metadata, rel_file_path)
+    #     for extractor in self._extractors:
+    #         pattern = extractor.input_file_pattern
+    #         if pattern[0] == '*':
+    #             pattern = '.' + pattern
+    #         if re.fullmatch(pattern, file_path.name):
+    #             metadata = extractor.extract_metadata_from_file(file_path)
+    #             # TODO: The metadata tree should be compiled/merged with the Parser schema
+    #             # We should think if this is to be done instead of the path tree structure
+    #             # or do it afterwards through another mechanism
+    #             #   ->  Think about reshaping/filtering function for dictionaries using schemas
+    #             #       add bool condition to switch between directory hierarchy for metadata objects
+    #             #            or schema hierarchy
+    #             #       add linking between extracted metadata object properties through schema keywords
+    #             #           -> cf mattermost chat
+    #             self._deep_set(self.metadata, metadata, rel_file_path)
 
     def _update_metadata_tree_with_path_hierarchy(self, metadata: dict,
                                                   decompress_path: Path,

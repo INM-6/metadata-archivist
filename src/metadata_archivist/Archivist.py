@@ -17,7 +17,7 @@ from .Logger import LOG, set_verbose, set_debug
 
 class Archivist():
     """
-    Convinience class for orchestrating the Decompressor, Parser and Exporter.
+    Convenience class for orchestrating the Decompressor, Parser and Exporter.
     """
 
     def __init__(self, archive_path: Path, parser: Parser, **kwargs) -> None:

@@ -14,7 +14,7 @@ from .Logger import LOG
 
 class Exporter():
     """
-    Convinience class for handling different export formats.
+    Convenience class for handling different export formats.
     Currently only available export format is JSON.
     """
 

@@ -8,9 +8,10 @@ Authors: Jose V., Matthias K.
 
 """
 
-from collections.abc import Iterable
+from re import fullmatch
 from typing import Optional
 from functools import reduce
+from collections.abc import Iterable
 
 
 def defs2dict(defs, search_dict: Optional[dict] = None):
@@ -72,3 +73,30 @@ def _merge_dicts(dict1: dict, dict2: dict) -> dict:
         merged_dict[key] = dict2[key]
 
     return merged_dict
+
+def _deep_get_from_schema(schema, keys: list):
+    # if len(keys) > 0:
+    k = keys.pop(0)
+    if len(keys) > 0:
+        if k in schema.keys():
+            _deep_get_from_schema(schema[k], keys)
+        elif 'properties' in schema.keys() and keys[0] in schema['properties']:
+            _deep_get_from_schema(schema['properties'][k], keys)
+        elif 'additionalProperties' in schema.keys(
+        ) and keys[0] in schema['additionalProperties']:
+            _deep_get_from_schema(schema['additionalProperties'], keys)
+        elif 'additionalProperties' in schema.keys(
+        ) and 'properties' in schema['additionalProperties'] and keys[
+                0] in schema['additionalProperties']['properties']:
+            _deep_get_from_schema(schema['additionalProperties']['properties'],
+                                 keys)
+        elif 'patternProperties' in schema.keys() and any(
+                fullmatch(x, k)
+                for x in schema['patternProperties'].keys()):
+            for kk in schema['patternProperties'].keys():
+                if fullmatch(kk, k):
+                    _deep_get_from_schema(schema['patternProperties'][kk], keys)
+                    break
+    else:
+        print(schema[k])
+        return schema[k]

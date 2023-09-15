@@ -7,10 +7,10 @@ Authors: Jose V., Matthias K.
 
 """
 
-import re
 import zipfile
 import tarfile
 
+from re import fullmatch
 from pathlib import Path
 from collections.abc import Callable
 from typing import Optional, List, Tuple, NoReturn
@@ -118,7 +118,7 @@ class Decompressor():
                     item_path.unlink()
 
                 # TODO: think about precompiling patterns to optimize regex match time
-                elif any(re.fullmatch(f'.*/{pat}', item.name)
+                elif any(fullmatch(f'.*/{pat}', item.name)
                         for pat in output_file_patterns):
                     t.extract(item, path=decompress_path)
                     decompressed_files.append(item_path)

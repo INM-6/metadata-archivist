@@ -9,13 +9,16 @@ Authors: Matthias K., Jose V.
 
 from pathlib import Path
 
-from .Exporter import Exporter
 from .Parser import Parser
+from .Exporter import Exporter
 from .Decompressor import Decompressor
 from .Logger import LOG, set_verbose, set_debug
 
 
 class Archivist():
+    """
+    Convinience class for orchestrating the Decompressor, Parser and Exporter.
+    """
 
     def __init__(self, archive_path: Path, parser: Parser, **kwargs) -> None:
         """
@@ -155,9 +158,9 @@ class Archivist():
         Returns extracted metadata.
         """
         LOG.info(f'''Extracting:
-    Output path: {self._out_dir_path}
-    Extraction path: {self._dc_dir_path}
-    Remove extracted: {self.config["auto_cleanup"]}''')
+        Output path: {self._out_dir_path}
+        Extraction path: {self._dc_dir_path}
+        Remove extracted: {self.config["auto_cleanup"]}''')
 
         LOG.info("Unpacking archive...")
         LOG.debug(f'    using patterns: {self.parser.input_file_patterns}')
@@ -193,8 +196,7 @@ class Archivist():
         if self._cache["compile_metadata"]:
             LOG.info(f'''Compiling metadata...''')
             self._cache["compile_metadata"] = False
-            metadata = self.parser.compile_metadata(**kwargs)
-            self._cache["metadata"] = metadata
+            self._cache["metadata"] = self.parser.compile_metadata(**kwargs)
             LOG.info("Done!")
             self._clean_up()
 
@@ -205,9 +207,8 @@ class Archivist():
         Exports generated metadata to file using internal Exporter object.
         Returns path to exported file.
         """
-        metadata = self.get_metadata()
         LOG.info(f'''Exporting metadata...''')
-        self.exporter.export(metadata,
+        self.exporter.export(self.get_metadata(),
                              self.metadata_output_file)
         LOG.info("Done!")
 

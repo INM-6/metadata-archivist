@@ -9,16 +9,17 @@ Authors: Jose V., Matthias K.
 
 """
 
-import re
 import abc  # Abstract class base infrastructure
 
 import jsonschema  # to validate extracted data
 
+from re import fullmatch
 from pathlib import Path
+from copy import deepcopy
 from typing import NoReturn
 
 from .Logger import LOG
-from .helper_functions import _merge_dicts
+from .helper_functions import _merge_dicts, _deep_get_from_schema
 
 
 class AExtractor(abc.ABC):
@@ -136,7 +137,7 @@ class AExtractor(abc.ABC):
         pattern = self.input_file_pattern
         if pattern[0] == '*':
             pattern = '.' + pattern
-        if not re.fullmatch(pattern, file_path.name):
+        if not fullmatch(pattern, file_path.name):
             raise RuntimeError(
                 f'The input file {file_path.name} does not match the extractors pattern: {self.input_file_pattern}'
             )
@@ -198,7 +199,7 @@ class AExtractor(abc.ABC):
             add_type = kwargs['add_type']
         else:
             add_type = False
-        metadata_copy = metadata.copy()
+        metadata_copy = deepcopy(metadata)
         if keys is None:
             return metadata_copy
         else:
@@ -225,10 +226,10 @@ class AExtractor(abc.ABC):
         """
         new_dict = {}
         if level >= len(filter):
-            new_dict = metadata.copy()
+            new_dict = deepcopy(metadata)
         else:
             for k in metadata.keys():
-                if re.fullmatch(filter[level], k):
+                if fullmatch(filter[level], k):
                     if isinstance(metadata[k], dict):
                         new_dict[k] = self._filter_dict(
                             metadata[k], filter, level + 1)
@@ -255,16 +256,16 @@ class AExtractor(abc.ABC):
                 val = metadata[kk]
                 metadata[kk] = {'value': val}
                 print(key_list + [kk])
-                schem_entry = deep_get_from_schema(
-                    self._schema['properties'].copy(), key_list + [kk])
+                schem_entry = _deep_get_from_schema(
+                    deepcopy(self._schema['properties']), key_list + [kk])
                 if schem_entry is None and 'additionalProperties' in self._schema.keys(
                 ):
-                    schem_entry = deep_get_from_schema(
-                        self._schema['additionalProperties'].copy(), *key_list)
+                    schem_entry = _deep_get_from_schema(
+                        deepcopy(self._schema['additionalProperties']), *key_list)
                 if schem_entry is None and 'patternProperties' in self._schema.keys(
                 ):
-                    schem_entry = deep_get_from_schema(
-                        self._schema['patternProperties'].copy(), *key_list)
+                    schem_entry = _deep_get_from_schema(
+                        deepcopy(self._schema['patternProperties']), *key_list)
                 print(schem_entry)
                 if schem_entry is not None:
                     if add_description and 'description' in schem_entry.keys():
@@ -272,31 +273,3 @@ class AExtractor(abc.ABC):
                             {'description': schem_entry['description']})
                     if add_type and 'type' in schem_entry.keys():
                         metadata[kk].update({'type': schem_entry['type']})
-
-
-def deep_get_from_schema(schema, keys: list):
-    # if len(keys) > 0:
-    k = keys.pop(0)
-    if len(keys) > 0:
-        if k in schema.keys():
-            deep_get_from_schema(schema[k], keys)
-        elif 'properties' in schema.keys() and keys[0] in schema['properties']:
-            deep_get_from_schema(schema['properties'][k], keys)
-        elif 'additionalProperties' in schema.keys(
-        ) and keys[0] in schema['additionalProperties']:
-            deep_get_from_schema(schema['additionalProperties'], keys)
-        elif 'additionalProperties' in schema.keys(
-        ) and 'properties' in schema['additionalProperties'] and keys[
-                0] in schema['additionalProperties']['properties']:
-            deep_get_from_schema(schema['additionalProperties']['properties'],
-                                 keys)
-        elif 'patternProperties' in schema.keys() and any(
-                re.fullmatch(x, k)
-                for x in schema['patternProperties'].keys()):
-            for kk in schema['patternProperties'].keys():
-                if re.fullmatch(kk, k):
-                    deep_get_from_schema(schema['patternProperties'][kk], keys)
-                    break
-    else:
-        print(schema[k])
-        return schema[k]

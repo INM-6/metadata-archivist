@@ -51,7 +51,45 @@ class yml_extractor(AExtractor):
     def __init__(self) -> None:
         super().__init__(name='yml_extractor',
                          input_file_pattern='*.yml',
-                         schema={})
+                         schema={
+                            'type': 'object',
+                            'properties': {
+                                'input_files': {
+                                    'type': 'object',
+                                    'properties': {
+                                        'precipitation': {
+                                            'type': 'string',
+                                            'description': 'precipitation input file name'
+                                        },
+                                        'temperature': {
+                                            'type': 'string',
+                                            'description': 'temperature input file name'
+                                        }
+                                    }
+                                },
+                                'parameters': {
+                                    'type': 'object',
+                                    'properties': {
+                                        'a': {
+                                            'type': 'number',
+                                            'description': 'parameter a'
+                                        },
+                                        'b': {
+                                            'type': 'number',
+                                            'description': 'parameter b'
+                                        }
+                                    }
+                                },
+                                'info1': {
+                                    'type': 'string',
+                                    'description': 'this is a  metadata'
+                                },
+                                'info2': {
+                                    'type': 'string',
+                                    'description': 'this as well'
+                                }
+                            }
+                         })
 
     def extract(self, file_path):
         with open(file_path, "r") as stream:

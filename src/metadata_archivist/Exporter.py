@@ -10,8 +10,13 @@ Authors: Jose V., Matthias K.
 from json import dump
 from pathlib import Path
 
+from .Logger import LOG
 
 class Exporter():
+    """
+    Convinience class for handling different export formats.
+    Currently only available export format is JSON.
+    """
 
     def __init__(self, format: str) -> None:
         if format.upper() == "JSON":
@@ -20,7 +25,7 @@ class Exporter():
             raise RuntimeError("Unknown export format type.")
 
 
-    def _export_json(self, metadata: dict, outfile: Path, verb: bool = False) -> None:
+    def _export_json(self, metadata: dict, outfile: Path) -> None:
         """
         Saves metadata to file as JSON.
 
@@ -31,11 +36,9 @@ class Exporter():
             verb: Boolean to control verbose output.
         """
 
-        if verb:
-            print(f"Saving metadata to file: {outfile}")
+        LOG.info(f"Saving metadata to file: {outfile}")
 
         with outfile.open("w") as f:
             dump(metadata, f, indent=4)
 
-        if verb:
-            print("Saved metadata file.")
+        LOG.info("Saved metadata file.")

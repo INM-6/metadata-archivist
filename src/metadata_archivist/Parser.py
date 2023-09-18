@@ -10,10 +10,10 @@ Authors: Jose V., Matthias K.
 
 """
 
-import re
-
-from json import dump, load
+from re import fullmatch
 from pathlib import Path
+from copy import deepcopy
+from json import dump, load, dumps
 from typing import Optional, List, NoReturn, Union
 
 from .Logger import LOG
@@ -91,8 +91,7 @@ class Parser():
                 raise TypeError('schema must be dict or Path')
         else:
             self._use_schema = False
-            # TODO: wouldn't it better to copy it to avoid losing the default after modifications in an interactive session?
-            self._schema = DEFAULT_PARSER_SCHEMA
+            self._schema = deepcopy(DEFAULT_PARSER_SCHEMA)
 
         # Used for internal handling:
         # Shouldn't use much memory but TODO: check additional memory usage
@@ -184,8 +183,8 @@ class Parser():
             if len(self.metadata) > 0:
                 # TODO: Should we raise exception instead of warning?
                 LOG.warning(
-                    "Warning: compiling available metadata after disabling lazy loading.",
-                    RuntimeWarning)
+                    "Compiling available metadata after disabling lazy loading."
+                    )
             self.compile_metadata()
         self._lazy_load = lazy_load
 
@@ -267,7 +266,7 @@ class Parser():
         for ex in self.extractors:
             if ex.name == extractor_name:
                 return ex
-        raise RuntimeWarning(f'no extractor with name: {extractor_name} exist')
+        LOG.warning(f"No extractor with name: {extractor_name} exist")
 
     # TODO: Check whether we want to keep this or not:
     # def _update_metadata_tree(self, decompress_path: Path,
@@ -312,7 +311,7 @@ class Parser():
     #         pattern = extractor.input_file_pattern
     #         if pattern[0] == '*':
     #             pattern = '.' + pattern
-    #         if re.fullmatch(pattern, file_path.name):
+    #         if fullmatch(pattern, file_path.name):
     #             metadata = extractor.extract_metadata_from_file(file_path)
     #             # TODO: The metadata tree should be compiled/merged with the Parser schema
     #             # We should think if this is to be done instead of the path tree structure
@@ -384,7 +383,7 @@ class Parser():
                 pattern = extractor.input_file_pattern
                 if pattern[0] == '*':
                     pattern = '.' + pattern
-                if re.fullmatch(pattern, fp.name):
+                if fullmatch(pattern, fp.name):
                     to_extract[ex_id].append(fp)
 
         # TODO: Think about parallelization scheme with ProcessPoolExecutor
@@ -398,16 +397,16 @@ class Parser():
 
                 if not self._lazy_load:
                     # self._update_metadata_tree_with_path_hierarchy(metadata, decompress_path, file_path)
-                    self._cache[ex_id].add(**{
-                        'decompress_path': decompress_path,
-                        'file_path': file_path,
-                        'metadata': metadata
-                    })
+                    self._cache[ex_id].add(
+                        decompress_path,
+                        file_path,
+                        metadata
+                    )
                 else:
-                    entry = self._cache[ex_id].add(**{
-                        'decompress_path': decompress_path,
-                        'file_path': file_path
-                    })
+                    entry = self._cache[ex_id].add(
+                        decompress_path,
+                        file_path
+                    )
                     if entry.meta_path.exists():
                         if override_meta_files:
                             LOG.warning(f"Metadata file {entry.meta_path} exists, overriding.")
@@ -420,123 +419,193 @@ class Parser():
 
         return meta_files
 
-    def _update_metadata_tree_with_schema(self, hierarchy, **kwargs) -> None:
-        """add metadata from a Hierachy object to the metadata dict
-        currently the metadata is only taken from a !extractor object located at the last
-        entry in the list provided by the hierachy class. this can be extended in the future
+   # def _update_metadata_tree_with_schema(self, hierarchy, **kwargs) -> None:
+   #     """add metadata from a Hierachy object to the metadata dict
+   #     currently the metadata is only taken from a !extractor object located at the last
+   #     entry in the list provided by the hierachy class. this can be extended in the future
 
-        :param hierarchy: a Hierachy object
-        :returns: None
+   #     :param hierarchy: a Hierachy object
+   #     :returns: None
 
+   #     """
+
+   #     # If there is an extractor passed by the Hierachy (i.e. at the last entry in the list)
+   #     if hierarchy.extractor_name is not None:
+   #         LOG.debug(
+   #             f'        working on extractor: {hierarchy.extractor_name}')
+   #         LOG.debug(
+   #             f'        with path: {hierarchy._hierachy[-1].path} and re`s: {hierarchy.regexps} '
+   #         )
+
+   #         extractor = self.get_extractor(
+   #             hierarchy.extractor_name
+   #         )  # TODO: reconcider: we should use id here
+   #         for meta_set in self._cache[extractor.id]:
+   #             LOG.debug(
+   #                 f'            checking available metadata: {meta_set.rel_path}'
+   #             )
+   #             # check which metadata sets read by the extractor match the path in the metadata tree
+   #             if hierarchy.match_path(meta_set.rel_path):
+   #                 # LOG.debug(
+   #                 #     f'            found metadata: {meta_set.metadata}')
+   #                 # build dict-structure following the structure passed by the hierachy
+   #                 relative_root = self.metadata
+   #                 for node in hierarchy._hierachy[:-1]:
+   #                     if node.add_to_metadata:
+   #                         if node.name not in relative_root.keys():
+   #                             relative_root[node.name] = {}
+   #                             if node.description is not None:
+   #                                 relative_root[node.name][
+   #                                     'description'] = node.description
+   #                         relative_root = relative_root[node.name]
+   #                 # relative_root.update(
+   #                 #     extractor.filter_metadata(
+   #                 #         meta_set.metadata,
+   #                 #         hierarchy.extractor_directive.keys, **kwargs))
+   #                 filtered_metadata = extractor.filter_metadata(
+   #                     meta_set.metadata, hierarchy.extractor_directive.keys,
+   #                     **kwargs)
+   #                 relative_root[
+   #                     meta_set.rel_path.as_posix()] = filtered_metadata
+   #     else:
+   #         raise NotImplementedError(
+   #             'currently only metadata from extractors can be added to the schema'
+   #         )
+
+   # def _schema_iterator(self,
+   #                      properties: Optional[dict] = None,
+   #                      hierachy=None,
+   #                      level=0,
+   #                      prop_type: Optional[str] = None,
+   #                      parent_prop_name: Optional[str] = None):
+   #     """
+   #     schema iterator, returns nodes in schema.
+   #     """
+   #     # index_dirdirective = None
+   #     if self.schema is None:
+   #         raise RuntimeError(
+   #             f'A schema must be specified before starting the _schema_iterator'
+   #         )
+   #     # --- initialize variables if none are given
+   #     if properties is None:
+   #         if 'properties' not in self.schema.keys() or not isinstance(
+   #                 self.schema['properties'], dict):
+   #             raise RuntimeError(
+   #                 f'The root schema is expected to contain a dict properites: {self.schema}'
+   #             )
+   #         properties = self.schema['properties']
+   #         prop_name = 'properties'
+   #     if hierachy is None:
+   #         hierachy = helpers.Hierachy()
+   #     for prop_name, prop in properties.items():
+   #         # --- check for archivist directives
+   #         if prop_name in [
+   #                 'properties', 'unevaluatedProperties',
+   #                 'additionalProperties', 'patternProperties'
+   #         ]:
+   #             prop_type = prop_name
+   #             yield from self._schema_iterator(prop, hierachy, level,
+   #                                              prop_type, prop_name)
+   #         elif prop_name == '!varname':
+   #             level = hierachy.add(helpers.DirectoryDirective(
+   #                 varname=properties['!varname'], regexp=parent_prop_name),
+   #                                  level=level)
+   #         elif prop_name == '!extractor':
+   #             level = hierachy.add(helpers.ExtractorDirective(**prop), level=level)
+   #             yield prop, hierachy
+   #         elif prop_name == '$ref':
+   #             if prop[:8] == '#/$defs/':
+   #                 # search defs for corresponding schema and apply it
+   #                 for defs in self.schema['$defs']:
+   #                     defstring = f'#/$defs/{defs}'.strip()
+   #                     if defstring == prop[:len(defstring)]:
+   #                         subschem = self.schema['$defs'][defs.split('/')
+   #                                                         [-1]]
+   #                         yield from self._schema_iterator(
+   #                             subschem, hierachy, level, prop_type,
+   #                             prop_name)
+   #                         break
+   #             elif prop[:13] == '#/properties/':
+   #                 # for referencing other properties, basically links
+   #                 nodes = prop.split('/')
+   #                 if not nodes:
+   #                     raise RuntimeError(f'unknown ref: {prop}')
+   #             else:
+   #                 raise NotImplementedError(
+   #                     f'unkown reference, please open an issue: {prop}')
+   #         elif isinstance(prop, dict) and prop_name != '!extractor':
+   #             yield from self._schema_iterator(prop, hierachy, level,
+   #                                              prop_type, prop_name)
+
+    def _update_metadata_tree_with_schema2(self,
+                                           interpreted_schema: helpers.SchemaEntry,
+                                           branch: Optional[list] = None,
+                                           **kwargs) -> None:
         """
-
-        # If there is an extractor passed by the Hierachy (i.e. at the last entry in the list)
-        if hierarchy.extractor_name is not None:
-            LOG.debug(
-                f'        working on extractor: {hierarchy.extractor_name}')
-            LOG.debug(
-                f'        with path: {hierarchy._hierachy[-1].path} and re`s: {hierarchy.regexps} '
-            )
-
-            extractor = self.get_extractor(
-                hierarchy.extractor_name
-            )  # TODO: reconcider: we should use id here
-            for meta_set in self._cache[extractor.id]:
-                LOG.debug(
-                    f'            checking available metadata: {meta_set.rel_path}'
-                )
-                # check which metadata sets read by the extractor match the path in the metadata tree
-                if hierarchy.match_path(meta_set.rel_path):
-                    # LOG.debug(
-                    #     f'            found metadata: {meta_set.metadata}')
-                    # build dict-structure following the structure passed by the hierachy
-                    relative_root = self.metadata
-                    for node in hierarchy._hierachy[:-1]:
-                        if node.add_to_metadata:
-                            if node.name not in relative_root.keys():
-                                relative_root[node.name] = {}
-                                if node.description is not None:
-                                    relative_root[node.name][
-                                        'description'] = node.description
-                            relative_root = relative_root[node.name]
-                    # relative_root.update(
-                    #     extractor.filter_metadata(
-                    #         meta_set.metadata,
-                    #         hierarchy.extractor_directive.keys, **kwargs))
-                    filtered_metadata = extractor.filter_metadata(
-                        meta_set.metadata, hierarchy.extractor_directive.keys,
-                        **kwargs)
-                    relative_root[
-                        meta_set.rel_path.as_posix()] = filtered_metadata
-        else:
-            raise NotImplementedError(
-                'currently only metadata from extractors can be added to the schema'
-            )
-
-    def _schema_iterator(self,
-                         properties: Optional[dict] = None,
-                         hierachy=None,
-                         level=0,
-                         prop_type: Optional[str] = None,
-                         parent_prop_name: Optional[str] = None):
+        Recursively generate metadata file using interpreted_schema obtained with SchemaInterpreter.
+        Designed to mimic structure of interpreted_schema where each SchemaEntry is a branching node in the metadata
+        and whenever an extractor context is found the branch terminates.
+        Handles additional context like extractor directives (!extractor) and directory directives (!varname).
         """
-        schema iterator, returns nodes in schema.
-        """
-        # index_dirdirective = None
-        if self.schema is None:
-            raise RuntimeError(
-                f'A schema must be specified before starting the _schema_iterator'
-            )
-        # --- initialize variables if none are given
-        if properties is None:
-            if 'properties' not in self.schema.keys() or not isinstance(
-                    self.schema['properties'], dict):
-                raise RuntimeError(
-                    f'The root schema is expected to contain a dict properites: {self.schema}'
-                )
-            properties = self.schema['properties']
-            prop_name = 'properties'
-        if hierachy is None:
-            hierachy = helpers.Hierachy()
-        for prop_name, prop in properties.items():
-            # --- check for archivist directives
-            if prop_name in [
-                    'properties', 'unevaluatedProperties',
-                    'additionalProperties', 'patternProperties'
-            ]:
-                prop_type = prop_name
-                yield from self._schema_iterator(prop, hierachy, level,
-                                                 prop_type, prop_name)
-            elif prop_name == '!varname':
-                level = hierachy.add(helpers.DirectoryDirective(
-                    varname=properties['!varname'], regexp=parent_prop_name),
-                                     level=level)
-            elif prop_name == '!extractor':
-                level = hierachy.add(helpers.ExtractorDirective(**prop), level=level)
-                yield prop, hierachy
-            elif prop_name == '$ref':
-                if prop[:8] == '#/$defs/':
-                    # search defs for corresponding schema and apply it
-                    for defs in self.schema['$defs']:
-                        defstring = f'#/$defs/{defs}'.strip()
-                        if defstring == prop[:len(defstring)]:
-                            subschem = self.schema['$defs'][defs.split('/')
-                                                            [-1]]
-                            yield from self._schema_iterator(
-                                subschem, hierachy, level, prop_type,
-                                prop_name)
-                            break
-                elif prop[:13] == '#/properties/':
-                    # for referencing other properties, basically links
-                    nodes = prop.split('/')
-                    if not nodes:
-                        raise RuntimeError(f'unknown ref: {prop}')
+        tree = {}
+        context = interpreted_schema.context
+        if branch is None:
+            branch = []
+
+        # For all the entries in the interpreted schema
+        for key, value in interpreted_schema.items():
+
+            # Only process SchemaEntries
+            if isinstance(value, helpers.SchemaEntry):
+
+                # Update position in branch
+                branch.append(key)
+
+                # If entry corresponds to an extractor structure
+                if "extractor_id" in value.context:
+
+                    # Get extractor and its cache
+                    extractor = self.get_extractor(value.context["extractor_id"])
+                    cache_extractor = self._cache[value.context["extractor_id"]]
+
+                    # Extractor may have processed multiple files
+                    extracted_metadata = []
+
+                    # For all cache entries
+                    for cache_entry in cache_extractor:
+
+                        # If needed match path against branch position
+                        if "useRegex" in context and False:
+                            # TODO: check for path match
+                            continue
+
+                        # Lazy loading handling
+                        metadata = cache_entry.load_metadata()
+                        
+                        # Compute additional directives if given
+                        if "!extractor" in value.context:
+                            filtered_metadata = extractor.filter_metadata(
+                                metadata, value.context["!extractor"]["keys"],
+                                **kwargs)
+                            extracted_metadata.append(filtered_metadata)
+
+                        # Else directly append metadata
+                        else:
+                            extracted_metadata.append(metadata)
+
+                    # Update tree according to metadata retrieved
+                    tree[key] = extracted_metadata[0] if len(extracted_metadata) == 1 else extracted_metadata
+                        
+                # If not in extractor context then continue on branch depth
                 else:
-                    raise NotImplementedError(
-                        f'unkown reference, please open an issue: {prop}')
-            elif isinstance(prop, dict) and prop_name != '!extractor':
-                yield from self._schema_iterator(prop, hierachy, level,
-                                                 prop_type, prop_name)
+                    tree[key] = self._update_metadata_tree_with_schema2(value, branch)
+                    branch.pop()
+            
+            # Nodes should not be of a different type than SchemaEntry
+            else:
+                raise RuntimeError(f"Unexpected value in interpreted schema: {key}: {type(value)}")
+
+        return tree
 
     def compile_metadata(self, **kwargs) -> dict:
         """
@@ -544,25 +613,27 @@ class Parser():
         """
         if self._cache.is_empty():
             raise RuntimeError(
-                "Metadata needs to be parsed before updating the tree")
+                "Metadata needs to be parsed before updating the tree."
+                )
         if self._use_schema:
-            if self.lazy_load:
-                raise NotImplementedError()
-            LOG.debug("    using schema")
-            iterator = self._schema_iterator()
-            while True:
-                try:
-                    _, hierarchy = next(iterator)
-                    self._update_metadata_tree_with_schema(hierarchy, **kwargs)
-                except StopIteration:
-                    break
+            # if self.lazy_load:
+                # raise NotImplementedError()
+            # LOG.debug("    using schema")
+            # iterator = self._schema_iterator()
+            # while True:
+                # try:
+                    # _, hierarchy = next(iterator)
+                    # self._update_metadata_tree_with_schema(hierarchy, **kwargs)
+                # except StopIteration:
+                    # break
+            interpreter = helpers.SchemaInterpreter(self.schema)
+            interpreted_schema = interpreter.generate()
+            self.metadata = self._update_metadata_tree_with_schema2(interpreted_schema, **kwargs)
+
         else:
             for extractor_cache in self._cache:
                 for cache_entry in extractor_cache:
-                    if cache_entry.metadata is None:
-                        with cache_entry.meta_path.open("r") as f:
-                            cache_entry.add_metadata(load(f))
-
+                    self._load_metadata(cache_entry)
                     self._update_metadata_tree_with_path_hierarchy(
                         cache_entry.metadata, cache_entry.decompress_path,
                         cache_entry.file_path)

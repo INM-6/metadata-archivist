@@ -28,7 +28,7 @@ see examples:
 
 ## Schema Interpreter Notes
 To be able to parse abstract schema and generate correctly structured metadata files,
-an intermediary data structure is needed to convert implicit schema definitions to explicit functional rules.
+an interpretable data structure is needed to convert implicit schema definitions to explicit functional rules.
 
 ### Terms
 * Metadata archive:
@@ -50,7 +50,7 @@ an intermediary data structure is needed to convert implicit schema definitions 
 ### Basic premise
 The structure of the unified metadata file can be separated by structure stemming from the parsing results and structure stemming from the extraction results.
 When using a schema, the structure of the parsing results are solely dictated by the schema.
-Hence, when exploring the schema to generate the intermediary data structure one can consider the branching in the schema structure as branching of the metadata structure
+Hence, when exploring the schema to generate the interpretable data structure one can consider the branching in the schema structure as branching of the metadata structure
 and the extractor structure as a terminal value.
 
 ### Technical assumptions

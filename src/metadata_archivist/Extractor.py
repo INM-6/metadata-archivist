@@ -9,20 +9,19 @@ Authors: Jose V., Matthias K.
 
 """
 
-import abc  # Abstract class base infrastructure
-
-import jsonschema  # to validate extracted data
-
 from re import fullmatch
 from pathlib import Path
 from copy import deepcopy
 from typing import NoReturn
+from abc import ABC, abstractmethod # Abstract class base infrastructure
+
+from jsonschema import validate, ValidationError
 
 from .Logger import LOG
 from .helper_functions import _merge_dicts, _deep_get_from_schema
 
 
-class AExtractor(abc.ABC):
+class AExtractor(ABC):
     """
     Base extractor class.
     There is a one to one mapping from extractors
@@ -150,7 +149,7 @@ class AExtractor(abc.ABC):
 
         return self.extracted_metadata
 
-    @abc.abstractmethod
+    @abstractmethod
     def extract(self, file_path: Path) -> dict:
         """
         Main method of the Extractor class
@@ -170,9 +169,9 @@ class AExtractor(abc.ABC):
             - True if validation successful False otherwise
         """
         try:
-            jsonschema.validate(self.extracted_metadata, schema=self.schema)
+            validate(self.extracted_metadata, schema=self.schema)
             return True
-        except jsonschema.ValidationError as e:
+        except ValidationError as e:
             # TODO: better exception mechanism
             LOG.warning(e.message)
 

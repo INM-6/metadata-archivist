@@ -611,19 +611,19 @@ class SchemaInterpreter:
             # Case dict i.e. branch
             if isinstance(val, dict):
 
-                # Known simple properties create a new branch without context
+                # Known simple properties return recursion results without branching
                 if key in _KNOWN_PROPERTIES:
                     if parent_key is None:
                         raise RuntimeError("Nameless property branch found.")
                     relative_root = self._interpret_schema(val, parent_key, relative_root)
 
-                # Special properties create a new branch with context
+                # Special properties return recursion results with additional context
                 elif key in _SPECIAL_PROPERTIES:
                     if parent_key is None:
                         raise RuntimeError("Nameless special property branch found.")
                     relative_root = self._process_special_dict(val, key, parent_key, relative_root)
 
-                # Other dictionaries do no branch but go in depth
+                # Other dictionaries create new branches while copying context and recurse over content
                 else:
                     relative_root[key] = self._interpret_schema(val, key, SchemaEntry(key=key, context=deepcopy(relative_root.context)))
 
@@ -632,7 +632,7 @@ class SchemaInterpreter:
                 if parent_key is None:
                     raise RuntimeError("Nameless tree leaf found.")
                 
-                # Special strings add context or represent an extractor
+                # Special strings add context or reference an extractor
                 if key in _SPECIAL_STRINGS:
                     relative_root = self._process_special_strings(val, key, parent_key, relative_root)
 

@@ -496,14 +496,14 @@ class SchemaInterpreter:
         # Case patternProperties
         # We create a regex context and recurse over the contents of the property.
         if prop_key == "patternProperties":
-            entry.context = {"useRegex": True}
+            entry.context.update({"useRegex": True})
             return self._interpret_schema(prop_val, parent_key, entry)
 
         # Case !extractor
         # We create an !extractor context but keep on with current recursion level
         # Contents of this dictionary are not supposed to contain additional directives/properties.
         elif prop_key == "!extractor":
-            entry.context = {prop_key: prop_val}
+            entry.context.update({prop_key: prop_val})
             return entry 
         
         # Else not-implemented

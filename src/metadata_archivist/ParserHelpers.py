@@ -428,12 +428,12 @@ class SchemaEntry:
     Get, set, and iteration access is redirected to internal storage.
     """
 
-    name: str
+    key: str
     context: dict
     _content: dict
 
-    def __init__(self, name: Optional[str] = None, context: Optional[dict] = None) -> None:
-       self.name = name
+    def __init__(self, key: Optional[str] = None, context: Optional[dict] = None) -> None:
+       self.key = key
        self.context = context if context is not None else {}
        self._content = {}
        self._iterator = None
@@ -486,53 +486,45 @@ class SchemaInterpreter:
         self._schema = schema
         self.structure = SchemaEntry()
 
-    def _process_special_dict(self, prop_key: str, prop_val: dict, parent_key: str) -> SchemaEntry:
+    def _process_special_dict(self, prop_val: dict, prop_key: str, parent_key: str, entry: SchemaEntry) -> SchemaEntry:
         """
         Method to interpret special dictionaries in schema.
         Currently only patternProperties and !extractor directives are implemented.
         More can be added as additional elif checks.
         TODO: create a modular system for processing? (instead of if/elif checks?)
         """
-        new_entry = SchemaEntry(name=parent_key)
-
         # Case patternProperties
         # We create a regex context and recurse over the contents of the property.
         if prop_key == "patternProperties":
-            new_entry.context = {"useRegex": True}
-            return self._interpret_schema(prop_val, prop_key, new_entry)
+            entry.context = {"useRegex": True}
+            return self._interpret_schema(prop_val, parent_key, entry)
 
         # Case !extractor
         # We create an !extractor context but keep on with current recursion level
         # Contents of this dictionary are not supposed to contain additional directives/properties.
         elif prop_key == "!extractor":
-            new_entry.context = {prop_key: prop_val}
-            return new_entry
+            entry.context = {prop_key: prop_val}
+            return entry 
         
         # Else not-implemented
         else:
             raise NotImplementedError(f"Unknown special property type: {prop_key}")
         
 
-    def _process_special_strings(self, prop_key: str, prop_val: dict, parent_key: str, entry: SchemaEntry) -> SchemaEntry:
+    def _process_special_strings(self, prop_val: dict, prop_key: str, parent_key: str, entry: SchemaEntry) -> SchemaEntry:
         """
         Method to interpret special string values in schema.
         Currently only $ref and !varname directives are implemented.
         More can be added as additional elif checks.
         TODO: create a modular system for processing? (instead of if/elif checks?)
         """
-
         # Case $ref
         if prop_key == "$ref":
             # Check if reference is well formed against knowledge base
             if not any(prop_val.startswith(ss) for ss in _KNOWN_REFS):
                 raise RuntimeError(f"Malformed reference prop_value: {prop_key}: {prop_val}")
-            # If an !extractor was found before then a SchemaEntry with extractor context must be found at parent_key
-            # Otherwise create new entry and call _process_refs to check for correctness before creating extraction context.
-            if parent_key not in entry:
-                entry[parent_key] = SchemaEntry(name=parent_key)
-            elif "!extractor" not in entry[parent_key].context:
-                raise RuntimeError(f"Parent key exists in relative root but not appropriate context defined {prop_key}, {parent_key}")
-            entry[parent_key] = self._process_refs(prop_val, entry[parent_key])
+            # Call _process_refs to check for correctness before creating extraction context.
+            entry = self._process_refs(prop_val, entry)
 
         # Case !varname
         elif prop_key == "!varname":
@@ -585,21 +577,25 @@ class SchemaInterpreter:
         """
         Recursive method to explore JSON schema.
         Following the technical assumptions made (cf. README.md/SchemaInterpreter),
-        only the properties of the schema are interpreted (recursively so),
-        items of the property are of type str -> dict|str (key -> value),
+        only the properties at the root of the schema are interpreted (recursively so),
+        items of the property are of type key[str] -> value[dict|str],
         any other type is currently ignored as NotImplemented feature.
-        When interpreting we generate a data object with a tree structure,
-        i.e. nested SchemaEntry.
+        When interpreting we generate a SchemaEntry with nested tree structure.
 
-        - When processing dictionaries, they can either be nested properties,
-        in which case a new branch is created i.e. new SchemaEntry and a new
-        recursion is called on its contents.
-        Otherwise if it is a special directive with multiple instructions e.g. !extractor
-        a new entry with additional context is created but is not recursed over,
-        in this case the current recursion will continue until arriving at a leaf (str)
-        and leaf processing is in charge of using the enriched entry.
-        Other dictionaries are not considered as intermediary structures
-        hence their contents are recursed over but do not generate a new branch.
+        - When processing dictionaries, these can either be simple properties,
+        special properties or intermediate structures.
+        If the dictionary is a simple property then recursion is called on its contents
+        without creating a new branch.
+        If the dictionary is a special property then: either it is a composite directive
+        e.g. !extractor in which case context is added then the current recursion will
+        continue until arriving at a leaf (str) and leaf processing is in charge of using
+        the enriched entry. Otherwise, the property indicates a new recursion with additional
+        context e.g. patternProperties indicate a new recursion with regular expression file
+        matching. However the no new branch is created and the recursion results are added to
+        the current branch.
+        Any other dictionaries are considered as intermediary structures hence a new branch
+        is created and a recursion is done on its contents.
+        The previous is the ONLY SCENARIO FOR BRANCHING inside the interpretable data structure.
 
         - When processing strings, they can be either JSON schema additional information
         in which case it is ignored or they can be additional directives e.g. $ref or !varname
@@ -619,17 +615,17 @@ class SchemaInterpreter:
                 if key in _KNOWN_PROPERTIES:
                     if parent_key is None:
                         raise RuntimeError("Nameless property branch found.")
-                    relative_root[parent_key] = self._interpret_schema(val, key, SchemaEntry(name=parent_key))
+                    relative_root = self._interpret_schema(val, parent_key, relative_root)
 
                 # Special properties create a new branch with context
                 elif key in _SPECIAL_PROPERTIES:
                     if parent_key is None:
                         raise RuntimeError("Nameless special property branch found.")
-                    relative_root[parent_key] = self._process_special_dict(key, val, parent_key)
+                    relative_root = self._process_special_dict(val, key, parent_key, relative_root)
 
                 # Other dictionaries do no branch but go in depth
                 else:
-                    relative_root = self._interpret_schema(val, key, relative_root)
+                    relative_root[key] = self._interpret_schema(val, key, SchemaEntry(key=key, context=deepcopy(relative_root.context)))
 
             # Case str i.e. leaf            
             elif isinstance(val, str):
@@ -638,7 +634,7 @@ class SchemaInterpreter:
                 
                 # Special strings add context or represent an extractor
                 if key in _SPECIAL_STRINGS:
-                    relative_root = self._process_special_strings(key, val, parent_key, relative_root)
+                    relative_root = self._process_special_strings(val, key, parent_key, relative_root)
 
                 # Others are ignored
                 else:

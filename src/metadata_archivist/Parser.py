@@ -540,7 +540,7 @@ class Parser():
     def _update_metadata_tree_with_schema2(self,
                                            interpreted_schema: helpers.SchemaEntry,
                                            branch: Optional[list] = None,
-                                           **kwargs) -> None:
+                                           **kwargs) -> dict:
         """
         Recursively generate metadata file using interpreted_schema obtained with SchemaInterpreter.
         Designed to mimic structure of interpreted_schema where each SchemaEntry is a branching node in the metadata

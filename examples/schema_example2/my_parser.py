@@ -145,10 +145,10 @@ my_schema = {
                     "properties": {
                         "basin_information": {
                             "!extractor": {
-                                'name': 'basin_character_extractor',
                                 'path': '*/{basin}/basin.yml',
                                 'keys': ['river', 'size']
-                            }
+                            },
+                            '$ref': '#/$defs/basin_character_extractor',
                         },
                     }
                 },
@@ -158,10 +158,10 @@ my_schema = {
                     "properties": {
                         "station_information": {
                             "!extractor": {
-                                'name': 'station_character_extractor',
                                 'path': '*/{station}/station.yml',
                                 'keys': ['river', 'mean_disch']
-                            }
+                            },
+                            '$ref': '#/$defs/station_character_extractor',
                         },
 
                     },

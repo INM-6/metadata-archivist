@@ -633,7 +633,7 @@ class Parser():
         else:
             for extractor_cache in self._cache:
                 for cache_entry in extractor_cache:
-                    self._load_metadata(cache_entry)
+                    cache_entry.load_metadata()
                     self._update_metadata_tree_with_path_hierarchy(
                         cache_entry.metadata, cache_entry.decompress_path,
                         cache_entry.file_path)

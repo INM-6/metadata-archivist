@@ -137,38 +137,35 @@ my_schema = {
     'properties': {
         'metadata_archive': {
             'type': 'object',
-            'pattern': {
-                'type': 'object',
-                'patternProperties': {
-                    "^basin_": {
-                        "!varname": 'basin',
-                        "type": "object",
-                        'description': 'some description',
-                        "properties": {
-                            "basin_information": {
-                                "!extractor": {
-                                    'name': 'basin_character_extractor',
-                                    'path': '*/{basin}/basin.yml',
-                                    'keys': ['river', 'size']
-                                }
-                            },
-                        }
-                    },
-                    "^station_": {
-                        "!varname": 'station',
-                        "type": "object",
-                        "properties": {
-                            "station_information": {
-                                "!extractor": {
-                                    'name': 'station_character_extractor',
-                                    'path': '*/{station}/station.yml',
-                                    'keys': ['river', 'mean_disch']
-                                }
-                            },
+            'patternProperties': {
+                "^basin_": {
+                    "!varname": 'basin',
+                    "type": "object",
+                    'description': 'some description',
+                    "properties": {
+                        "basin_information": {
+                            "!extractor": {
+                                'name': 'basin_character_extractor',
+                                'path': '*/{basin}/basin.yml',
+                                'keys': ['river', 'size']
+                            }
+                        },
+                    }
+                },
+                "^station_": {
+                    "!varname": 'station',
+                    "type": "object",
+                    "properties": {
+                        "station_information": {
+                            "!extractor": {
+                                'name': 'station_character_extractor',
+                                'path': '*/{station}/station.yml',
+                                'keys': ['river', 'mean_disch']
+                            }
+                        },
 
                     },
                 }
-            }
             },
         }
     },

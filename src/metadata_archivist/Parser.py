@@ -19,6 +19,7 @@ from typing import Optional, List, NoReturn, Union
 from .Logger import LOG
 from .Extractor import AExtractor
 from . import ParserHelpers as helpers
+from .SchemaInterpreter import SchemaInterpreter, SchemaEntry
 
 
 DEFAULT_PARSER_SCHEMA = {
@@ -538,7 +539,7 @@ class Parser():
    #                                              prop_type, prop_name)
 
     def _update_metadata_tree_with_schema2(self,
-                                           interpreted_schema: helpers.SchemaEntry,
+                                           interpreted_schema: SchemaEntry,
                                            branch: Optional[list] = None,
                                            **kwargs) -> dict:
         """
@@ -556,50 +557,52 @@ class Parser():
         for key, value in interpreted_schema.items():
 
             # Only process SchemaEntries
-            if isinstance(value, helpers.SchemaEntry):
+            if isinstance(value, SchemaEntry):
 
                 # Update position in branch
                 branch.append(key)
+                tree[key] = self._update_metadata_tree_with_schema2(value, branch)
+                branch.pop()
 
-                # If entry corresponds to an extractor structure
-                if "extractor_id" in value.context:
+            # If entry corresponds to an extractor reference
+            elif key == "$extractor_id" and isinstance(value, str):
 
-                    # Get extractor and its cache
-                    extractor = self.get_extractor(value.context["extractor_id"])
-                    cache_extractor = self._cache[value.context["extractor_id"]]
+                # Currently only one extractor reference per entry is allowed
+                # and if a reference exists it must be the only content in the entry
+                if len(interpreted_schema.items()) > 1:
+                    LOG.debug(dumps(interpreted_schema._content, indent=4, default=vars))
+                    raise RuntimeError(f"Invalid entry content {interpreted_schema.key}: {interpreted_schema._content}")
 
-                    # Extractor may have processed multiple files
-                    extracted_metadata = []
+                # Get extractor and its cache
+                extractor = self.get_extractor(value)
+                cache_extractor = self._cache[value]
 
-                    # For all cache entries
-                    for cache_entry in cache_extractor:
+                # Extractor may have processed multiple files
+                extracted_metadata = []
 
-                        # If needed match path against branch position
-                        if "useRegex" in context and False:
-                            # TODO: check for path match
-                            continue
+                # For all cache entries
+                for cache_entry in cache_extractor:
 
-                        # Lazy loading handling
-                        metadata = cache_entry.load_metadata()
-                        
-                        # Compute additional directives if given
-                        if "!extractor" in value.context:
-                            filtered_metadata = extractor.filter_metadata(
-                                metadata, value.context["!extractor"]["keys"],
-                                **kwargs)
-                            extracted_metadata.append(filtered_metadata)
+                    # If needed match path against branch position
+                    if "useRegex" in context and False:
+                        continue
 
-                        # Else directly append metadata
-                        else:
-                            extracted_metadata.append(metadata)
+                    # Lazy loading handling
+                    metadata = cache_entry.load_metadata()
+                    
+                    # Compute additional directives if given
+                    if "!extractor" in context:
+                        filtered_metadata = extractor.filter_metadata(
+                            metadata, context["!extractor"]["keys"],
+                            **kwargs)
+                        extracted_metadata.append(filtered_metadata)
 
-                    # Update tree according to metadata retrieved
-                    tree[key] = extracted_metadata[0] if len(extracted_metadata) == 1 else extracted_metadata
-                        
-                # If not in extractor context then continue on branch depth
-                else:
-                    tree[key] = self._update_metadata_tree_with_schema2(value, branch)
-                    branch.pop()
+                    # Else directly append metadata
+                    else:
+                        extracted_metadata.append(metadata)
+
+                # Update tree according to metadata retrieved
+                tree = extracted_metadata[0] if len(extracted_metadata) == 1 else extracted_metadata
             
             # Nodes should not be of a different type than SchemaEntry
             else:
@@ -626,7 +629,7 @@ class Parser():
                     # self._update_metadata_tree_with_schema(hierarchy, **kwargs)
                 # except StopIteration:
                     # break
-            interpreter = helpers.SchemaInterpreter(self.schema)
+            interpreter = SchemaInterpreter(self.schema)
             interpreted_schema = interpreter.generate()
             self.metadata = self._update_metadata_tree_with_schema2(interpreted_schema, **kwargs)
 

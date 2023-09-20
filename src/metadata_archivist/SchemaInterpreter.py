@@ -12,8 +12,8 @@ Authors: Jose V., Matthias K.
 
 from json import dumps
 from copy import deepcopy
+from typing import Optional, Any
 from collections.abc import Iterable
-from typing import Optional, Any, Union
 
 from .Logger import LOG, is_debug
 

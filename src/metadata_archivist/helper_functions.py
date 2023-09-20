@@ -11,8 +11,6 @@ Authors: Jose V., Matthias K.
 from json import dumps
 from pathlib import Path
 from re import fullmatch
-from typing import Optional
-from functools import reduce
 from collections.abc import Iterable
 
 from .Logger import LOG

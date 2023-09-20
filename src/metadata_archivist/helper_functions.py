@@ -8,6 +8,7 @@ Authors: Jose V., Matthias K.
 
 """
 
+from pathlib import Path
 from re import fullmatch
 from typing import Optional
 from functools import reduce
@@ -30,6 +31,42 @@ from collections.abc import Iterable
 #def deep_get(dictionary, *keys):
 #    return reduce(lambda d, key: d.get(key) if d else None, keys, dictionary)
 
+def _update_dict_with_path_hierarchy(target_dict: dict, value: dict, relative_path: Path) -> None:
+    """
+    In place dict update.
+    Generates and dynamically fills the metadata tree with path hierarchy.
+    The hierarchy is based on decompressed directory.
+    """
+    hierarchy = list(relative_path.parents)
+    # '.' is always the root of a relative path hence parents of a relative path will always contain 1 element
+    if len(hierarchy) < 2:
+        # In case there is no hierarchy then we just add the metadata in a flat structure
+        target_dict[relative_path.name] = value
+    else:
+        # Else we generate the hierarchy structure in the metadata tree
+        hierarchy.reverse()  # Get the hierarchy starting from root node
+        hierarchy.pop(0)  # Remove '.' node
+        iterator = iter(hierarchy)
+        node = next(
+            iterator
+        )  # Should not raise StopIteration as there is at least one element in list
+        relative_root = target_dict
+        while node is not None:
+            node_str = str(node)
+            if node_str not in relative_root:
+                relative_root[node_str] = {}
+            relative_root = relative_root[node_str]
+            try:
+                node = next(iterator).relative_to(node)
+                # If relative paths are not used then they will contain previous node name in path
+            except StopIteration:
+                relative_root[relative_path.name] = value
+                break
+        else:
+            # If break point not reached
+            raise RuntimeError(
+                f"Could not update metadata tree based on file hierarchy. File: {relative_path}"
+            )
 
 def _merge_dicts(dict1: dict, dict2: dict) -> dict:
     """

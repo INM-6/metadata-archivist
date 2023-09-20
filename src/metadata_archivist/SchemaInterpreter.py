@@ -119,7 +119,7 @@ class SchemaInterpreter:
 
     def _process_extractor_directive(self, prop_val: Union[str, dict], prop_key: str, parent_key: str, entry: SchemaEntry) -> SchemaEntry:
         # We create an !extractor context but keep on with current recursion level
-        # Contents of this dictionary are not supposed to contain additional directives/properties.
+        # Contents of this dictionary are not supposed to be handled by the interpreter.
         entry.context.update({prop_key: prop_val})
 
         return entry 
@@ -228,7 +228,7 @@ class SchemaInterpreter:
                 if isinstance(val, dict):
                     relative_root[key] = self._interpret_schema(val, key, SchemaEntry(key=key, context=deepcopy(relative_root.context)))
 
-                # Case str i.e. leaf            
+                # Case str i.e. leaf
                 elif isinstance(val, str):
                     LOG.debug(f"Ignoring key value pair: {key}: {val}")
 

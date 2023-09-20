@@ -279,6 +279,7 @@ class _CacheEntry:
                  metadata: Optional[dict] = None):
         self.decompress_path = decompress_path
         self.file_path = file_path
+        self.rel_path = file_path.relative_to(decompress_path)
         self.metadata = metadata
         if metadata is None:
             self.meta_path = Path(str(file_path) + ".meta")
@@ -311,15 +312,6 @@ class _CacheEntry:
         if self.metadata is not None:
             raise RuntimeError('metadata already exists')
         self.metadata = metadata
-
-    @property
-    def rel_path(self) -> Path:
-        """
-        Returns the file path relative to the decompression path.
-        In practice this means that a unique path relative to the decompression path
-        is generated for the extracted file.
-        """
-        return self.file_path.relative_to(self.decompress_path)
 
 
 class Indexes:

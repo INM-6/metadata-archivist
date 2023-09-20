@@ -589,6 +589,7 @@ class Parser():
                             for i, part in enumerate(reversed_branch):
 
                                 # Expand star pattern
+                                # TODO: should star patterns be allowed without using path information?
                                 if part == "*":
 
                                     # If star at end of regex path then match is true

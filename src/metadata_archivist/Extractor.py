@@ -204,7 +204,7 @@ class AExtractor(ABC):
         else:
             new_dict = {}
             for k in keys:
-                LOG.debug(k)
+                LOG.debug(f"filtering key: {k}")
                 new_dict = _merge_dicts(
                     new_dict, self._filter_dict(metadata, k.split('/')))
             if add_description or add_type:

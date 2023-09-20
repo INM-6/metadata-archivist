@@ -11,6 +11,8 @@ Authors: Jose V., Matthias K.
 from json import dumps
 from pathlib import Path
 from re import fullmatch
+from typing import Optional
+from re import match, fullmatch
 from collections.abc import Iterable
 
 from .Logger import LOG
@@ -120,3 +122,58 @@ def _deep_get_from_schema(schema, keys: list):
     else:
         print(schema[k])
         return schema[k]
+
+def _pattern_path_part_match(pattern_path_parts: list, actual_path_parts: list, context: Optional[dict] = None) -> bool:
+    """
+    Path parts pattern matching.
+    A tree branch parts or a regex path are needed to compare with an actual path.
+    Both provided paths need to come as a list of parts in reverse order.
+    A context can be provided to process !varname instructions.
+
+    Returns True if all parts of the pattern matched.
+    """
+    is_match = False
+    # We match through looping over the regex path in reverse order
+    for i, part in enumerate(pattern_path_parts):
+
+        # Expand star pattern
+        if part == "*":
+
+            # If star at end of regex path then match is true
+            if (i + 1) == len(pattern_path_parts):
+                continue
+
+            # Else match against same index element in file path
+            # TODO: star matching should always be true, is this necessary?
+            elif not match('.*', actual_path_parts[i]):
+                LOG.debug(f"{part} did not match against {actual_path_parts[i]}")
+                break
+        
+        # Match against varname
+        elif fullmatch('.*{[a-zA-Z0-9_]+}.*', part) and context is not None:
+            # !varname should always be in context in this case
+            if "!varname" not in context:
+                # TODO: should we instead raise an error?
+                LOG.critical(f"Varname required to match with variables: {pattern_path_parts}")
+                break
+            
+            # correctly interpreted !varname should also come with a regexp in context
+            if "regexp" not in context:
+                LOG.debug(dumps(context, indent=4, default=vars))
+                raise RuntimeError("!varname in context but no regexp found")
+
+            # Else match against same index element in file path
+            elif not match(part.format(**{context["!varname"]: context["regexp"]}), actual_path_parts[i]):
+                LOG.debug(f"{part} did not match against {actual_path_parts[i]}")
+                break
+
+        # Else literal matching
+        elif not match(part, actual_path_parts[i]):
+            LOG.debug(f"{part} did not match against {actual_path_parts[i]}")
+            break
+    
+    # Everything matched in the for loop i.e. no breakpoint reached
+    else:
+        is_match = True
+
+    return is_match

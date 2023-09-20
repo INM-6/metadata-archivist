@@ -11,8 +11,8 @@ Authors: Jose V., Matthias K.
 """
 
 from pathlib import Path
+from re import fullmatch
 from copy import deepcopy
-from re import match, fullmatch
 from json import dump, load, dumps
 from typing import Optional, List, NoReturn, Union
 
@@ -20,7 +20,7 @@ from .Logger import LOG
 from .Extractor import AExtractor
 from . import ParserHelpers as helpers
 from .SchemaInterpreter import SchemaInterpreter, SchemaEntry
-from .helper_functions import _update_dict_with_path_hierarchy, _merge_dicts
+from .helper_functions import _update_dict_with_path_hierarchy, _merge_dicts, _pattern_path_part_match
 
 
 DEFAULT_PARSER_SCHEMA = {
@@ -567,109 +567,52 @@ class Parser():
                 # For all cache entries
                 for cache_entry in cache_extractor:
 
-                    # If needed match path against branch position
+                    # If in a regex context match file path to branch position
                     if "useRegex" in context:
 
                         # Extracted metadata should be structured in a dictionary
                         # where keys are filenames and values are metadata
                         if extracted_metadata is None:
                             extracted_metadata = {}
+                        elif not isinstance(extracted_metadata, dict):
+                            LOG.debug(f"extracted metadata: {extracted_metadata}\n\ncontext: {context}")
+                            raise RuntimeError(f"Incorrect extracted_metadata initialization type: {extracted_metadata}")
 
-                        is_match = False
+                        # We skip the last element as it represents the node name of the extracted metadata
+                        # not to be included in the path of the tree
+                        file_path_parts = list(cache_entry.rel_path.parent.parts)
+                        file_path_parts.reverse()
+                        reversed_branch = list(reversed(branch[:len(branch) - 1]))
 
-                        # If no path is available for matching the we match using the available branch paths
-                        if not ("!extractor" in context and "path" in context["!extractor"]):
-                            file_path_parts = list(cache_entry.rel_path.parent.parts)
-                            file_path_parts.reverse()
-                            # We skip the last element as it represents the node name of the extracted metadata
-                            # not included in the path of the tree
-                            reversed_branch = list(reversed(branch[:len(branch) - 1]))
-
-                            # We match through looping over the branch parts in reverse order
-                            for i, part in enumerate(reversed_branch):
-
-                                # Expand star pattern
-                                # TODO: should star patterns be allowed without using path information?
-                                if part == "*":
-
-                                    # If star at end of regex path then match is true
-                                    if (i + 1) == len(regex_path):
-                                        continue
-
-                                    # Else match against same index element in file path
-                                    # TODO: star matching should always be true, is this necessary?
-                                    elif not match('.*', file_path_parts[i]):
-                                        LOG.debug(f"{part} did not match against {file_path_parts[i]}")
-                                        break
-
-                                # Else literal matching
-                                elif not match(part, file_path_parts[i]):
-                                    LOG.debug(f"{part} did not match against {file_path_parts[i]}")
-                                    break
-                            
-                            # Everything matched in the for loop i.e. no breakpoint reached
-                            else:
-                                is_match = True
-
-                        # Otherwise we prioritize path matching using extractor directives
-                        else:
-                            file_path_parts = list(cache_entry.rel_path.parts)
-                            file_path_parts.reverse()
-                            regex_path = context["!extractor"]["path"].split("/")
-                            regex_path.reverse()
-
-                            # We match through looping over the regex path in reverse order
-                            for i, part in enumerate(regex_path):
-
-                                # Expand star pattern
-                                if part == "*":
-
-                                    # If star at end of regex path then match is true
-                                    if (i + 1) == len(regex_path):
-                                        continue
-
-                                    # Else match against same index element in file path
-                                    # TODO: star matching should always be true, is this necessary?
-                                    elif not match('.*', file_path_parts[i]):
-                                        LOG.debug(f"{part} did not match against {file_path_parts[i]}")
-                                        break
-                                
-                                # Match against varname
-                                elif fullmatch('.*{[a-zA-Z0-9_]+}.*', part):
-                                    # !varname should always be in context in this case
-                                    if "!varname" not in context:
-                                        # TODO: should we instead raise an error?
-                                        LOG.critical(f"Varname required to match with variables: {regex_path}")
-                                        break
-                                    
-                                    # correctly interpreted !varname should also come with a regexp in context
-                                    if "regexp" not in context:
-                                        LOG.debug(dumps(interpreted_schema, indent=4, default=vars))
-                                        raise RuntimeError("!varname in context but no regexp found")
-
-                                    # Else match against same index element in file path
-                                    elif not match(part.format(**{context["!varname"]: context["regexp"]}), file_path_parts[i]):
-                                        LOG.debug(f"{part} did not match against {file_path_parts[i]}")
-                                        break
-
-                                # Else literal matching
-                                elif not match(part, file_path_parts[i]):
-                                    LOG.debug(f"{part} did not match against {file_path_parts[i]}")
-                                    break
-                            
-                            # Everything matched in the for loop i.e. no breakpoint reached
-                            else:
-                                is_match = True
-                                    
-                        # If the match is negative then we skip the current cache entry
-                        if not is_match:
+                        # If there is a mismatch we skip the cache entry
+                        if not _pattern_path_part_match(reversed_branch, file_path_parts):
                             continue
 
-                    # If not in a regex context then extracted metadata is structured
-                    # in a list and metadata is appended to it
-                    else:
+                    # If path information is present in extractor directives match file path to given regex path
+                    if "!extractor" in context and "path" in context["!extractor"]:
+
+                        # Extracted metadata should be structured in a dictionary
+                        # where keys are filenames and values are metadata
                         if extracted_metadata is None:
-                            extracted_metadata = []
+                            extracted_metadata = {}
+                        elif not isinstance(extracted_metadata, dict):
+                            LOG.debug(f"extracted metadata: {extracted_metadata}\n\ncontext: {context}")
+                            raise RuntimeError(f"Incorrect extracted_metadata initialization type: {extracted_metadata}")
+
+                        # In this case the name of the file should be taken into account in the context path
+                        file_path_parts = list(cache_entry.rel_path.parts)
+                        file_path_parts.reverse()
+                        regex_path = context["!extractor"]["path"].split("/")
+                        regex_path.reverse()
+                                    
+                        # If the match is negative then we skip the current cache entry
+                        if not _pattern_path_part_match(regex_path, file_path_parts, context):
+                            continue
+
+                    # If not in a regex/path context then extracted metadata is structured
+                    # in a list and metadata is appended to it
+                    if extracted_metadata is None:
+                        extracted_metadata = []
 
                     # Lazy loading handling
                     metadata = cache_entry.load_metadata()

@@ -168,6 +168,7 @@ from typing import Optional, Any, Dict, Union
     #         return return_dict
 
 
+# TODO: Should all the ParserHelpers classes name start with "_" ?
 class Cache:
     """
     Convenience class for caching extraction results.

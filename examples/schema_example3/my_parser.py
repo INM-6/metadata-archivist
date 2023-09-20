@@ -51,7 +51,45 @@ class yml_extractor(AExtractor):
     def __init__(self) -> None:
         super().__init__(name='yml_extractor',
                          input_file_pattern='config.yml',
-                         schema={})
+                         schema={
+                            'type': 'object',
+                            'properties': {
+                                'input_files': {
+                                    'type': 'object',
+                                    'properties': {
+                                        'precipitation': {
+                                            'type': 'string',
+                                            'description': 'precipitation input file name'
+                                        },
+                                        'temperature': {
+                                            'type': 'string',
+                                            'description': 'temperature input file name'
+                                        }
+                                    }
+                                },
+                                'parameters': {
+                                    'type': 'object',
+                                    'properties': {
+                                        'a': {
+                                            'type': 'number',
+                                            'description': 'parameter a'
+                                        },
+                                        'b': {
+                                            'type': 'number',
+                                            'description': 'parameter b'
+                                        }
+                                    }
+                                },
+                                'info1': {
+                                    'type': 'string',
+                                    'description': 'this is a  metadata'
+                                },
+                                'info2': {
+                                    'type': 'string',
+                                    'description': 'this as well'
+                                }
+                            }
+                         })
 
     def extract(self, file_path):
         with open(file_path, "r") as stream:
@@ -67,7 +105,27 @@ class basin_character_extractor(AExtractor):
     def __init__(self) -> None:
         super().__init__(name='basin_character_extractor',
                          input_file_pattern='basin.yml',
-                         schema={})
+                         schema={
+                            'type': 'object',
+                            'properties': {
+                                'river': {
+                                    'type': 'string',
+                                    'description': 'name of the river'
+                                },
+                                'length': {
+                                    'type': 'integer',
+                                    'description': 'length in km'
+                                },
+                                'size': {
+                                    'type': 'integer',
+                                    'description': 'flow accumulation in km^2'
+                                },
+                                'max_depth': {
+                                    'type': 'integer',
+                                    'description': 'maximum depth in m'
+                                }
+                            }
+                         })
 
     def extract(self, file_path):
         with open(file_path, "r") as stream:
@@ -83,7 +141,23 @@ class station_character_extractor(AExtractor):
     def __init__(self) -> None:
         super().__init__(name='station_character_extractor',
                          input_file_pattern='station.yml',
-                         schema={})
+                         schema={
+                            'type': 'object',
+                            'properties': {
+                                'river': {
+                                    'type': 'string',
+                                    'description': 'name of the river'
+                                },
+                                'grdc_id': {
+                                    'type': 'string',
+                                    'description': 'grdc id'
+                                },
+                                'mean_disch': {
+                                    'type': 'number',
+                                    'description': 'mean annual discharge in m^3s^-1'
+                                }
+                            }
+                         })
 
     def extract(self, file_path):
         with open(file_path, "r") as stream:
@@ -97,7 +171,7 @@ class station_character_extractor(AExtractor):
 my_schema = {
     '$schema': 'https://abc',
     '$id': 'https://abc.json',
-    'description': 'my example schema',
+    'description': 'my example schema 3',
     'type': 'object',
     'properties': {
         'metadata_archive': {

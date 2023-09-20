@@ -23,5 +23,10 @@ arch = Archivist(archive_path=Path('metadata_archive.tar'),
                  add_type=True)
 
 arch.extract()
-print(dumps(arch.parser.metadata, indent=4))
 arch.export()
+
+print("\nResulting schema:")
+print(dumps(my_parser.schema, indent=4))
+
+print("\nResulting metadata:")
+print(dumps(arch.get_metadata(), indent=4))

@@ -6,9 +6,6 @@ Schema Interpretation class for creating the
 interpretable structure for the unified metadata file.
 See README.md/SchemaInterpreter section.
 
-Interpretation rules can be customized or added through
-the INTERPRETATION_RULES dictionary.
-
 Authors: Jose V., Matthias K.
 
 """
@@ -19,13 +16,6 @@ from collections.abc import Iterable
 from typing import Optional, Any, Union
 
 from .Logger import LOG, is_debug
-
-"""
-Constants for schema specific/special values to be considered when parsing.
-"""
-_KNOWN_REFS = [
-    "#/$defs/",
-]
 
 class SchemaEntry:
     """
@@ -95,85 +85,10 @@ class SchemaInterpreter:
         self._schema = schema
         self.structure = SchemaEntry()
 
-        # INTERPRETATION_RULES constant is created inside
-        # class instance to be able to pass self to function context
-        self._INTERPRETATION_RULES = {
-            "properties": self._process_simple_property,
-            "unevaluatedProperties": self._process_simple_property,
-            "additionalProperties": self._process_simple_property,
-            "patternProperties": self._process_pattern_property,
-            "!extractor": self._process_extractor_directive,
-            "$ref": self._process_reference,
-            "!varname": self._process_varname,
-        }
+        # We load INTERPRETATION_RULES directly in instance to avoid circular importing issues
+        from .InterpretationRules import _INTERPRETATION_RULES
+        self.rules = deepcopy(_INTERPRETATION_RULES)
 
-    def _process_simple_property(self, prop_val: dict, prop_key: str, parent_key: str, entry: SchemaEntry) -> SchemaEntry:
-        # Known simple properties return recursion results without branching
-        return self._interpret_schema(prop_val, parent_key, entry)
-
-    def _process_pattern_property(self, prop_val: dict, prop_key: str, parent_key: str, entry: SchemaEntry) -> SchemaEntry:
-        # We create a regex context and recurse over the contents of the property.
-        entry.context.update({"useRegex": True})
-
-        return self._interpret_schema(prop_val, parent_key, entry)
-
-    def _process_extractor_directive(self, prop_val: Union[str, dict], prop_key: str, parent_key: str, entry: SchemaEntry) -> SchemaEntry:
-        # We create an !extractor context but keep on with current recursion level
-        # Contents of this dictionary are not supposed to be handled by the interpreter.
-        entry.context.update({prop_key: prop_val})
-
-        return entry 
-
-    def _process_reference(self, prop_val: dict, prop_key: str, parent_key: str, entry: SchemaEntry) -> SchemaEntry:
-        # Check if reference is well formed against knowledge base
-        if not any(prop_val.startswith(ss) for ss in _KNOWN_REFS):
-            raise RuntimeError(f"Malformed reference prop_value: {prop_key}: {prop_val}")
-
-        # Call _process_refs to check for correctness before creating extraction context.
-        entry = self._process_refs(prop_val, entry)
-
-        return entry
-        
-
-    def _process_varname(self, prop_val: dict, prop_key: str, parent_key: str, entry: SchemaEntry) -> SchemaEntry:
-        # Check if regex context is present in current entry
-        if "useRegex" not in entry.context:
-            raise RuntimeError("Contextless !varname found")
-        # Add a !varname context which contains the name to use
-        # and to which expression it corresponds to.
-        entry.context.update({prop_key: prop_val, "regexp": parent_key})
-        
-        return entry
-        
-    def _recurse_sub_schema(self, sub_schema: dict, entry: SchemaEntry, filters: Optional[list] = None) -> list:
-        # TODO: recursively explore extractor sub-schema and collect entry names and description.
-        # List of keys can be passed as filters to select a branch of the extractor sub schema.
-        # Resulting list should contain all the #/property that needs to be linked
-        # with their respective positions so that _process_refs can take care of creating links
-        # and avoid circular dependencies.
-        return []
-
-    def _process_refs(self, prop_val: str, entry: SchemaEntry) -> SchemaEntry:
-
-        # Test correctness of reference
-        val_split = prop_val.split("/")
-        if len(val_split) < 3:
-            raise ValueError(f"Malformed reference: {prop_val}")
-        ex_id = val_split[2]
-        if ex_id not in self._schema["$defs"]:
-            raise KeyError(f"Extractor not found: {ex_id}")
-        
-        # Add identified extractor to context
-        LOG.debug(f"processing reference to: {ex_id}")
-        entry["$extractor_id"] = ex_id
-
-        # Further process reference e.g. filters, internal property references -> links
-        sub_schema = self._schema["$defs"][ex_id]["properties"]
-        links = self._recurse_sub_schema(sub_schema, entry, filters=None if len(val_split) <= 3 else val_split[3:])
-        # TODO: take care of linking
-
-        return entry
-    
     def _interpret_schema(self,
                          properties: dict,
                          parent_key: Optional[str] = None,
@@ -214,14 +129,14 @@ class SchemaInterpreter:
 
             # If the key is known as an interpretation rule
             # call the function mapped into the INTERPRETATION_RULE dictionary
-            if key in self._INTERPRETATION_RULES:
+            if key in self.rules:
                 # This error is only raised if an interpretation rule is found at root of schema properties
                 # rules must be defined in individual items of the properties, hence a parent key should
                 # always be present.
                 if parent_key is None:
                     LOG.debug(dumps(relative_root, indent=4, default=vars))
                     raise RuntimeError("Cannot interpret rule without parent key.")
-                relative_root = self._INTERPRETATION_RULES[key](val, key, parent_key, relative_root)
+                relative_root = self.rules[key](self, val, key, parent_key, relative_root)
 
             else:
                 # Case dict i.e. branch

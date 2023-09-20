@@ -10,9 +10,9 @@ Authors: Jose V., Matthias K.
 
 """
 
-from re import fullmatch
 from pathlib import Path
 from copy import deepcopy
+from re import match, fullmatch
 from json import dump, load, dumps
 from typing import Optional, List, NoReturn, Union
 
@@ -20,6 +20,7 @@ from .Logger import LOG
 from .Extractor import AExtractor
 from . import ParserHelpers as helpers
 from .SchemaInterpreter import SchemaInterpreter, SchemaEntry
+from .helper_functions import _update_dict_with_path_hierarchy, _merge_dicts
 
 
 DEFAULT_PARSER_SCHEMA = {
@@ -324,45 +325,6 @@ class Parser():
     #             #           -> cf mattermost chat
     #             self._deep_set(self.metadata, metadata, rel_file_path)
 
-    def _update_metadata_tree_with_path_hierarchy(self, metadata: dict,
-                                                  decompress_path: Path,
-                                                  file_path: Path) -> None:
-        """
-        Generates and dynamically fills the metadata tree with path hierarchy.
-        The hierarchy is based on decompressed directory.
-        """
-        relative_path = file_path.relative_to(decompress_path)
-        hierarchy = list(relative_path.parents)
-        # '.' is always the root of a relative path hence parents of a relative path will always contain 1 element
-        if len(hierarchy) < 2:
-            # In case there is no hierarchy then we just add the metadata in a flat structure
-            self.metadata[file_path.name] = metadata
-        else:
-            # Else we generate the hierarchy structure in the metadata tree
-            hierarchy.reverse()  # Get the hierarchy starting from root node
-            hierarchy.pop(0)  # Remove '.' node
-            iterator = iter(hierarchy)
-            node = next(
-                iterator
-            )  # Should not raise StopIteration as there is at least one element in list
-            relative_root = self.metadata
-            while node is not None:
-                node_str = str(node)
-                if node_str not in relative_root:
-                    relative_root[node_str] = {}
-                relative_root = relative_root[node_str]
-                try:
-                    node = next(iterator).relative_to(node)
-                    # If relative paths are not used then they will contain previous node name in path
-                except StopIteration:
-                    relative_root[file_path.name] = metadata
-                    break
-            else:
-                # If break point not reached
-                raise RuntimeError(
-                    f"Could not update metadata tree based on file hierarchy. File: {file_path}"
-                )
-
     def parse_files(self, decompress_path: Path,
                     file_paths: List[Path],
                     override_meta_files: bool = True) -> List[Path]:
@@ -547,6 +509,9 @@ class Parser():
         Designed to mimic structure of interpreted_schema where each SchemaEntry is a branching node in the metadata
         and whenever an extractor context is found the branch terminates.
         Handles additional context like extractor directives (!extractor) and directory directives (!varname).
+
+        While recursing over the tree branches, the branch path i.e. all the parent nodes are tracked in order
+        to use patternProperties without path directives.
         """
         tree = {}
         context = interpreted_schema.context
@@ -559,9 +524,28 @@ class Parser():
             # Only process SchemaEntries
             if isinstance(value, SchemaEntry):
 
-                # Update position in branch
                 branch.append(key)
-                tree[key] = self._update_metadata_tree_with_schema2(value, branch)
+
+                # Update position in branch
+
+                # If current context and child context contain regex information
+                # We merge all recursion results from children and return the resulting merge
+                if "useRegex" in context:
+                    tree = _merge_dicts(tree, self._update_metadata_tree_with_schema2(value, branch))
+
+                # If current context does not contain regex information but child context does
+                # We retrieve the root node of the children recursion and an entry to the tree
+                elif "useRegex" in value.context:
+                    recursion_result = self._update_metadata_tree_with_schema2(value, branch)
+                    if key not in recursion_result:
+                        LOG.debug(f"current metadata tree: {tree}\n\nrecursion results: {recursion_result}")
+                        raise RuntimeError("Malformed metadata tree when processing regex context")
+                    tree[key] = self._update_metadata_tree_with_schema2(value, branch)[key]
+
+                # Else we add a new entry to the tree using the recursion results
+                else:
+                    tree[key] = self._update_metadata_tree_with_schema2(value, branch)
+
                 branch.pop()
 
             # If entry corresponds to an extractor reference
@@ -578,31 +562,156 @@ class Parser():
                 cache_extractor = self._cache[value]
 
                 # Extractor may have processed multiple files
-                extracted_metadata = []
+                extracted_metadata = None
 
                 # For all cache entries
                 for cache_entry in cache_extractor:
 
                     # If needed match path against branch position
-                    if "useRegex" in context and False:
-                        continue
+                    if "useRegex" in context:
+
+                        # Extracted metadata should be structured in a dictionary
+                        # where keys are filenames and values are metadata
+                        if extracted_metadata is None:
+                            extracted_metadata = {}
+
+                        is_match = False
+
+                        # If no path is available for matching the we match using the available branch paths
+                        if not ("!extractor" in context and "path" in context["!extractor"]):
+                            file_path_parts = list(cache_entry.rel_path.parent.parts)
+                            file_path_parts.reverse()
+                            # We skip the last element as it represents the node name of the extracted metadata
+                            # not included in the path of the tree
+                            reversed_branch = list(reversed(branch[:len(branch) - 1]))
+
+                            # We match through looping over the branch parts in reverse order
+                            for i, part in enumerate(reversed_branch):
+
+                                # Expand star pattern
+                                if part == "*":
+
+                                    # If star at end of regex path then match is true
+                                    if (i + 1) == len(regex_path):
+                                        continue
+
+                                    # Else match against same index element in file path
+                                    # TODO: star matching should always be true, is this necessary?
+                                    elif not match('.*', file_path_parts[i]):
+                                        LOG.debug(f"{part} did not match against {file_path_parts[i]}")
+                                        break
+
+                                # Else literal matching
+                                elif not match(part, file_path_parts[i]):
+                                    LOG.debug(f"{part} did not match against {file_path_parts[i]}")
+                                    break
+                            
+                            # Everything matched in the for loop i.e. no breakpoint reached
+                            else:
+                                is_match = True
+
+                        # Otherwise we prioritize path matching using extractor directives
+                        else:
+                            file_path_parts = list(cache_entry.rel_path.parts)
+                            file_path_parts.reverse()
+                            regex_path = context["!extractor"]["path"].split("/")
+                            regex_path.reverse()
+
+                            # We match through looping over the regex path in reverse order
+                            for i, part in enumerate(regex_path):
+
+                                # Expand star pattern
+                                if part == "*":
+
+                                    # If star at end of regex path then match is true
+                                    if (i + 1) == len(regex_path):
+                                        continue
+
+                                    # Else match against same index element in file path
+                                    # TODO: star matching should always be true, is this necessary?
+                                    elif not match('.*', file_path_parts[i]):
+                                        LOG.debug(f"{part} did not match against {file_path_parts[i]}")
+                                        break
+                                
+                                # Match against varname
+                                elif fullmatch('.*{[a-zA-Z0-9_]+}.*', part):
+                                    # !varname should always be in context in this case
+                                    if "!varname" not in context:
+                                        # TODO: should we instead raise an error?
+                                        LOG.critical(f"Varname required to match with variables: {regex_path}")
+                                        break
+                                    
+                                    # correctly interpreted !varname should also come with a regexp in context
+                                    if "regexp" not in context:
+                                        LOG.debug(dumps(interpreted_schema, indent=4, default=vars))
+                                        raise RuntimeError("!varname in context but no regexp found")
+
+                                    # Else match against same index element in file path
+                                    elif not match(part.format(**{context["!varname"]: context["regexp"]}), file_path_parts[i]):
+                                        LOG.debug(f"{part} did not match against {file_path_parts[i]}")
+                                        break
+
+                                # Else literal matching
+                                elif not match(part, file_path_parts[i]):
+                                    LOG.debug(f"{part} did not match against {file_path_parts[i]}")
+                                    break
+                            
+                            # Everything matched in the for loop i.e. no breakpoint reached
+                            else:
+                                is_match = True
+                                    
+                        # If the match is negative then we skip the current cache entry
+                        if not is_match:
+                            continue
+
+                    # If not in a regex context then extracted metadata is structured
+                    # in a list and metadata is appended to it
+                    else:
+                        if extracted_metadata is None:
+                            extracted_metadata = []
 
                     # Lazy loading handling
                     metadata = cache_entry.load_metadata()
                     
                     # Compute additional directives if given
-                    if "!extractor" in context:
+                    if "!extractor" in context and "keys" in context["!extractor"]:
                         filtered_metadata = extractor.filter_metadata(
                             metadata, context["!extractor"]["keys"],
                             **kwargs)
-                        extracted_metadata.append(filtered_metadata)
+                        
+                        # When in a regex context then resulting extracted metadata is a dict
+                        if isinstance(extracted_metadata, dict):
 
-                    # Else directly append metadata
+                            # When updating the extracted metadata dict,
+                            # the relative path to cache entry is used,
+                            # however the filename is changed to the name of key of the interpreted_schema key.
+                            relative_path = cache_entry.rel_path.parent / interpreted_schema.key
+                            _update_dict_with_path_hierarchy(extracted_metadata, filtered_metadata, relative_path)
+
+                        # Else by default we append to a list
+                        else:
+                            extracted_metadata.append(filtered_metadata)
+
+                    # Else directly add metadata
                     else:
-                        extracted_metadata.append(metadata)
+                        # When in a regex context then resulting extracted metadata is a dict
+                        if isinstance(extracted_metadata, dict):
+
+                            # When updating the extracted metadata dict,
+                            # the relative path to cache entry is used,
+                            # however the filename is changed to the name of key of the interpreted_schema key.
+                            relative_path = cache_entry.rel_path.parent / interpreted_schema.key
+                            _update_dict_with_path_hierarchy(extracted_metadata, metadata, relative_path)
+
+                        # Else by default we append to a list
+                        else:
+                            extracted_metadata.append(metadata)
 
                 # Update tree according to metadata retrieved
-                tree = extracted_metadata[0] if len(extracted_metadata) == 1 else extracted_metadata
+                if isinstance(extracted_metadata, list):
+                    tree = extracted_metadata[0] if len(extracted_metadata) == 1 else extracted_metadata
+                else:
+                    tree = extracted_metadata
             
             # Nodes should not be of a different type than SchemaEntry
             else:
@@ -637,9 +746,10 @@ class Parser():
             for extractor_cache in self._cache:
                 for cache_entry in extractor_cache:
                     cache_entry.load_metadata()
-                    self._update_metadata_tree_with_path_hierarchy(
-                        cache_entry.metadata, cache_entry.decompress_path,
-                        cache_entry.file_path)
+                    _update_dict_with_path_hierarchy(
+                        self.metadata,
+                        cache_entry.metadata,
+                        cache_entry.rel_path)
 
         return self.metadata
 

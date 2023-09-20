@@ -34,14 +34,13 @@ from .Logger import LOG
 #def deep_get(dictionary, *keys):
 #    return reduce(lambda d, key: d.get(key) if d else None, keys, dictionary)
 
-def _update_dict_with_path_hierarchy(target_dict: dict, value: dict, relative_path: Path) -> None:
+def _update_dict_with_parts(target_dict: dict, value: dict, parts: list) -> None:
     """
     In place dict update.
     Generates and dynamically fills the metadata tree with path hierarchy.
     The hierarchy is based on decompressed directory.
     """
     # Get the parts of the relative path
-    parts = list(relative_path.parts)
     relative_root = target_dict
     for part in parts[:len(parts) - 1]:
         if part not in relative_root:
@@ -123,7 +122,7 @@ def _deep_get_from_schema(schema, keys: list):
         print(schema[k])
         return schema[k]
 
-def _pattern_path_part_match(pattern_path_parts: list, actual_path_parts: list, context: Optional[dict] = None) -> bool:
+def _pattern_parts_match(pattern_parts: list, actual_parts: list, context: Optional[dict] = None) -> bool:
     """
     Path parts pattern matching.
     A tree branch parts or a regex path are needed to compare with an actual path.
@@ -134,19 +133,19 @@ def _pattern_path_part_match(pattern_path_parts: list, actual_path_parts: list, 
     """
     is_match = False
     # We match through looping over the regex path in reverse order
-    for i, part in enumerate(pattern_path_parts):
+    for i, part in enumerate(pattern_parts):
 
         # Expand star pattern
         if part == "*":
 
             # If star at end of regex path then match is true
-            if (i + 1) == len(pattern_path_parts):
+            if (i + 1) == len(pattern_parts):
                 continue
 
             # Else match against same index element in file path
             # TODO: star matching should always be true, is this necessary?
-            elif not match('.*', actual_path_parts[i]):
-                LOG.debug(f"{part} did not match against {actual_path_parts[i]}")
+            elif not match('.*', actual_parts[i]):
+                LOG.debug(f"{part} did not match against {actual_parts[i]}")
                 break
         
         # Match against varname
@@ -154,7 +153,7 @@ def _pattern_path_part_match(pattern_path_parts: list, actual_path_parts: list, 
             # !varname should always be in context in this case
             if "!varname" not in context:
                 # TODO: should we instead raise an error?
-                LOG.critical(f"Varname required to match with variables: {pattern_path_parts}")
+                LOG.critical(f"Varname required to match with variables: {pattern_parts}")
                 break
             
             # correctly interpreted !varname should also come with a regexp in context
@@ -163,13 +162,13 @@ def _pattern_path_part_match(pattern_path_parts: list, actual_path_parts: list, 
                 raise RuntimeError("!varname in context but no regexp found")
 
             # Else match against same index element in file path
-            elif not match(part.format(**{context["!varname"]: context["regexp"]}), actual_path_parts[i]):
-                LOG.debug(f"{part} did not match against {actual_path_parts[i]}")
+            elif not match(part.format(**{context["!varname"]: context["regexp"]}), actual_parts[i]):
+                LOG.debug(f"{part} did not match against {actual_parts[i]}")
                 break
 
         # Else literal matching
-        elif not match(part, actual_path_parts[i]):
-            LOG.debug(f"{part} did not match against {actual_path_parts[i]}")
+        elif not match(part, actual_parts[i]):
+            LOG.debug(f"{part} did not match against {actual_parts[i]}")
             break
     
     # Everything matched in the for loop i.e. no breakpoint reached

@@ -20,7 +20,7 @@ from .Logger import LOG
 from .Extractor import AExtractor
 from . import ParserHelpers as helpers
 from .SchemaInterpreter import SchemaInterpreter, SchemaEntry
-from .helper_functions import _update_dict_with_path_hierarchy, _merge_dicts, _pattern_path_part_match
+from .helper_functions import _update_dict_with_parts, _merge_dicts, _pattern_parts_match
 
 
 DEFAULT_PARSER_SCHEMA = {
@@ -585,7 +585,7 @@ class Parser():
                         reversed_branch = list(reversed(branch[:len(branch) - 1]))
 
                         # If there is a mismatch we skip the cache entry
-                        if not _pattern_path_part_match(reversed_branch, file_path_parts):
+                        if not _pattern_parts_match(reversed_branch, file_path_parts):
                             continue
 
                     # If path information is present in extractor directives match file path to given regex path
@@ -606,7 +606,7 @@ class Parser():
                         regex_path.reverse()
                                     
                         # If the match is negative then we skip the current cache entry
-                        if not _pattern_path_part_match(regex_path, file_path_parts, context):
+                        if not _pattern_parts_match(regex_path, file_path_parts, context):
                             continue
 
                     # If not in a regex/path context then extracted metadata is structured
@@ -630,7 +630,7 @@ class Parser():
                             # the relative path to cache entry is used,
                             # however the filename is changed to the name of key of the interpreted_schema key.
                             relative_path = cache_entry.rel_path.parent / interpreted_schema.key
-                            _update_dict_with_path_hierarchy(extracted_metadata, filtered_metadata, relative_path)
+                            _update_dict_with_parts(extracted_metadata, filtered_metadata, list(relative_path.parts))
 
                         # Else by default we append to a list
                         else:
@@ -645,7 +645,7 @@ class Parser():
                             # the relative path to cache entry is used,
                             # however the filename is changed to the name of key of the interpreted_schema key.
                             relative_path = cache_entry.rel_path.parent / interpreted_schema.key
-                            _update_dict_with_path_hierarchy(extracted_metadata, metadata, relative_path)
+                            _update_dict_with_parts(extracted_metadata, metadata, list(relative_path.parts))
 
                         # Else by default we append to a list
                         else:
@@ -690,10 +690,10 @@ class Parser():
             for extractor_cache in self._cache:
                 for cache_entry in extractor_cache:
                     cache_entry.load_metadata()
-                    _update_dict_with_path_hierarchy(
+                    _update_dict_with_parts(
                         self.metadata,
                         cache_entry.metadata,
-                        cache_entry.rel_path)
+                        list(cache_entry.rel_path.parts))
 
         return self.metadata
 

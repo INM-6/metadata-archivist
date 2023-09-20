@@ -619,37 +619,23 @@ class Parser():
                     
                     # Compute additional directives if given
                     if "!extractor" in context and "keys" in context["!extractor"]:
-                        filtered_metadata = extractor.filter_metadata(
+                        metadata = extractor.filter_metadata(
                             metadata, context["!extractor"]["keys"],
                             **kwargs)
-                        
-                        # When in a regex context then resulting extracted metadata is a dict
-                        if isinstance(extracted_metadata, dict):
 
-                            # When updating the extracted metadata dict,
-                            # the relative path to cache entry is used,
-                            # however the filename is changed to the name of key of the interpreted_schema key.
-                            relative_path = cache_entry.rel_path.parent / interpreted_schema.key
-                            _update_dict_with_parts(extracted_metadata, filtered_metadata, list(relative_path.parts))
+                    # Update extracted metadata
+                    # When in a regex context then resulting extracted metadata is a dict
+                    if isinstance(extracted_metadata, dict):
 
-                        # Else by default we append to a list
-                        else:
-                            extracted_metadata.append(filtered_metadata)
+                        # When updating the extracted metadata dict,
+                        # the relative path to cache entry is used,
+                        # however the filename is changed to the name of key of the interpreted_schema key.
+                        relative_path = cache_entry.rel_path.parent / interpreted_schema.key
+                        _update_dict_with_parts(extracted_metadata, metadata, list(relative_path.parts))
 
-                    # Else directly add metadata
+                    # Else by default we append to a list
                     else:
-                        # When in a regex context then resulting extracted metadata is a dict
-                        if isinstance(extracted_metadata, dict):
-
-                            # When updating the extracted metadata dict,
-                            # the relative path to cache entry is used,
-                            # however the filename is changed to the name of key of the interpreted_schema key.
-                            relative_path = cache_entry.rel_path.parent / interpreted_schema.key
-                            _update_dict_with_parts(extracted_metadata, metadata, list(relative_path.parts))
-
-                        # Else by default we append to a list
-                        else:
-                            extracted_metadata.append(metadata)
+                        extracted_metadata.append(metadata)
 
                 # Update tree according to metadata retrieved
                 if isinstance(extracted_metadata, list):

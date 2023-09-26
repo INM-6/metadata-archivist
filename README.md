@@ -68,4 +68,3 @@ and the extractor structure as a terminal value.
   - Only one reference to a definition is accepted per named dictionary. (TODO: expand on the future?)
   - !extractor instructions point to dictionaries but this are not considered branches of the metadata structure, instead are considered as additional contextual information.
   - !extractor instructions must always precede the reference.
-- Currently, regex context defined by patternProperties must be initialized at the root of the interpreted tree, otherwise when compiling the structure of the unified metadata file, the branch structure will be broken. (TODO: check if we want to enforce of change this behavior)

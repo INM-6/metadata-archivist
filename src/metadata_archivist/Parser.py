@@ -528,19 +528,42 @@ class Parser():
 
                 # Update position in branch
 
-                # If current context and child context contain regex information
+                # If current context contains regex information (children always inherit context)
                 # We merge all recursion results from children and return the resulting merge
                 if "useRegex" in context:
                     tree = _merge_dicts(tree, self._update_metadata_tree_with_schema2(value, branch))
 
-                # If current context does not contain regex information but child context does
-                # We retrieve the root node of the children recursion and an entry to the tree
+                # If current context does not contain regex information but child context does,
+                # we need to integrate the recursion result into the metadata tree.
+                # However the recursion result will contain all the nodes in the branch up to
+                # the root of the tree i.e. if we are not currently at the root there will be
+                # a merging conflict. For this we loop over the tree nodes stored in the branch
+                # until we reach the current node and at that point we integrate into the tree.
                 elif "useRegex" in value.context:
                     recursion_result = self._update_metadata_tree_with_schema2(value, branch)
-                    if key not in recursion_result:
+                    # For each tree node in the current branch
+                    for node in branch:
+
+                        # Check the length of the recursion result and and existence of node
+                        if len(recursion_result) > 1 or node not in recursion_result:
+                            LOG.debug(f"current metadata tree: {tree}\n\nrecursion results: {recursion_result}")
+                            raise RuntimeError("Malformed recursion result when processing regex context")
+                        
+                        # If the current node is equal to the key in the interpreted schema i.e. last iteration of loop
+                        if key == node:
+                            # Add recursion result to tree
+                            tree[key] = recursion_result[key]
+                            # With break loop won't exit into else clause
+                            break
+
+                        # Otherwise we move in depth with the next node of the recursion result
+                        else:
+                            recursion_result = recursion_result[node]
+                    
+                    # If the break is never reached an error has ocurred
+                    else:
                         LOG.debug(f"current metadata tree: {tree}\n\nrecursion results: {recursion_result}")
                         raise RuntimeError("Malformed metadata tree when processing regex context")
-                    tree[key] = self._update_metadata_tree_with_schema2(value, branch)[key]
 
                 # Else we add a new entry to the tree using the recursion results
                 else:

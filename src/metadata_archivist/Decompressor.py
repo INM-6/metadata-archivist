@@ -13,7 +13,7 @@ import tarfile
 from re import fullmatch
 from pathlib import Path
 from collections.abc import Callable
-from typing import Optional, List, Tuple, NoReturn
+from typing import Optional, List, Tuple, NoReturn, Union
 
 from .Logger import LOG
 
@@ -42,7 +42,7 @@ class Decompressor():
         return self._archive_path
 
     @archive_path.setter
-    def archive_path(self, archive_path: Path) -> None:
+    def archive_path(self, archive_path: Union[str, Path]) -> None:
         """Sets new archive path after checking."""
         self._archive_path, self._decompress = self._check_archive(archive_path)
 
@@ -59,11 +59,16 @@ class Decompressor():
         """
         raise AttributeError("decompress method can only be set through archive path checking")
 
-    def _check_archive(self, file_path: Path) -> Tuple[Path, Callable]:
+    def _check_archive(self, file_path: Union[str, Path]) -> Tuple[Path, Callable]:
         """
         Internal method to check archive format.
         If archive is in correct format then path to archive and decompression method are returned.
         """
+
+        if isinstance(file_path, str):
+            file_path = Path(file_path)
+        elif not isinstance(file_path, Path):
+            raise TypeError(f"Incorrect type format for file path: {file_path!r}")
 
         if not file_path.is_file():
             raise FileNotFoundError(f"Incorrect path to file: {file_path}")

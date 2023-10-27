@@ -8,6 +8,7 @@ Authors: Matthias K., Jose V.
 """
 
 from pathlib import Path
+from typing import Union
 
 from .Parser import Parser
 from .Exporter import Exporter
@@ -20,7 +21,7 @@ class Archivist():
     Convenience class for orchestrating the Decompressor, Parser and Exporter.
     """
 
-    def __init__(self, archive_path: Path, parser: Parser, **kwargs) -> None:
+    def __init__(self, archive_path: Union[str, Path], parser: Parser, **kwargs) -> None:
         """
         Initialization method of Archivist class.
 

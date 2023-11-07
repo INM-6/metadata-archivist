@@ -9,6 +9,7 @@ Authors: Matthias K., Jose V.
 
 from pathlib import Path
 from typing import Union
+from shutil import rmtree
 
 from .Parser import Parser
 from .Exporter import Exporter
@@ -219,36 +220,38 @@ class Archivist():
         """Cleanup method automatically called after metadata extraction (or compilation if lazy_loading)"""
         if self.config["auto_cleanup"]:
             LOG.info("Cleaning extraction directory...")
-            errors = []
-            files = self._cache["decompressed_files"] + self._cache[
-                "meta_files"]
+            #errors = []
+            #files = self._cache["decompressed_files"] + self._cache[
+            #    "meta_files"]
             dirs = self._cache["decompressed_dirs"]
             if str(self._dc_dir_path) != '.':
-                dirs.append(self._dc_dir_path)
+                dirs.insert(0, self._dc_dir_path)
 
-            LOG.info(f"    cleaning files:")
-            for f in files:
-                LOG.info(f"        {str(f)}")
-                try:
-                    f.unlink()
-                except Exception as e:
-                    errors.append(
-                        (str(f),
-                         e.message if hasattr(e, "message") else str(e)))
+            rmtree(dirs[0])
 
-            LOG.info(f"    cleaning directories:")
-            for d in dirs:
-                LOG.info(f"        {str(d)}")
-                try:
-                    d.rmdir()
-                except Exception as e:
-                    errors.append(
-                        (str(d),
-                         e.message if hasattr(e, "message") else str(e)))
+            #LOG.info(f"    cleaning files:")
+            #for f in files:
+            #    LOG.info(f"        {str(f)}")
+            #    try:
+            #        f.unlink()
+            #    except Exception as e:
+            #        errors.append(
+            #            (str(f),
+            #             e.message if hasattr(e, "message") else str(e)))
 
-            if len(errors) > 0:
-                for e in errors:
-                    LOG.warning(
-                        f"    error cleaning:\n        {e[0]} -- {e[1]}")
+            #LOG.info(f"    cleaning directories:")
+            #for d in dirs:
+            #    LOG.info(f"        {str(d)}")
+            #    try:
+            #        d.rmdir()
+            #    except Exception as e:
+            #        errors.append(
+            #            (str(d),
+            #             e.message if hasattr(e, "message") else str(e)))
+
+            #if len(errors) > 0:
+            #    for e in errors:
+            #        LOG.warning(
+            #            f"    error cleaning:\n        {e[0]} -- {e[1]}")
 
             LOG.info("Done!")

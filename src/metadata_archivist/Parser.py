@@ -343,10 +343,9 @@ class Parser():
             to_extract[ex_id] = []
             LOG.debug(f'    preparing extractor: {ex_id}')
             for fp in file_paths:
-                pattern = extractor.input_file_pattern
-                if pattern[0] == '*':
-                    pattern = '.' + pattern
-                if fullmatch(pattern, fp.name):
+                pattern = extractor.input_file_pattern.split("/")
+                pattern.reverse()
+                if _pattern_parts_match(pattern, list(reversed(fp.parts))):
                     to_extract[ex_id].append(fp)
 
         # TODO: Think about parallelization scheme with ProcessPoolExecutor
@@ -603,8 +602,7 @@ class Parser():
 
                         # We skip the last element as it represents the node name of the extracted metadata
                         # not to be included in the path of the tree
-                        file_path_parts = list(cache_entry.rel_path.parent.parts)
-                        file_path_parts.reverse()
+                        file_path_parts = list(reversed(cache_entry.rel_path.parent.parts))
                         reversed_branch = list(reversed(branch[:len(branch) - 1]))
 
                         # If there is a mismatch we skip the cache entry
@@ -623,8 +621,7 @@ class Parser():
                             raise RuntimeError(f"Incorrect extracted_metadata initialization type: {extracted_metadata}")
 
                         # In this case the name of the file should be taken into account in the context path
-                        file_path_parts = list(cache_entry.rel_path.parts)
-                        file_path_parts.reverse()
+                        file_path_parts = list(reversed(cache_entry.rel_path.parts))
                         regex_path = context["!extractor"]["path"].split("/")
                         regex_path.reverse()
                                     

@@ -16,6 +16,7 @@ from collections.abc import Callable
 from typing import Optional, List, Tuple, NoReturn, Union
 
 from .Logger import LOG
+from .helper_functions import _pattern_parts_match
 
 class Decompressor():
     """
@@ -108,28 +109,27 @@ class Decompressor():
         with tarfile.open(archive_path) as t:
             item = t.next()
             while item is not None:
-                LOG.info(f"    processing file: {item.name}")
-                item_path = decompress_path.joinpath(item.name)
-                if any(item.name.endswith(format)
-                        for format in ['tgz', 'tar']):
-                    t.extract(item, path=decompress_path)
-                    _, new_decompressed_dirs, new_decompressed_files = self._decompress_tar(output_file_patterns,
-                                                       archive_path=item_path,
-                                                       extraction_path=decompress_path)
-                    # Reverse ordering of dirs to correctly remove them
-                    new_decompressed_dirs.extend(decompressed_dirs)
-                    decompressed_dirs = new_decompressed_dirs
-                    decompressed_files.extend(new_decompressed_files)
-                    item_path.unlink()
+                if item.isfile():
+                    LOG.info(f"    processing file: {item.name}")
+                    item_path = decompress_path.joinpath(item.name)
+                    if any(item.name.endswith(format)
+                            for format in ['tgz', 'tar']):
+                        t.extract(item, path=decompress_path)
+                        _, new_decompressed_dirs, new_decompressed_files = self._decompress_tar(output_file_patterns,
+                                                        archive_path=item_path,
+                                                        extraction_path=decompress_path)
+                        # Reverse ordering of dirs to correctly remove them
+                        decompressed_dirs.extend(new_decompressed_dirs)
+                        decompressed_files.extend(new_decompressed_files)
+                        item_path.unlink()
 
-                # TODO: think about precompiling patterns to optimize regex match time
-                elif any(fullmatch(f'.*/{pat}', item.name)
-                        for pat in output_file_patterns):
-                    t.extract(item, path=decompress_path)
-                    decompressed_files.append(item_path)
-                elif item.isdir():
-                    # TODO: Deal with empty dirs
-                    decompressed_dirs.insert(0, item_path)
+                    # TODO: think about precompiling patterns to optimize regex match time
+                    elif any(_pattern_parts_match(list(reversed(pat.split("/"))),
+                                                list(reversed(item.name.split("/"))))
+                            for pat in output_file_patterns):
+                        t.extract(item, path=decompress_path)
+                        decompressed_files.append(item_path)
+                        decompressed_dirs.append(item_path.parent)
                 item = t.next()
 
         # Returned paths are used for parsing and automatic clean-up.

@@ -18,7 +18,7 @@ from abc import ABC, abstractmethod # Abstract class base infrastructure
 from jsonschema import validate, ValidationError
 
 from .Logger import LOG
-from .helper_functions import _merge_dicts, _deep_get_from_schema
+from .helper_functions import _merge_dicts, _deep_get_from_schema, _pattern_parts_match
 
 
 class AExtractor(ABC):
@@ -133,17 +133,13 @@ class AExtractor(ABC):
         takes care of prior file checking and applies validate
         on extracted metadata.
         """
-        pattern = self.input_file_pattern
-        if pattern[0] == '*':
-            pattern = '.' + pattern
-        if not fullmatch(pattern, file_path.name):
-            raise RuntimeError(
-                f'The input file {file_path.name} does not match the extractors pattern: {self.input_file_pattern}'
-            )
-        elif not file_path.is_file():
+        if not file_path.is_file():
             raise RuntimeError(
                 f'The input file {file_path.name} is incorrect')
-        else:
+ 
+        pattern = self.input_file_pattern.split("/")
+        pattern.reverse()
+        if _pattern_parts_match(pattern, list(reversed(file_path.parts))):
             self.extracted_metadata = self.extract(file_path)
         self.validate()
 

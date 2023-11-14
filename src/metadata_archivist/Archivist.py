@@ -8,18 +8,21 @@ Authors: Matthias K., Jose V.
 """
 
 from pathlib import Path
+from typing import Union
+from shutil import rmtree
 
-from .Exporter import Exporter
 from .Parser import Parser
+from .Exporter import Exporter
 from .Decompressor import Decompressor
-from .Logger import LOG, set_verbose
+from .Logger import LOG, set_verbose, set_debug
+
 
 class Archivist():
+    """
+    Convenience class for orchestrating the Decompressor, Parser and Exporter.
+    """
 
-    def __init__(self,
-                 archive_path: Path,
-                 parser: Parser,
-                 **kwargs) -> None:
+    def __init__(self, archive_path: Union[str, Path], parser: Parser, **kwargs) -> None:
         """
         Initialization method of Archivist class.
 
@@ -39,23 +42,32 @@ class Archivist():
         self.parser = parser
 
         # Check and get paths for internal handling
-        self._dc_dir_path = self._check_dir(self.config["extraction_directory"],
-                                           allow_existing=False)
+        self._dc_dir_path = self._check_dir(
+            self.config["extraction_directory"], allow_existing=False)
         self._out_dir_path = self._check_dir(self.config["output_directory"],
-                                            allow_existing=True)
+                                             allow_existing=True)
 
         # Set exporter
-        f_format = self.config["output_file"][self.config["output_file"].find(".") + 1:]
+        # TODO: use output format for better handling?
+        f_format = self.config["output_file"][self.config["output_file"].
+                                              find(".") + 1:]
         self.exporter = Exporter(f_format)
-        self.metadata_output_file = self._out_dir_path / Path(self.config["output_file"])
+        self.metadata_output_file = self._out_dir_path / Path(
+            self.config["output_file"])
         if self.metadata_output_file.exists():
-            if self.config["overwrite"]:
-                if self.metadata_output_file.is_file():
-                    LOG.warning(f"Metadata output file exists: '{self.metadata_output_file}', overwriting.")
+            if self.metadata_output_file.is_file():
+                if self.config["overwrite"]:
+                    LOG.warning(
+                        f"Metadata output file exists: '{self.metadata_output_file}', overwriting."
+                    )
                 else:
-                    raise RuntimeError(f"Metadata output file exists: '{self.metadata_output_file}' cannot overwrite.")
+                    raise RuntimeError(
+                        f"Metadata output file exists: '{self.metadata_output_file}', overwriting not allowed"
+                    )
             else:
-                raise RuntimeError(f"Metadata output file exists: '{self.metadata_output_file}' overwrite not allowed.")
+                raise RuntimeError(
+                    f"'{self.metadata_output_file}' exists and is not a file, cannot overwrite"
+                )
 
         # Operational memory
         self._cache = {}
@@ -69,22 +81,32 @@ class Archivist():
             "extraction_directory": ".",
             "output_directory": ".",
             "output_file": "metadata.json",
-            "overwrite": True, # TODO: change to False after development phase is done. 
+            "overwrite":
+            True,  # TODO: change to False after development phase is done. 
             "auto_cleanup": True,
-            "verbose": True # TODO: change to False after development phase is done.
+            "verbose":
+            'debug',  # TODO: change to None after development phase is done.
+            'add_description': True,
+            'add_type': False
         }
         key_list = list(self.config.keys())
 
         # Init logger object with verbose configuration
         if "verbose" in kwargs:
-            if not isinstance(kwargs["verbose"], bool):
-                raise RuntimeError(f"Incorrect value for argument: verbose")
+            if kwargs["verbose"] is not None and kwargs["verbose"] not in [
+                    'debug', 'info'
+            ]:
+                raise RuntimeError(
+                    f"Incorrect value for argument: verbose, expected None, debug or info"
+                )
             self.config["verbose"] = kwargs["verbose"]
             key_list.remove("verbose")
             kwargs.pop("verbose", None)
-                
-        if self.config["verbose"]:
+
+        if self.config["verbose"] == 'info':
             set_verbose()
+        elif self.config["verbose"] == 'debug':
+            set_debug()
 
         # Init rest of config params
         for key in kwargs:
@@ -97,9 +119,11 @@ class Archivist():
             else:
                 LOG.info(f"Unused argument: {key}")
 
-        if self.config["verbose"]:
+        if self.config["verbose"] in ['debug', 'info']:
             for key in key_list:
-                LOG.info(f"No argument found for: '{key}' initializing by default: '{self.config[key]}'")
+                LOG.info(
+                    f"No argument found for: '{key}' initializing by default: '{self.config[key]}'"
+                )
 
     def _check_dir(self, dir_path: str, allow_existing: bool = False) -> Path:
         """
@@ -121,7 +145,8 @@ class Archivist():
                 if not allow_existing:
                     raise RuntimeError(f"Directory already exists: {path}")
                 if not path.is_dir():
-                    raise NotADirectoryError(f"Incorrect path to directory: {path}")
+                    raise NotADirectoryError(
+                        f"Incorrect path to directory: {path}")
             else:
                 path.mkdir(parents=True)
 
@@ -135,34 +160,37 @@ class Archivist():
         Returns extracted metadata.
         """
         LOG.info(f'''Extracting:
-    Output path: {self._out_dir_path}
-    Extraction path: {self._dc_dir_path}
-    Remove extracted: {self.config["auto_cleanup"]}''')
-        
+        Output path: {self._out_dir_path}
+        Extraction path: {self._dc_dir_path}
+        Remove extracted: {self.config["auto_cleanup"]}''')
+
         LOG.info("Unpacking archive...")
-                  
-        decompress_path, decompressed_files, decompressed_dirs = self.decompressor.decompress(self.parser.input_file_patterns)
+        LOG.debug(f'    using patterns: {self.parser.input_file_patterns}')
+
+        decompress_path, decompressed_dirs, decompressed_files = self.decompressor.decompress(
+            self.parser.input_file_patterns)
 
         LOG.info(f'''Done!\nparsing files ...''')
 
-        meta_files = self.parser.parse_files(decompress_path, decompressed_files)
+        meta_files = self.parser.parse_files(decompress_path,
+                                             decompressed_files)
 
         LOG.info(f'''Done!''')
-                  
+
         self._cache["decompress_path"] = decompress_path
         self._cache["decompressed_files"] = decompressed_files
         self._cache["decompressed_dirs"] = decompressed_dirs
         self._cache["meta_files"] = meta_files
         self._cache["compile_metadata"] = True
-                  
+
         if len(self._cache["meta_files"]) == 0:
-            metadata = self.get_metadata()
+            metadata = self.get_metadata(**self.config)
         else:
             metadata = None
 
         return metadata
-    
-    def get_metadata(self) -> dict:
+
+    def get_metadata(self, **kwargs) -> dict:
         """
         Returns generated metadata as a dictionary.
         If needed, uses parser to first compile metadata.
@@ -170,11 +198,10 @@ class Archivist():
         if self._cache["compile_metadata"]:
             LOG.info(f'''Compiling metadata...''')
             self._cache["compile_metadata"] = False
-            metadata = self.parser.compile_metadata()
-            self._cache["metadata"] = metadata
+            self._cache["metadata"] = self.parser.compile_metadata(**kwargs)
             LOG.info("Done!")
             self._clean_up()
-        
+
         return self._cache["metadata"]
 
     def export(self) -> Path:
@@ -182,11 +209,9 @@ class Archivist():
         Exports generated metadata to file using internal Exporter object.
         Returns path to exported file.
         """
-        metadata = self.get_metadata()
         LOG.info(f'''Exporting metadata...''')
-        self.exporter.export(metadata,
-                             self.metadata_output_file,
-                             verb=self.config["verbose"])
+        self.exporter.export(self.get_metadata(),
+                             self.metadata_output_file)
         LOG.info("Done!")
 
         return self.metadata_output_file
@@ -195,34 +220,38 @@ class Archivist():
         """Cleanup method automatically called after metadata extraction (or compilation if lazy_loading)"""
         if self.config["auto_cleanup"]:
             LOG.info("Cleaning extraction directory...")
-            errors = []
-            files = self._cache["decompressed_files"] + self._cache["meta_files"]
+            #errors = []
+            #files = self._cache["decompressed_files"] + self._cache[
+            #    "meta_files"]
             dirs = self._cache["decompressed_dirs"]
             if str(self._dc_dir_path) != '.':
-                dirs.append(self._dc_dir_path)
+                dirs.insert(0, self._dc_dir_path)
 
-            LOG.info(f"    cleaning files:")
-            for f in files:
-                LOG.info(f"        {str(f)}")
+            rmtree(dirs[0])
 
-            for file in files:
-                try:
-                    file.unlink()
-                except Exception as e:
-                    errors.append((str(file), e.message if hasattr(e, "message") else str(e)))
-            
-            LOG.info(f"    cleaning directories:")
-            for d in dirs:
-                LOG.info(f"        {str(d)}")
+            #LOG.info(f"    cleaning files:")
+            #for f in files:
+            #    LOG.info(f"        {str(f)}")
+            #    try:
+            #        f.unlink()
+            #    except Exception as e:
+            #        errors.append(
+            #            (str(f),
+            #             e.message if hasattr(e, "message") else str(e)))
 
-            for dir in dirs:
-                try:
-                    dir.rmdir()
-                except Exception as e:
-                    errors.append((str(dir), e.message if hasattr(e, "message") else str(e)))
+            #LOG.info(f"    cleaning directories:")
+            #for d in dirs:
+            #    LOG.info(f"        {str(d)}")
+            #    try:
+            #        d.rmdir()
+            #    except Exception as e:
+            #        errors.append(
+            #            (str(d),
+            #             e.message if hasattr(e, "message") else str(e)))
 
-            if len(errors) > 0:
-                for e in errors:
-                    LOG.warning(f"    error cleaning:\n        {e[0]} -- {e[1]}")
-            
+            #if len(errors) > 0:
+            #    for e in errors:
+            #        LOG.warning(
+            #            f"    error cleaning:\n        {e[0]} -- {e[1]}")
+
             LOG.info("Done!")

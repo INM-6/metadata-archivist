@@ -1,0 +1,6 @@
+input_files:
+  precipitation: pre_station.nc
+  temperature: tavg_station.nc
+parameters:
+  a: 9.0
+  b: 7.1

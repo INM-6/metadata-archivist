@@ -1,0 +1,76 @@
+{
+    "$schema": "https://abc",
+    "$id": "https://abc.json",
+    "description": "my example schema",
+    "type": "object",
+    "properties": {
+        "metadata_archive": {
+            "type": "object",
+            "patternProperties": {
+                "^basin_": {
+                    "type": "object",
+                    "properties": {
+                        "basin_characteristics": {
+                            "$ref": "#/$defs/basin_character_extractor"
+                        },
+                        "simulation": {
+                            "type": "object",
+                            "properties": {
+                                "time_info": {
+                                    "$ref": "#/$defs/time_extractor"
+                                },
+                                "model_configuration": {
+                                    "$ref": "#/$defs/yml_extractor"
+                                }
+                            }
+                        }
+                    }
+                },
+                "^station_": {
+                    "type": "object",
+                    "properties": {
+                        "basin_characteristics": {
+                            "$ref": "#/$defs/station_character_extractor"
+                        },
+                        "simulation": {
+                            "type": "object",
+                            "properties": {
+                                "time_info": {
+                                    "$ref": "#/$defs/time_extractor"
+                                },
+                                "model_configuration": {
+                                    "$ref": "#/$defs/yml_extractor"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "$defs": {
+        "time_extractor": {
+            "type": "object",
+            "properties": {
+                "real": {
+                    "type": "string",
+                    "description": "the time from start to finish of the call"
+                },
+                "user": {
+                    "type": "string",
+                    "description": "amount of CPU time spent in user mode"
+                },
+                "sys": {
+                    "type": "string",
+                    "description": "amount of CPU time spent in kernel mode"
+                },
+                "system": {
+                    "$ref": "#/properties/sys"
+                }
+            }
+        },
+        "yml_extractor": {},
+        "basin_character_extractor": {},
+        "station_character_extractor": {}
+    }
+}

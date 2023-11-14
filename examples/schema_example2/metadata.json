@@ -1,0 +1,22 @@
+{
+    "metadata_archive": {
+        "basin_danube": {
+            "basin_information": {
+                "river": "danube",
+                "size": 801463
+            }
+        },
+        "basin_rhine": {
+            "basin_information": {
+                "river": "rhein",
+                "size": 185300
+            }
+        },
+        "station_123456": {
+            "station_information": {
+                "river": "rhine",
+                "mean_disch": 201
+            }
+        }
+    }
+}

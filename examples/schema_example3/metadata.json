@@ -1,0 +1,78 @@
+{
+    "metadata_archive": {
+        "basin_danube": {
+            "basin_characteristics": {
+                "river": "danube",
+                "length": 2850,
+                "size": 801463,
+                "max_depth": 90
+            },
+            "simulation": {
+                "time_info": {
+                    "real": "0m2.596s",
+                    "user": "0m15.543s",
+                    "sys": "0m0.632s"
+                },
+                "model_configuration": {
+                    "input_files": {
+                        "precipitation": "pre.nc",
+                        "temperature": "tavg.nc"
+                    },
+                    "parameters": {
+                        "a": 1.1,
+                        "b": 2.3
+                    }
+                }
+            }
+        },
+        "basin_rhine": {
+            "basin_characteristics": {
+                "river": "rhein",
+                "length": 1232,
+                "size": 185300,
+                "max_depth": 32
+            },
+            "simulation": {
+                "time_info": {
+                    "real": "0m2.596s",
+                    "user": "0m15.543s",
+                    "sys": "0m0.632s"
+                },
+                "model_configuration": {
+                    "input_files": {
+                        "precipitation": "pre.nc",
+                        "temperature": "tavg.nc"
+                    },
+                    "parameters": {
+                        "a": 1.1,
+                        "b": 2.3
+                    }
+                }
+            }
+        },
+        "station_123456": {
+            "basin_characteristics": {
+                "river": "rhine",
+                "grdc_id": "123456",
+                "mean_disch": 201
+            },
+            "simulation": {
+                "time_info": {
+                    "real": "0m2.596s",
+                    "user": "0m15.543s",
+                    "sys": "0m0.632s"
+                },
+                "model_configuration": {
+                    "input_files": {
+                        "precipitation": "pre.nc",
+                        "temperature": "tavg.nc"
+                    },
+                    "parameters": {
+                        "a": 1.1,
+                        "b": 2.3
+                    }
+                }
+            }
+        }
+    }
+}

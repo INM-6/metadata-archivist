@@ -1,93 +1,75 @@
 {
     "metadata_archive": {
         "basin_danube": {
-            "basin.yml": {
-                "basin.yml": {
-                    "river": "danube",
-                    "length": 2850,
-                    "size": 801463,
-                    "max_depth": 90
-                }
+            "basin_characteristics": {
+                "river": "danube",
+                "length": 2850,
+                "size": 801463,
+                "max_depth": 90
             },
             "simulation": {
-                "time.txt": {
-                    "time.txt": {
-                        "real": "0m2.596s",
-                        "user": "0m15.543s",
-                        "sys": "0m0.632s"
-                    }
+                "time_info": {
+                    "real": "0m2.596s",
+                    "user": "0m15.543s",
+                    "sys": "0m0.632s"
                 },
-                "config.yml": {
-                    "config.yml": {
-                        "input_files": {
-                            "precipitation": "pre.nc",
-                            "temperature": "tavg.nc"
-                        },
-                        "parameters": {
-                            "a": 1.1,
-                            "b": 2.3
-                        }
+                "model_configuration": {
+                    "input_files": {
+                        "precipitation": "pre.nc",
+                        "temperature": "tavg.nc"
+                    },
+                    "parameters": {
+                        "a": 1.1,
+                        "b": 2.3
                     }
                 }
             }
         },
         "basin_rhine": {
-            "basin.yml": {
-                "basin.yml": {
-                    "river": "rhein",
-                    "length": 1232,
-                    "size": 185300,
-                    "max_depth": 32
-                }
+            "basin_characteristics": {
+                "river": "rhein",
+                "length": 1232,
+                "size": 185300,
+                "max_depth": 32
             },
             "simulation": {
-                "time.txt": {
-                    "time.txt": {
-                        "real": "0m2.596s",
-                        "user": "0m15.543s",
-                        "sys": "0m0.632s"
-                    }
+                "time_info": {
+                    "real": "0m2.596s",
+                    "user": "0m15.543s",
+                    "sys": "0m0.632s"
                 },
-                "config.yml": {
-                    "config.yml": {
-                        "input_files": {
-                            "precipitation": "pre.nc",
-                            "temperature": "tavg.nc"
-                        },
-                        "parameters": {
-                            "a": 1.1,
-                            "b": 2.3
-                        }
+                "model_configuration": {
+                    "input_files": {
+                        "precipitation": "pre.nc",
+                        "temperature": "tavg.nc"
+                    },
+                    "parameters": {
+                        "a": 1.1,
+                        "b": 2.3
                     }
                 }
             }
         },
         "station_123456": {
-            "station.yml": {
-                "station.yml": {
-                    "river": "rhine",
-                    "grdc_id": "123456",
-                    "mean_disch": 201
-                }
+            "basin_characteristics": {
+                "river": "rhine",
+                "grdc_id": "123456",
+                "mean_disch": 201
             },
             "simulation": {
-                "time.txt": {
-                    "time.txt": {
-                        "real": "0m2.596s",
-                        "user": "0m15.543s",
-                        "sys": "0m0.632s"
-                    }
+                "time_info": {
+                    "real": "0m2.596s",
+                    "user": "0m15.543s",
+                    "sys": "0m0.632s"
                 },
-                "config.yml": {
-                    "config.yml": {
-                        "input_files": {
-                            "precipitation": "pre.nc",
-                            "temperature": "tavg.nc"
-                        },
-                        "parameters": {
-                            "a": 1.1,
-                            "b": 2.3
-                        }
+                "model_configuration": {
+                    "input_files": {
+                        "precipitation": "pre.nc",
+                        "temperature": "tavg.nc"
+                    },
+                    "parameters": {
+                        "a": 1.1,
+                        "b": 2.3
                     }
                 }
             }

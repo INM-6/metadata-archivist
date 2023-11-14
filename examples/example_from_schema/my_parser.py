@@ -51,7 +51,45 @@ class yml_extractor(AExtractor):
     def __init__(self) -> None:
         super().__init__(name='yml_extractor',
                          input_file_pattern='*.yml',
-                         schema={})
+                         schema={
+                            'type': 'object',
+                            'properties': {
+                                'input_files': {
+                                    'type': 'object',
+                                    'properties': {
+                                        'precipitation': {
+                                            'type': 'string',
+                                            'description': 'precipitation input file name'
+                                        },
+                                        'temperature': {
+                                            'type': 'string',
+                                            'description': 'temperature input file name'
+                                        }
+                                    }
+                                },
+                                'parameters': {
+                                    'type': 'object',
+                                    'properties': {
+                                        'a': {
+                                            'type': 'number',
+                                            'description': 'parameter a'
+                                        },
+                                        'b': {
+                                            'type': 'number',
+                                            'description': 'parameter b'
+                                        }
+                                    }
+                                },
+                                'info1': {
+                                    'type': 'string',
+                                    'description': 'this is a  metadata'
+                                },
+                                'info2': {
+                                    'type': 'string',
+                                    'description': 'this as well'
+                                }
+                            }
+                         })
 
     def extract(self, file_path):
         with open(file_path, "r") as stream:
@@ -84,80 +122,6 @@ my_schema = {
                 },
             },
         },
-    },
-    '$defs': {
-        'time_extractor': {
-            'type': 'object',
-            'properties': {
-                'real': {
-                    'type': 'string',
-                    'description': 'the time from start to finish of the call'
-                },
-                'user': {
-                    'type': 'string',
-                    'description': 'amount of CPU time spent in user mode'
-                },
-                'sys': {
-                    'type': 'string',
-                    'description': 'amount of CPU time spent in kernel mode'
-                },
-                'system': {
-                    '$ref': '#/properties/sys'
-                }
-            }
-        },
-        'yml_extractor': {
-            'type': 'object',
-            'properties': {
-                'input_files': {
-                    'type': 'object',
-                    'properties': {
-                        'precipitation': {
-                            'type': 'str',
-                            'description': 'precipitation input file name'
-                        },
-                        'temperature': {
-                            'type': 'str',
-                            'description': 'temperature input file name'
-                        }
-                    }
-                },
-                'parameters': {
-                    'type': 'object',
-                    'properties': {
-                        'a': {
-                            'type': 'float',
-                            'description': 'parameter a'
-                        },
-                        'b': {
-                            'type': 'float',
-                            'description': 'parameter b'
-                        }
-                    }
-                },
-                'info1': {
-                    'type': 'string',
-                    'description': 'this is a  metadata'
-                },
-                'info2': {
-                    'type': 'string',
-                    'description': 'this as well'
-                }
-            }
-        },
-        'other_block': {
-            'type': 'object',
-            'properties': {
-                'nested_info': {
-                    'type': 'object',
-                    'properties': {
-                        'user_time_info': {
-                            '$ref': '#/$defs/time_extractor/user'
-                        }
-                    }
-                }
-            }
-        }
     }
 }
 

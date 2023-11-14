@@ -7,15 +7,16 @@ Authors: Jose V., Matthias K.
 
 """
 
-import re
 import zipfile
 import tarfile
 
+from re import fullmatch
 from pathlib import Path
 from collections.abc import Callable
-from typing import Optional, List, Tuple, NoReturn
+from typing import Optional, List, Tuple, NoReturn, Union
 
 from .Logger import LOG
+from .helper_functions import _pattern_parts_match
 
 class Decompressor():
     """
@@ -28,15 +29,13 @@ class Decompressor():
 
     def __init__(self,
                  archive_path: Path,
-                 config: dict,
-                 verbose: Optional[bool] = True) -> None:
+                 config: dict) -> None:
         
         # Protected
         self._archive_path, self._decompress = self._check_archive(archive_path)
 
         # Public
         self.config = config
-        self.verbose = verbose
 
     @property
     def archive_path(self) -> Path:
@@ -44,7 +43,7 @@ class Decompressor():
         return self._archive_path
 
     @archive_path.setter
-    def archive_path(self, archive_path: Path) -> None:
+    def archive_path(self, archive_path: Union[str, Path]) -> None:
         """Sets new archive path after checking."""
         self._archive_path, self._decompress = self._check_archive(archive_path)
 
@@ -61,11 +60,16 @@ class Decompressor():
         """
         raise AttributeError("decompress method can only be set through archive path checking")
 
-    def _check_archive(self, file_path: Path) -> Tuple[Path, Callable]:
+    def _check_archive(self, file_path: Union[str, Path]) -> Tuple[Path, Callable]:
         """
         Internal method to check archive format.
         If archive is in correct format then path to archive and decompression method are returned.
         """
+
+        if isinstance(file_path, str):
+            file_path = Path(file_path)
+        elif not isinstance(file_path, Path):
+            raise TypeError(f"Incorrect type format for file path: {file_path!r}")
 
         if not file_path.is_file():
             raise FileNotFoundError(f"Incorrect path to file: {file_path}")
@@ -95,8 +99,7 @@ class Decompressor():
             archive_path = self._archive_path
         if extraction_path is None:
             extraction_path = Path(self.config["extraction_directory"])
-        if self.verbose:
-            LOG.info(f"Decompression of archive: {archive_path.name}")
+        LOG.info(f"Decompression of archive: {archive_path.name}")
 
         archive_name = archive_path.stem.split(".")[0]
         decompress_path = extraction_path.joinpath(archive_name)
@@ -106,28 +109,28 @@ class Decompressor():
         with tarfile.open(archive_path) as t:
             item = t.next()
             while item is not None:
-                if self.verbose:
+                if item.isfile():
                     LOG.info(f"    processing file: {item.name}")
-                if any(item.name.endswith(format)
-                        for format in ['tgz', 'tar']):
-                    t.extract(item, path=decompress_path)
-                    new_archive = decompress_path.joinpath(item.name)
-                    _, ndd, ndf = self._decompress_tar(output_file_patterns,
-                                                       archive_path=new_archive,
-                                                       extraction_path=decompress_path)
-                    ndd.extend(decompressed_dirs)
-                    decompressed_dirs = ndd
-                    decompressed_files.extend(ndf)
-                    new_archive.unlink()
+                    item_path = decompress_path.joinpath(item.name)
+                    if any(item.name.endswith(format)
+                            for format in ['tgz', 'tar']):
+                        t.extract(item, path=decompress_path)
+                        _, new_decompressed_dirs, new_decompressed_files = self._decompress_tar(output_file_patterns,
+                                                        archive_path=item_path,
+                                                        extraction_path=decompress_path)
+                        # Reverse ordering of dirs to correctly remove them
+                        decompressed_dirs.extend(new_decompressed_dirs)
+                        decompressed_files.extend(new_decompressed_files)
+                        item_path.unlink()
 
-                elif any(re.fullmatch(f'.*/{pat}', item.name)
-                        for pat in output_file_patterns):
-                    t.extract(item, path=decompress_path)
-                    decompressed_files.append(decompress_path.joinpath(item.name))
-                elif item.isdir():
-                    # TODO: Deal with empty dirs
-                    decompressed_dirs.insert(0, decompress_path.joinpath(item.name))
+                    # TODO: think about precompiling patterns to optimize regex match time
+                    elif any(_pattern_parts_match(list(reversed(pat.split("/"))),
+                                                list(reversed(item.name.split("/"))))
+                            for pat in output_file_patterns):
+                        t.extract(item, path=decompress_path)
+                        decompressed_files.append(item_path)
+                        decompressed_dirs.append(item_path.parent)
                 item = t.next()
 
         # Returned paths are used for parsing and automatic clean-up.
-        return decompress_path, decompressed_files, decompressed_dirs
+        return decompress_path, decompressed_dirs, decompressed_files

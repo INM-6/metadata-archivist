@@ -8,16 +8,21 @@ Authors: Matthias K., Jose V.
 """
 
 from pathlib import Path
+from typing import Union
+from shutil import rmtree
 
-from .Exporter import Exporter
 from .Parser import Parser
+from .Exporter import Exporter
 from .Decompressor import Decompressor
 from .Logger import LOG, set_verbose, set_debug
 
 
 class Archivist():
+    """
+    Convenience class for orchestrating the Decompressor, Parser and Exporter.
+    """
 
-    def __init__(self, archive_path: Path, parser: Parser, **kwargs) -> None:
+    def __init__(self, archive_path: Union[str, Path], parser: Parser, **kwargs) -> None:
         """
         Initialization method of Archivist class.
 
@@ -43,24 +48,25 @@ class Archivist():
                                              allow_existing=True)
 
         # Set exporter
+        # TODO: use output format for better handling?
         f_format = self.config["output_file"][self.config["output_file"].
                                               find(".") + 1:]
         self.exporter = Exporter(f_format)
         self.metadata_output_file = self._out_dir_path / Path(
             self.config["output_file"])
         if self.metadata_output_file.exists():
-            if self.config["overwrite"]:
-                if self.metadata_output_file.is_file():
+            if self.metadata_output_file.is_file():
+                if self.config["overwrite"]:
                     LOG.warning(
                         f"Metadata output file exists: '{self.metadata_output_file}', overwriting."
                     )
                 else:
                     raise RuntimeError(
-                        f"Metadata output file exists: '{self.metadata_output_file}' cannot overwrite."
+                        f"Metadata output file exists: '{self.metadata_output_file}', overwriting not allowed"
                     )
             else:
                 raise RuntimeError(
-                    f"Metadata output file exists: '{self.metadata_output_file}' overwrite not allowed."
+                    f"'{self.metadata_output_file}' exists and is not a file, cannot overwrite"
                 )
 
         # Operational memory
@@ -154,14 +160,14 @@ class Archivist():
         Returns extracted metadata.
         """
         LOG.info(f'''Extracting:
-    Output path: {self._out_dir_path}
-    Extraction path: {self._dc_dir_path}
-    Remove extracted: {self.config["auto_cleanup"]}''')
+        Output path: {self._out_dir_path}
+        Extraction path: {self._dc_dir_path}
+        Remove extracted: {self.config["auto_cleanup"]}''')
 
         LOG.info("Unpacking archive...")
         LOG.debug(f'    using patterns: {self.parser.input_file_patterns}')
 
-        decompress_path, decompressed_files, decompressed_dirs = self.decompressor.decompress(
+        decompress_path, decompressed_dirs, decompressed_files = self.decompressor.decompress(
             self.parser.input_file_patterns)
 
         LOG.info(f'''Done!\nparsing files ...''')
@@ -180,8 +186,7 @@ class Archivist():
         if len(self._cache["meta_files"]) == 0:
             metadata = self.get_metadata(**self.config)
         else:
-            raise NotImplementedError()
-            # metadata = None
+            metadata = None
 
         return metadata
 
@@ -193,8 +198,7 @@ class Archivist():
         if self._cache["compile_metadata"]:
             LOG.info(f'''Compiling metadata...''')
             self._cache["compile_metadata"] = False
-            metadata = self.parser.compile_metadata(**kwargs)
-            self._cache["metadata"] = metadata
+            self._cache["metadata"] = self.parser.compile_metadata(**kwargs)
             LOG.info("Done!")
             self._clean_up()
 
@@ -205,12 +209,9 @@ class Archivist():
         Exports generated metadata to file using internal Exporter object.
         Returns path to exported file.
         """
-        metadata = self.get_metadata()
         LOG.info(f'''Exporting metadata...''')
-        self.exporter.export(metadata,
-                             self.metadata_output_file,
-                             verb=(self.config["verbose"] in ['debug',
-                                                              'info']))
+        self.exporter.export(self.get_metadata(),
+                             self.metadata_output_file)
         LOG.info("Done!")
 
         return self.metadata_output_file
@@ -219,40 +220,38 @@ class Archivist():
         """Cleanup method automatically called after metadata extraction (or compilation if lazy_loading)"""
         if self.config["auto_cleanup"]:
             LOG.info("Cleaning extraction directory...")
-            errors = []
-            files = self._cache["decompressed_files"] + self._cache[
-                "meta_files"]
+            #errors = []
+            #files = self._cache["decompressed_files"] + self._cache[
+            #    "meta_files"]
             dirs = self._cache["decompressed_dirs"]
             if str(self._dc_dir_path) != '.':
-                dirs.append(self._dc_dir_path)
+                dirs.insert(0, self._dc_dir_path)
 
-            LOG.info(f"    cleaning files:")
-            for f in files:
-                LOG.info(f"        {str(f)}")
+            rmtree(dirs[0])
 
-            for file in files:
-                try:
-                    file.unlink()
-                except Exception as e:
-                    errors.append(
-                        (str(file),
-                         e.message if hasattr(e, "message") else str(e)))
+            #LOG.info(f"    cleaning files:")
+            #for f in files:
+            #    LOG.info(f"        {str(f)}")
+            #    try:
+            #        f.unlink()
+            #    except Exception as e:
+            #        errors.append(
+            #            (str(f),
+            #             e.message if hasattr(e, "message") else str(e)))
 
-            LOG.info(f"    cleaning directories:")
-            for d in dirs:
-                LOG.info(f"        {str(d)}")
+            #LOG.info(f"    cleaning directories:")
+            #for d in dirs:
+            #    LOG.info(f"        {str(d)}")
+            #    try:
+            #        d.rmdir()
+            #    except Exception as e:
+            #        errors.append(
+            #            (str(d),
+            #             e.message if hasattr(e, "message") else str(e)))
 
-            for dir in dirs:
-                try:
-                    dir.rmdir()
-                except Exception as e:
-                    errors.append(
-                        (str(dir),
-                         e.message if hasattr(e, "message") else str(e)))
-
-            if len(errors) > 0:
-                for e in errors:
-                    LOG.warning(
-                        f"    error cleaning:\n        {e[0]} -- {e[1]}")
+            #if len(errors) > 0:
+            #    for e in errors:
+            #        LOG.warning(
+            #            f"    error cleaning:\n        {e[0]} -- {e[1]}")
 
             LOG.info("Done!")

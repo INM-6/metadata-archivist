@@ -1,6 +1,6 @@
 input_files:
-  precipitation: pre.nc
-  temperature: tavg.nc
+  precipitation: pre_rhine.nc
+  temperature: tavg_rhine.nc
 parameters:
-  a: 1.1
-  b: 2.3
+  a: 1.8
+  b: 3.9

@@ -4,6 +4,7 @@
 from metadata_archivist import Archivist
 from my_parser import my_parser
 from pathlib import Path
+from json import dumps
 import shutil
 
 tmpdir = Path('tmp')
@@ -22,5 +23,10 @@ arch = Archivist(archive_path=Path('metadata_archive.tar'),
                  add_type=True)
 
 arch.extract()
-print(arch.parser.metadata)
 arch.export()
+
+print("\nResulting schema:")
+print(dumps(my_parser.schema, indent=4))
+
+print("\nResulting metadata:")
+print(dumps(arch.get_metadata(), indent=4))

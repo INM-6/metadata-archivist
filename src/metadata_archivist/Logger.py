@@ -40,5 +40,9 @@ def set_verbose() -> None:
 
 
 def set_debug() -> None:
-    """Function used to set LOG object logging level to INFO"""
+    """Function used to set LOG object logging level to DEBUG"""
     LOG.setLevel(logging.DEBUG)
+
+def is_debug() -> bool:
+    """Status function which returns true if logging level is defined to DEBUG"""
+    return LOG.level == logging.DEBUG

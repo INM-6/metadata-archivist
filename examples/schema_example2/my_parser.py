@@ -132,107 +132,44 @@ class station_character_extractor(AExtractor):
 my_schema = {
     '$schema': 'https://abc',
     '$id': 'https://abc.json',
-    'description': 'my example schema',
+    'description': 'my example schema 2',
     'type': 'object',
     'properties': {
         'metadata_archive': {
             'type': 'object',
-            'pattern': {
-                'type': 'object',
-                'patternProperties': {
-                    "^basin_": {
-                        "!varname": 'basin',
-                        "type": "object",
-                        'description': 'some description',
-                        "properties": {
-                            "basin_information": {
-                                "!extractor": {
-                                    'name': 'basin_character_extractor',
-                                    'path': '*/{basin}/basin.yml',
-                                    'keys': ['river', 'size']
-                                }
+            'patternProperties': {
+                "^basin_": {
+                    "!varname": 'basin',
+                    "type": "object",
+                    'description': 'some description',
+                    "properties": {
+                        "basin_information": {
+                            "!extractor": {
+                                'path': '*/{basin}/basin.yml',
+                                'keys': ['river', 'size']
                             },
-                        }
-                    },
-                    "^station_": {
-                        "!varname": 'station',
-                        "type": "object",
-                        "properties": {
-                            "station_information": {
-                                "!extractor": {
-                                    'name': 'station_character_extractor',
-                                    'path': '*/{station}/station.yml',
-                                    'keys': ['river', 'mean_disch']
-                                }
+                            '$ref': '#/$defs/basin_character_extractor',
+                        },
+                    }
+                },
+                "^station_": {
+                    "!varname": 'station',
+                    "type": "object",
+                    "properties": {
+                        "station_information": {
+                            "!extractor": {
+                                'path': '*/{station}/station.yml',
+                                'keys': ['river', 'mean_disch']
                             },
+                            '$ref': '#/$defs/station_character_extractor',
+                        },
 
                     },
                 }
-            }
             },
         }
-    },
-    '$defs': {
-        'time_extractor': {
-            'type': 'object',
-            'properties': {
-                'real': {
-                    'type': 'string',
-                    'description': 'the time from start to finish of the call'
-                },
-                'user': {
-                    'type': 'string',
-                    'description': 'amount of CPU time spent in user mode'
-                },
-                'sys': {
-                    'type': 'string',
-                    'description': 'amount of CPU time spent in kernel mode'
-                },
-                'system': {
-                    '$ref': '#/properties/sys'
-                }
-            }
-        },
-        'yml_extractor': {
-            'type': 'object',
-            'properties': {
-                'input_files': {
-                    'type': 'object',
-                    'properties': {
-                        'precipitation': {
-                            'type': 'str',
-                            'description': 'precipitation input file name'
-                        },
-                        'temperature': {
-                            'type': 'str',
-                            'description': 'temperature input file name'
-                        }
-                    }
-                },
-                'parameters': {
-                    'type': 'object',
-                    'properties': {
-                        'a': {
-                            'type': 'float',
-                            'description': 'parameter a'
-                        },
-                        'b': {
-                            'type': 'float',
-                            'description': 'parameter b'
-                        }
-                    }
-                },
-                'info1': {
-                    'type': 'string',
-                    'description': 'this is a  metadata'
-                },
-                'info2': {
-                    'type': 'string',
-                    'description': 'this as well'
-                }
-            }
-        }
-}}
+    }
+}
 
 my_parser = Parser(extractors=[
     time_extractor(),

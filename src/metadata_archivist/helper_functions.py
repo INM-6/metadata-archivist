@@ -177,17 +177,25 @@ def _pattern_parts_match(pattern_parts: list, actual_parts: list, context: Optio
 
     return is_match
 
-def _unpack_singular_nested_value(iterable: Any) -> Union[str, int, float, bool]:
+def _unpack_singular_nested_value(iterable: Any, level: Optional[int] = None) -> Union[str, int, float, bool]:
     """
     Helper function to unpack any type of singular nested value
     i.e. unpacking a nested container where each nesting level contains a single value until a primitive is found.
     """
     if isinstance(iterable, (str, int, float, bool)):
+        if level is not None and level > 0:
+            # TODO: Should we raise error?
+            LOG.warning(f"Finished unpacking before 0 level reached.")
         return iterable
     elif isinstance(iterable, Iterable):
         if len(iterable) > 1:
             raise IndexError(f"Multiple possible values found when unpacking singular nested value")
+        if level is not None:
+            if level > 0:
+                level -= 1
+            else:
+                return iterable
         if isinstance(iterable, dict):
-            return _unpack_singular_nested_value(next(iter(iterable.values())))
+            return _unpack_singular_nested_value(next(iter(iterable.values())), level)
         else:
-            return _unpack_singular_nested_value(next(iter(iterable)))
+            return _unpack_singular_nested_value(next(iter(iterable)), level)

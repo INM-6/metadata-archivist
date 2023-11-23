@@ -22,7 +22,7 @@ class Archivist():
     Convenience class for orchestrating the Explorer, Parser and Exporter.
     """
 
-    def __init__(self, path: Union[str, Path], parser: Formatter, **kwargs) -> None:
+    def __init__(self, path: Union[str, Path], formatter: Formatter, **kwargs) -> None:
         """
         Initialization method of Archivist class.
 
@@ -65,8 +65,8 @@ class Archivist():
         self.explorer = Explorer(path, self.config)
         self._cache["decompression"] = self.explorer.path_is_archive
 
-        # Set parser
-        self.parser = parser
+        # Set formatter
+        self.formatter = formatter
 
         # Set exporter
         # TODO: use output format for better handling?
@@ -168,14 +168,14 @@ class Archivist():
         Remove extracted: {self.config["auto_cleanup"]}''')
 
         LOG.info("Unpacking archive...")
-        LOG.debug(f'    using patterns: {self.parser.input_file_patterns}')
+        LOG.debug(f'    using patterns: {self.formatter.input_file_patterns}')
 
         decompress_path, decompressed_dirs, decompressed_files = self.explorer.explore(
-            self.parser.input_file_patterns)
+            self.formatter.input_file_patterns)
 
         LOG.info(f'''Done!\nparsing files ...''')
 
-        meta_files = self.parser.parse_files(decompress_path,
+        meta_files = self.formatter.parse_files(decompress_path,
                                              decompressed_files)
 
         LOG.info(f'''Done!''')
@@ -201,7 +201,7 @@ class Archivist():
         if self._cache["compile_metadata"]:
             LOG.info(f'''Compiling metadata...''')
             self._cache["compile_metadata"] = False
-            self._cache["metadata"] = self.parser.compile_metadata(**kwargs)
+            self._cache["metadata"] = self.formatter.compile_metadata(**kwargs)
             LOG.info("Done!")
             self._clean_up()
 

@@ -13,7 +13,7 @@ if tmpdir.exists():
 
 arch = Archivist(path=Path('metadata_archive.tar'),
                  extraction_directory='tmp',
-                 parser=my_parser,
+                 formatter=my_parser,
                  output_directory="./",
                  output_file="metadata.json",
                  overwrite=True,

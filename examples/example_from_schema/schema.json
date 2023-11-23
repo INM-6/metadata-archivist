@@ -22,6 +22,18 @@
         }
     },
     "$defs": {
+        "node": {
+            "properties": {
+                "anyOf": [
+                    {
+                        "$ref": "#/$defs/time_parser"
+                    },
+                    {
+                        "$ref": "#/$defs/yml_parser"
+                    }
+                ]
+            }
+        },
         "time_parser": {
             "type": "object",
             "properties": {
@@ -42,17 +54,42 @@
                 }
             }
         },
-        "yml_parser": {},
-        "other_block": {
+        "yml_parser": {
             "type": "object",
             "properties": {
-                "nested_info": {
+                "input_files": {
                     "type": "object",
                     "properties": {
-                        "user_time_info": {
-                            "$ref": "#/$defs/time_parser/user"
+                        "precipitation": {
+                            "type": "string",
+                            "description": "precipitation input file name"
+                        },
+                        "temperature": {
+                            "type": "string",
+                            "description": "temperature input file name"
                         }
                     }
+                },
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "a": {
+                            "type": "number",
+                            "description": "parameter a"
+                        },
+                        "b": {
+                            "type": "number",
+                            "description": "parameter b"
+                        }
+                    }
+                },
+                "info1": {
+                    "type": "string",
+                    "description": "this is a  metadata"
+                },
+                "info2": {
+                    "type": "string",
+                    "description": "this as well"
                 }
             }
         }

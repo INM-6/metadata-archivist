@@ -1,0 +1,39 @@
+{
+    "$schema": "https://abc",
+    "$id": "https://abc.json",
+    "description": "A plain schema for directory structures",
+    "type": "object",
+    "properties": {
+        "name": {
+            "type": "string"
+        },
+        "children": {
+            "type": "array",
+            "items": {
+                "$ref": "#"
+            }
+        },
+        "node": {
+            "$ref": "#/$defs/node"
+        }
+    },
+    "$defs": {
+        "node": {
+            "$id": "/schemas/address",
+            "$schema": "http://abc",
+            "type": "object",
+            "properties": {
+                "anyOf": [
+                    {
+                        "$ref": "#/$defs/time_parser"
+                    },
+                    {
+                        "$ref": "#/$defs/yml_parser"
+                    }
+                ]
+            }
+        },
+        "time_parser": {},
+        "yml_parser": {}
+    }
+}

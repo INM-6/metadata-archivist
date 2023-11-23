@@ -7,7 +7,7 @@ Authors: Matthias K., Jose V.
 
 """
 
-from json import load, dumps
+from json import load, dumps, dump
 from pathlib import Path
 
 from my_parser import my_parser
@@ -31,6 +31,8 @@ if __name__ == "__main__":
 
     print("\nResulting schema:")
     print(dumps(my_parser.schema, indent=4))
+    with Path("schema.json").open("w") as f:
+        dump(my_parser.schema, f, indent=4)
 
     print("\nResulting metadata:")
     print(dumps(arch.get_metadata(), indent=4))

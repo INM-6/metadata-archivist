@@ -134,22 +134,8 @@ def _pattern_parts_match(pattern_parts: list, actual_parts: list, context: Optio
     is_match = False
     # We match through looping over the regex path in reverse order
     for i, part in enumerate(pattern_parts):
-
-        # Expand star pattern
-        if part == "*":
-
-            # If star at end of regex path then match is true
-            if (i + 1) == len(pattern_parts):
-                continue
-
-            # Else match against same index element in file path
-            # TODO: star matching should always be true, is this necessary?
-            elif not match('.*', actual_parts[i]):
-                LOG.debug(f"{part} did not match against {actual_parts[i]}")
-                break
-        
         # Match against varname
-        elif fullmatch('.*\{[a-zA-Z0-9_]+\}.*', part) and context is not None:
+        if fullmatch(r'\{(\w_?-?)+\}', part) and context is not None:
             # !varname should always be in context in this case
             if "!varname" not in context:
                 # TODO: should we instead raise an error?
@@ -162,12 +148,12 @@ def _pattern_parts_match(pattern_parts: list, actual_parts: list, context: Optio
                 raise RuntimeError("!varname in context but no regexp found")
 
             # Else match against same index element in file path
-            elif not match(part.format(**{context["!varname"]: context["regexp"]}), actual_parts[i]):
+            elif not fullmatch(part.format(**{context["!varname"]: context["regexp"]}), actual_parts[i]):
                 LOG.debug(f"{part} did not match against {actual_parts[i]}")
                 break
 
         # Else literal matching
-        elif not match(part, actual_parts[i]):
+        elif not fullmatch(part, actual_parts[i]):
             LOG.debug(f"{part} did not match against {actual_parts[i]}")
             break
     

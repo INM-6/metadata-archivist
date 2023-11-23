@@ -1,5 +1,536 @@
 {
     "metadata_archive": {
+        "mhm.nml": {
+            "project_description": {
+                "project_details": "mHM test domain project",
+                "setup_description": "model run for the Mosel domain, forced with the E-OBS meteorologic data",
+                "simulation_type": "historical simulation",
+                "conventions": "XXX",
+                "contact": "mHM developers (email:mhm-developers@ufz.de)",
+                "mhm_details": "Helmholtz Center for Environmental Research - UFZ, Department Computational Hydrosystems, Stochastic Hydrology Group",
+                "history": "model run version 1"
+            },
+            "mainconfig": {
+                "iflag_coordinate_sys": 0,
+                "ndomains": 2,
+                "resolution_hydrology": [
+                    24000,
+                    24000
+                ],
+                "l0domain": [
+                    1,
+                    2
+                ],
+                "write_restart": true,
+                "read_opt_domain_data": [
+                    0,
+                    0
+                ],
+                "_start_index": {
+                    "resolution_hydrology": [
+                        1
+                    ],
+                    "l0domain": [
+                        1
+                    ],
+                    "read_opt_domain_data": [
+                        1
+                    ]
+                }
+            },
+            "mainconfig_mhm_mrm": {
+                "mhm_file_restartin": [
+                    "test_domain/restart/mHM_restart_001.nc",
+                    "test_domain_2/restart/mHM_restart_002.nc"
+                ],
+                "mrm_file_restartin": [
+                    "test_domain/restart/mRM_restart_001.nc",
+                    "test_domain_2/restart/mRM_restart_002.nc"
+                ],
+                "resolution_routing": [
+                    24000,
+                    24000
+                ],
+                "timestep": 1,
+                "read_restart": false,
+                "mrm_read_river_network": false,
+                "optimize": false,
+                "optimize_restart": false,
+                "opti_method": 1,
+                "opti_function": 10,
+                "_start_index": {
+                    "mhm_file_restartin": [
+                        1
+                    ],
+                    "mrm_file_restartin": [
+                        1
+                    ],
+                    "resolution_routing": [
+                        1
+                    ]
+                }
+            },
+            "mainconfig_mrm": {
+                "alma_convention": true,
+                "varnametotalrunoff": "total_runoff",
+                "filenametotalrunoff": "total_runoff",
+                "gw_coupling": false
+            },
+            "config_riv_temp": {
+                "albedo_water": 0.15,
+                "pt_a_water": 1.26,
+                "emissivity_water": 0.96,
+                "turb_heat_ex_coeff": 20.0,
+                "max_iter": 50,
+                "delta_iter": 0.01,
+                "step_iter": 5.0,
+                "riv_widths_file": "Q_bkfl",
+                "riv_widths_name": "P_bkfl",
+                "dir_riv_widths": [
+                    "test_domain/input/optional_data/",
+                    "test_domain_2/input/optional_data/"
+                ],
+                "_start_index": {
+                    "dir_riv_widths": [
+                        1
+                    ]
+                }
+            },
+            "directories_general": {
+                "dirconfigout": "test_domain/",
+                "dir_in": [
+                    "test_domain/input/mpr/",
+                    "test_domain_2/input/mpr/"
+                ],
+                "mhm_file_restartout": [
+                    "test_domain/restart/mHM_restart_001.nc",
+                    "test_domain_2/restart/mHM_restart_002.nc"
+                ],
+                "mrm_file_restartout": [
+                    "test_domain/restart/mRM_restart_001.nc",
+                    "test_domain_2/restart/mRM_restart_002.nc"
+                ],
+                "dir_out": [
+                    "test_domain/output_b1/",
+                    "test_domain_2/output/"
+                ],
+                "file_latlon": [
+                    "test_domain/input/mpr/latlon_1.nc",
+                    "test_domain_2/input/mpr/latlon.nc"
+                ],
+                "_start_index": {
+                    "dir_in": [
+                        1
+                    ],
+                    "mhm_file_restartout": [
+                        1
+                    ],
+                    "mrm_file_restartout": [
+                        1
+                    ],
+                    "dir_out": [
+                        1
+                    ],
+                    "file_latlon": [
+                        1
+                    ]
+                }
+            },
+            "directories_mhm": {
+                "dir_precipitation": [
+                    "test_domain/input/meteo/",
+                    "test_domain_2/input/meteo/"
+                ],
+                "dir_temperature": [
+                    "test_domain/input/meteo/",
+                    "test_domain_2/input/meteo/"
+                ],
+                "dir_referenceet": [
+                    "test_domain/input/meteo/",
+                    "test_domain_2/input/meteo/"
+                ],
+                "dir_mintemperature": [
+                    "test_domain/input/meteo/",
+                    "test_domain_2/input/meteo/"
+                ],
+                "dir_maxtemperature": [
+                    "test_domain/input/meteo/",
+                    "test_domain_2/input/meteo/"
+                ],
+                "dir_netradiation": [
+                    "test_domain/input/meteo/",
+                    "test_domain_2/input/meteo/"
+                ],
+                "dir_absvappressure": [
+                    "test_domain/input/meteo/",
+                    "test_domain_2/input/meteo/"
+                ],
+                "dir_windspeed": [
+                    "test_domain/input/meteo/",
+                    "test_domain_2/input/meteo/"
+                ],
+                "dir_radiation": [
+                    "test_domain/input/meteo/",
+                    "test_domain_2/input/meteo/"
+                ],
+                "path_mpr_nml": [
+                    "test_domain/test_domain_mpr.nml",
+                    "test_domain_2/test_domain_2_mpr.nml"
+                ],
+                "time_step_model_inputs": [
+                    0,
+                    0
+                ],
+                "_start_index": {
+                    "dir_precipitation": [
+                        1
+                    ],
+                    "dir_temperature": [
+                        1
+                    ],
+                    "dir_referenceet": [
+                        1
+                    ],
+                    "dir_mintemperature": [
+                        1
+                    ],
+                    "dir_maxtemperature": [
+                        1
+                    ],
+                    "dir_netradiation": [
+                        1
+                    ],
+                    "dir_absvappressure": [
+                        1
+                    ],
+                    "dir_windspeed": [
+                        1
+                    ],
+                    "dir_radiation": [
+                        1
+                    ],
+                    "path_mpr_nml": [
+                        1
+                    ],
+                    "time_step_model_inputs": [
+                        1
+                    ]
+                }
+            },
+            "directories_mrm": {
+                "dir_gauges": [
+                    "test_domain/input/routing/",
+                    "test_domain_2/input/routing/"
+                ],
+                "dir_total_runoff": [
+                    "test_domain/output_b1/",
+                    "test_domain_2/output/"
+                ],
+                "dir_bankfull_runoff": [
+                    "test_domain/input/optional_data/",
+                    "test_domain_2/input/optional_data/"
+                ],
+                "_start_index": {
+                    "dir_gauges": [
+                        1
+                    ],
+                    "dir_total_runoff": [
+                        1
+                    ],
+                    "dir_bankfull_runoff": [
+                        1
+                    ]
+                }
+            },
+            "optional_data": {
+                "dir_soil_moisture": [
+                    "test_domain/input/optional_data/"
+                ],
+                "nsoilhorizons_sm_input": 1,
+                "timestep_sm_input": -2,
+                "dir_neutrons": [
+                    "test_domain/input/optional_data/"
+                ],
+                "dir_evapotranspiration": [
+                    "test_domain/input/optional_data/"
+                ],
+                "timestep_et_input": -2,
+                "dir_tws": [
+                    "test_domain/input/optional_data/"
+                ],
+                "timestep_tws_input": -2,
+                "_start_index": {
+                    "dir_soil_moisture": [
+                        1
+                    ],
+                    "dir_neutrons": [
+                        1
+                    ],
+                    "dir_evapotranspiration": [
+                        1
+                    ],
+                    "dir_tws": [
+                        1
+                    ]
+                }
+            },
+            "processselection": {
+                "processcase": [
+                    1,
+                    1,
+                    1,
+                    1,
+                    0,
+                    1,
+                    1,
+                    3,
+                    1,
+                    0,
+                    0
+                ],
+                "_start_index": {
+                    "processcase": [
+                        1
+                    ]
+                }
+            },
+            "aggregate_periods": {
+                "nlandcoverperiods": 2,
+                "nlaiperiods": 12
+            },
+            "time_periods": {
+                "warming_days": [
+                    0,
+                    180
+                ],
+                "eval_per": [
+                    {
+                        "ystart": 1990,
+                        "mstart": 1,
+                        "dstart": 1,
+                        "yend": 1993,
+                        "mend": 12,
+                        "dend": 31
+                    },
+                    {
+                        "ystart": 1993,
+                        "mstart": 1,
+                        "dstart": 1,
+                        "yend": 1993,
+                        "mend": 12,
+                        "dend": 31
+                    }
+                ],
+                "_start_index": {
+                    "warming_days": [
+                        1
+                    ],
+                    "eval_per": [
+                        1
+                    ]
+                }
+            },
+            "directories_mpr": {
+                "dir_gridded_lai": [
+                    "test_domain/input/mpr/",
+                    "test_domain_2/input/mpr/"
+                ],
+                "_start_index": {
+                    "dir_gridded_lai": [
+                        1
+                    ]
+                }
+            },
+            "evaluation_gauges": {
+                "ngaugestotal": 2,
+                "nogauges_domain": [
+                    1,
+                    1
+                ],
+                "gauge_id": [
+                    [
+                        398,
+                        45
+                    ]
+                ],
+                "gauge_filename": [
+                    [
+                        "00398.txt",
+                        "45.txt"
+                    ]
+                ],
+                "_start_index": {
+                    "nogauges_domain": [
+                        1
+                    ],
+                    "gauge_id": [
+                        1,
+                        1
+                    ],
+                    "gauge_filename": [
+                        1,
+                        1
+                    ]
+                }
+            },
+            "inflow_gauges": {
+                "ninflowgaugestotal": 0,
+                "noinflowgauges_domain": [
+                    0
+                ],
+                "inflowgauge_id": [
+                    [
+                        -9
+                    ]
+                ],
+                "inflowgauge_filename": [
+                    [
+                        ""
+                    ]
+                ],
+                "inflowgauge_headwater": [
+                    [
+                        false
+                    ]
+                ],
+                "_start_index": {
+                    "noinflowgauges_domain": [
+                        1
+                    ],
+                    "inflowgauge_id": [
+                        1,
+                        1
+                    ],
+                    "inflowgauge_filename": [
+                        1,
+                        1
+                    ],
+                    "inflowgauge_headwater": [
+                        1,
+                        1
+                    ]
+                }
+            },
+            "panevapo": {
+                "evap_coeff": [
+                    1.3,
+                    1.2,
+                    0.72,
+                    0.75,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.5
+                ]
+            },
+            "nightdayratio": {
+                "read_meteo_weights": false,
+                "fnight_prec": [
+                    0.46,
+                    0.5,
+                    0.52,
+                    0.51,
+                    0.48,
+                    0.5,
+                    0.49,
+                    0.48,
+                    0.52,
+                    0.56,
+                    0.5,
+                    0.47
+                ],
+                "fnight_pet": [
+                    0.1,
+                    0.1,
+                    0.1,
+                    0.1,
+                    0.1,
+                    0.1,
+                    0.1,
+                    0.1,
+                    0.1,
+                    0.1,
+                    0.1,
+                    0.1
+                ],
+                "fnight_temp": [
+                    -0.76,
+                    -1.3,
+                    -1.88,
+                    -2.38,
+                    -2.72,
+                    -2.75,
+                    -2.74,
+                    -3.04,
+                    -2.44,
+                    -1.6,
+                    -0.94,
+                    -0.53
+                ],
+                "fnight_ssrd": [
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "fnight_strd": [
+                    0.45,
+                    0.45,
+                    0.45,
+                    0.45,
+                    0.45,
+                    0.45,
+                    0.45,
+                    0.45,
+                    0.45,
+                    0.45,
+                    0.45,
+                    0.45
+                ]
+            },
+            "optimization": {
+                "niterations": 7,
+                "seed": 1235876,
+                "dds_r": 0.2,
+                "sa_temp": -9.0,
+                "sce_ngs": 2,
+                "sce_npg": -9,
+                "sce_nps": -9,
+                "mcmc_opti": false,
+                "mcmc_error_params": [
+                    0.01,
+                    0.6
+                ]
+            }
+        },
+        "mrm_outputs.nml": {
+            "nloutputresults": {
+                "output_deflate_level_mrm": 6,
+                "output_double_precision_mrm": true,
+                "timestep_model_outputs_mrm": -1,
+                "outputflxstate_mrm": [
+                    true,
+                    true
+                ],
+                "_start_index": {
+                    "outputflxstate_mrm": [
+                        1
+                    ]
+                }
+            }
+        },
         "mhm_parameter.nml": {
             "mhm_parameters": {
                 "canopyinterceptionfactor": [
@@ -638,537 +1169,6 @@
                         1
                     ]
                 }
-            }
-        },
-        "mrm_outputs.nml": {
-            "nloutputresults": {
-                "output_deflate_level_mrm": 6,
-                "output_double_precision_mrm": true,
-                "timestep_model_outputs_mrm": -1,
-                "outputflxstate_mrm": [
-                    true,
-                    true
-                ],
-                "_start_index": {
-                    "outputflxstate_mrm": [
-                        1
-                    ]
-                }
-            }
-        },
-        "mhm.nml": {
-            "project_description": {
-                "project_details": "mHM test domain project",
-                "setup_description": "model run for the Mosel domain, forced with the E-OBS meteorologic data",
-                "simulation_type": "historical simulation",
-                "conventions": "XXX",
-                "contact": "mHM developers (email:mhm-developers@ufz.de)",
-                "mhm_details": "Helmholtz Center for Environmental Research - UFZ, Department Computational Hydrosystems, Stochastic Hydrology Group",
-                "history": "model run version 1"
-            },
-            "mainconfig": {
-                "iflag_coordinate_sys": 0,
-                "ndomains": 2,
-                "resolution_hydrology": [
-                    24000,
-                    24000
-                ],
-                "l0domain": [
-                    1,
-                    2
-                ],
-                "write_restart": true,
-                "read_opt_domain_data": [
-                    0,
-                    0
-                ],
-                "_start_index": {
-                    "resolution_hydrology": [
-                        1
-                    ],
-                    "l0domain": [
-                        1
-                    ],
-                    "read_opt_domain_data": [
-                        1
-                    ]
-                }
-            },
-            "mainconfig_mhm_mrm": {
-                "mhm_file_restartin": [
-                    "test_domain/restart/mHM_restart_001.nc",
-                    "test_domain_2/restart/mHM_restart_002.nc"
-                ],
-                "mrm_file_restartin": [
-                    "test_domain/restart/mRM_restart_001.nc",
-                    "test_domain_2/restart/mRM_restart_002.nc"
-                ],
-                "resolution_routing": [
-                    24000,
-                    24000
-                ],
-                "timestep": 1,
-                "read_restart": false,
-                "mrm_read_river_network": false,
-                "optimize": false,
-                "optimize_restart": false,
-                "opti_method": 1,
-                "opti_function": 10,
-                "_start_index": {
-                    "mhm_file_restartin": [
-                        1
-                    ],
-                    "mrm_file_restartin": [
-                        1
-                    ],
-                    "resolution_routing": [
-                        1
-                    ]
-                }
-            },
-            "mainconfig_mrm": {
-                "alma_convention": true,
-                "varnametotalrunoff": "total_runoff",
-                "filenametotalrunoff": "total_runoff",
-                "gw_coupling": false
-            },
-            "config_riv_temp": {
-                "albedo_water": 0.15,
-                "pt_a_water": 1.26,
-                "emissivity_water": 0.96,
-                "turb_heat_ex_coeff": 20.0,
-                "max_iter": 50,
-                "delta_iter": 0.01,
-                "step_iter": 5.0,
-                "riv_widths_file": "Q_bkfl",
-                "riv_widths_name": "P_bkfl",
-                "dir_riv_widths": [
-                    "test_domain/input/optional_data/",
-                    "test_domain_2/input/optional_data/"
-                ],
-                "_start_index": {
-                    "dir_riv_widths": [
-                        1
-                    ]
-                }
-            },
-            "directories_general": {
-                "dirconfigout": "test_domain/",
-                "dir_in": [
-                    "test_domain/input/mpr/",
-                    "test_domain_2/input/mpr/"
-                ],
-                "mhm_file_restartout": [
-                    "test_domain/restart/mHM_restart_001.nc",
-                    "test_domain_2/restart/mHM_restart_002.nc"
-                ],
-                "mrm_file_restartout": [
-                    "test_domain/restart/mRM_restart_001.nc",
-                    "test_domain_2/restart/mRM_restart_002.nc"
-                ],
-                "dir_out": [
-                    "test_domain/output_b1/",
-                    "test_domain_2/output/"
-                ],
-                "file_latlon": [
-                    "test_domain/input/mpr/latlon_1.nc",
-                    "test_domain_2/input/mpr/latlon.nc"
-                ],
-                "_start_index": {
-                    "dir_in": [
-                        1
-                    ],
-                    "mhm_file_restartout": [
-                        1
-                    ],
-                    "mrm_file_restartout": [
-                        1
-                    ],
-                    "dir_out": [
-                        1
-                    ],
-                    "file_latlon": [
-                        1
-                    ]
-                }
-            },
-            "directories_mhm": {
-                "dir_precipitation": [
-                    "test_domain/input/meteo/",
-                    "test_domain_2/input/meteo/"
-                ],
-                "dir_temperature": [
-                    "test_domain/input/meteo/",
-                    "test_domain_2/input/meteo/"
-                ],
-                "dir_referenceet": [
-                    "test_domain/input/meteo/",
-                    "test_domain_2/input/meteo/"
-                ],
-                "dir_mintemperature": [
-                    "test_domain/input/meteo/",
-                    "test_domain_2/input/meteo/"
-                ],
-                "dir_maxtemperature": [
-                    "test_domain/input/meteo/",
-                    "test_domain_2/input/meteo/"
-                ],
-                "dir_netradiation": [
-                    "test_domain/input/meteo/",
-                    "test_domain_2/input/meteo/"
-                ],
-                "dir_absvappressure": [
-                    "test_domain/input/meteo/",
-                    "test_domain_2/input/meteo/"
-                ],
-                "dir_windspeed": [
-                    "test_domain/input/meteo/",
-                    "test_domain_2/input/meteo/"
-                ],
-                "dir_radiation": [
-                    "test_domain/input/meteo/",
-                    "test_domain_2/input/meteo/"
-                ],
-                "path_mpr_nml": [
-                    "test_domain/test_domain_mpr.nml",
-                    "test_domain_2/test_domain_2_mpr.nml"
-                ],
-                "time_step_model_inputs": [
-                    0,
-                    0
-                ],
-                "_start_index": {
-                    "dir_precipitation": [
-                        1
-                    ],
-                    "dir_temperature": [
-                        1
-                    ],
-                    "dir_referenceet": [
-                        1
-                    ],
-                    "dir_mintemperature": [
-                        1
-                    ],
-                    "dir_maxtemperature": [
-                        1
-                    ],
-                    "dir_netradiation": [
-                        1
-                    ],
-                    "dir_absvappressure": [
-                        1
-                    ],
-                    "dir_windspeed": [
-                        1
-                    ],
-                    "dir_radiation": [
-                        1
-                    ],
-                    "path_mpr_nml": [
-                        1
-                    ],
-                    "time_step_model_inputs": [
-                        1
-                    ]
-                }
-            },
-            "directories_mrm": {
-                "dir_gauges": [
-                    "test_domain/input/routing/",
-                    "test_domain_2/input/routing/"
-                ],
-                "dir_total_runoff": [
-                    "test_domain/output_b1/",
-                    "test_domain_2/output/"
-                ],
-                "dir_bankfull_runoff": [
-                    "test_domain/input/optional_data/",
-                    "test_domain_2/input/optional_data/"
-                ],
-                "_start_index": {
-                    "dir_gauges": [
-                        1
-                    ],
-                    "dir_total_runoff": [
-                        1
-                    ],
-                    "dir_bankfull_runoff": [
-                        1
-                    ]
-                }
-            },
-            "optional_data": {
-                "dir_soil_moisture": [
-                    "test_domain/input/optional_data/"
-                ],
-                "nsoilhorizons_sm_input": 1,
-                "timestep_sm_input": -2,
-                "dir_neutrons": [
-                    "test_domain/input/optional_data/"
-                ],
-                "dir_evapotranspiration": [
-                    "test_domain/input/optional_data/"
-                ],
-                "timestep_et_input": -2,
-                "dir_tws": [
-                    "test_domain/input/optional_data/"
-                ],
-                "timestep_tws_input": -2,
-                "_start_index": {
-                    "dir_soil_moisture": [
-                        1
-                    ],
-                    "dir_neutrons": [
-                        1
-                    ],
-                    "dir_evapotranspiration": [
-                        1
-                    ],
-                    "dir_tws": [
-                        1
-                    ]
-                }
-            },
-            "processselection": {
-                "processcase": [
-                    1,
-                    1,
-                    1,
-                    1,
-                    0,
-                    1,
-                    1,
-                    3,
-                    1,
-                    0,
-                    0
-                ],
-                "_start_index": {
-                    "processcase": [
-                        1
-                    ]
-                }
-            },
-            "aggregate_periods": {
-                "nlandcoverperiods": 2,
-                "nlaiperiods": 12
-            },
-            "time_periods": {
-                "warming_days": [
-                    0,
-                    180
-                ],
-                "eval_per": [
-                    {
-                        "ystart": 1990,
-                        "mstart": 1,
-                        "dstart": 1,
-                        "yend": 1993,
-                        "mend": 12,
-                        "dend": 31
-                    },
-                    {
-                        "ystart": 1993,
-                        "mstart": 1,
-                        "dstart": 1,
-                        "yend": 1993,
-                        "mend": 12,
-                        "dend": 31
-                    }
-                ],
-                "_start_index": {
-                    "warming_days": [
-                        1
-                    ],
-                    "eval_per": [
-                        1
-                    ]
-                }
-            },
-            "directories_mpr": {
-                "dir_gridded_lai": [
-                    "test_domain/input/mpr/",
-                    "test_domain_2/input/mpr/"
-                ],
-                "_start_index": {
-                    "dir_gridded_lai": [
-                        1
-                    ]
-                }
-            },
-            "evaluation_gauges": {
-                "ngaugestotal": 2,
-                "nogauges_domain": [
-                    1,
-                    1
-                ],
-                "gauge_id": [
-                    [
-                        398,
-                        45
-                    ]
-                ],
-                "gauge_filename": [
-                    [
-                        "00398.txt",
-                        "45.txt"
-                    ]
-                ],
-                "_start_index": {
-                    "nogauges_domain": [
-                        1
-                    ],
-                    "gauge_id": [
-                        1,
-                        1
-                    ],
-                    "gauge_filename": [
-                        1,
-                        1
-                    ]
-                }
-            },
-            "inflow_gauges": {
-                "ninflowgaugestotal": 0,
-                "noinflowgauges_domain": [
-                    0
-                ],
-                "inflowgauge_id": [
-                    [
-                        -9
-                    ]
-                ],
-                "inflowgauge_filename": [
-                    [
-                        ""
-                    ]
-                ],
-                "inflowgauge_headwater": [
-                    [
-                        false
-                    ]
-                ],
-                "_start_index": {
-                    "noinflowgauges_domain": [
-                        1
-                    ],
-                    "inflowgauge_id": [
-                        1,
-                        1
-                    ],
-                    "inflowgauge_filename": [
-                        1,
-                        1
-                    ],
-                    "inflowgauge_headwater": [
-                        1,
-                        1
-                    ]
-                }
-            },
-            "panevapo": {
-                "evap_coeff": [
-                    1.3,
-                    1.2,
-                    0.72,
-                    0.75,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.5
-                ]
-            },
-            "nightdayratio": {
-                "read_meteo_weights": false,
-                "fnight_prec": [
-                    0.46,
-                    0.5,
-                    0.52,
-                    0.51,
-                    0.48,
-                    0.5,
-                    0.49,
-                    0.48,
-                    0.52,
-                    0.56,
-                    0.5,
-                    0.47
-                ],
-                "fnight_pet": [
-                    0.1,
-                    0.1,
-                    0.1,
-                    0.1,
-                    0.1,
-                    0.1,
-                    0.1,
-                    0.1,
-                    0.1,
-                    0.1,
-                    0.1,
-                    0.1
-                ],
-                "fnight_temp": [
-                    -0.76,
-                    -1.3,
-                    -1.88,
-                    -2.38,
-                    -2.72,
-                    -2.75,
-                    -2.74,
-                    -3.04,
-                    -2.44,
-                    -1.6,
-                    -0.94,
-                    -0.53
-                ],
-                "fnight_ssrd": [
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0
-                ],
-                "fnight_strd": [
-                    0.45,
-                    0.45,
-                    0.45,
-                    0.45,
-                    0.45,
-                    0.45,
-                    0.45,
-                    0.45,
-                    0.45,
-                    0.45,
-                    0.45,
-                    0.45
-                ]
-            },
-            "optimization": {
-                "niterations": 7,
-                "seed": 1235876,
-                "dds_r": 0.2,
-                "sa_temp": -9.0,
-                "sce_ngs": 2,
-                "sce_npg": -9,
-                "sce_nps": -9,
-                "mcmc_opti": false,
-                "mcmc_error_params": [
-                    0.01,
-                    0.6
-                ]
             }
         }
     }

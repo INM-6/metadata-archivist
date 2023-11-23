@@ -7,7 +7,7 @@ import unittest
 import sys
 
 sys.path.append('src')
-from metadata_archivist.ParserHelpers import Cache, _CacheEntry, _CacheExtractor
+from metadata_archivist.FormatterHelpers import Cache, _CacheEntry, _CacheExtractor
 
 
 class TestCacheEntry(unittest.TestCase):

@@ -18,7 +18,7 @@ from typing import Optional, List, NoReturn, Union
 
 from .Logger import LOG
 from .Extractor import AExtractor
-from . import ParserHelpers as helpers
+from . import FormatterHelpers as helpers
 from .SchemaInterpreter import SchemaInterpreter, SchemaEntry
 from .helper_functions import _update_dict_with_parts, _merge_dicts, _pattern_parts_match
 

@@ -1,12 +1,18 @@
 from metadata_archivist import AParser, Formatter
 import yaml
 
+def time_parser_sec(string):
+    minute_split = string.split("m")
+    minutes = int(minute_split[0]) * 60 * 1000
+    second_split = minute_split[1].split(".")
+    seconds = int(second_split[0]) * 1000
+    milis = int(second_split[1][:-1])
+    return (minutes + seconds + milis) / 1000
 
-def key_val_split(string, split_char):
+def key_val_split(string, split_char, functor):
     string = string.strip()
     out = string.split(split_char)
-    return {out[0].strip(): out[1].strip()}
-
+    return {out[0].strip(): functor(out[1].strip())}
 
 class time_parser(AParser):
 
@@ -42,7 +48,7 @@ class time_parser(AParser):
         with file_path.open("r") as fp:
             for line in fp:
                 if line != '\n':
-                    out.update(key_val_split(line, '\t'))
+                    out.update(key_val_split(line, '\t', time_parser_sec))
         return out
 
 
@@ -125,16 +131,32 @@ my_schema = {
                             }
                         },
                         'model': {
-                            'type': 'object',
-                            'properties': {
-                                'scale': {
-                                    '!parsing': {
-                                        'keys': ['parameters/scale']
+                            '!parsing': {
+                                'keys': ['parameters/scale']
+                            },
+                            '$ref': '#/$defs/yml_parser'
+                        },
+                        'virtual_processes': {
+                            'type': 'number',
+                            'description': 'total number of digital processing units i.e. #MPI * #threads',
+                            '!calculate': {
+                                'expression': '{val1} * {val2}',
+                                'variables': {
+                                    'val1': {
+                                        '!parsing': {
+                                            'keys': ['parameters/num_procs']
+                                        },
+                                        '$ref': '#/$defs/yml_parser'
                                     },
-                                    '$ref': '#/$defs/yml_parser'
+                                    'val2': {
+                                        '!parsing': {
+                                            'keys': ['parameters/threads_per_proc']
+                                        },
+                                        '$ref': '#/$defs/yml_parser'
+                                    }
                                 }
                             }
-                        },
+                        }
                     }
                 },
             },

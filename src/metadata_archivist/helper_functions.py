@@ -11,9 +11,9 @@ Authors: Jose V., Matthias K.
 from json import dumps
 from pathlib import Path
 from re import fullmatch
-from typing import Optional
 from re import match, fullmatch
 from collections.abc import Iterable
+from typing import Optional, Union, Any
 
 from .Logger import LOG
 
@@ -176,3 +176,18 @@ def _pattern_parts_match(pattern_parts: list, actual_parts: list, context: Optio
         is_match = True
 
     return is_match
+
+def _unpack_singular_nested_value(iterable: Any) -> Union[str, int, float, bool]:
+    """
+    Helper function to unpack any type of singular nested value
+    i.e. unpacking a nested container where each nesting level contains a single value until a primitive is found.
+    """
+    if isinstance(iterable, (str, int, float, bool)):
+        return iterable
+    elif isinstance(iterable, Iterable):
+        if len(iterable) > 1:
+            raise IndexError(f"Multiple possible values found when unpacking singular nested value")
+        if isinstance(iterable, dict):
+            return _unpack_singular_nested_value(next(iter(iterable.values())))
+        else:
+            return _unpack_singular_nested_value(next(iter(iterable)))

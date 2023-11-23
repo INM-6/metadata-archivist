@@ -13,16 +13,21 @@ Authors: Jose V., Matthias K.
 """
 
 from json import dumps
-from typing import Optional, Union
+from typing import Union, Any
 
 from .Logger import LOG
 from .Formatter import Formatter
 from .SchemaInterpreter import SchemaEntry
-from .helper_functions import _pattern_parts_match, _update_dict_with_parts
+from .helper_functions import _pattern_parts_match, _update_dict_with_parts, _unpack_singular_nested_value
 
-def _format_parser_id_rule(formatter: Formatter, interpreted_schema: SchemaEntry, branch: list, value: str, **kwargs) -> dict:
+def _format_parser_id_rule(formatter: Formatter, interpreted_schema: SchemaEntry, branch: list, value: Any, **kwargs) -> dict:
+    # Formats metadata with parsing result.
+    # As parsing results can be filtered by file name or file path,
+    # file matching and dictionary branching are matched against existing filters in context.
+    # Further value filtering can be done through key selection in !parsing directive.
+
     if not isinstance(value, str):
-        raise ValueError(f"Incorrect value type for formatting parser: {type(value)}")
+        raise TypeError(f"Incorrect value type for formatting parser id: {type(value)}")
 
     # Currently only one parser reference per entry is allowed
     # and if a reference exists it must be the only content in the entry
@@ -119,6 +124,37 @@ def _format_parser_id_rule(formatter: Formatter, interpreted_schema: SchemaEntry
 
     return tree
 
+def _format_calculate_rule(formatter: Formatter, interpreted_schema: SchemaEntry, branch: list, value: Any, **kwargs) -> Union[int, float]:
+    # Returns numerical value based on a mathematical equation using parsing results as variables.
+    # For each variable a corresponding numerical value in parsing results must be found.
+    # At this point variable, count and names have been verified by Interpreter.
+
+    if not isinstance(value, dict):
+        raise TypeError(f"Incorrect value type found while formatting calculation: {type(value)}")
+    
+    if not all(key in value for key in ["expression", "variables"]):
+        raise RuntimeError(f"Malformed !calculate entry found while formatting calculation: {value}")
+    
+    expression = value["expression"]
+    variables = value["variables"]
+
+    parsing_values = {}
+    for variable in variables:
+        entry = variables[variable]
+        if not isinstance(entry, SchemaEntry):
+            raise TypeError(f"Incorrect variable type found while formatting calculation: {type(entry)}")
+        if not len(entry.items()) == 1:
+            raise ValueError(f"Incorrect variable entry found while formatting calculation: {entry}")
+        
+        parsed_value = _format_parser_id_rule(formatter, entry, branch, entry["!parser_id"], **kwargs)
+
+        parsing_values[variable] = _unpack_singular_nested_value(parsed_value)
+
+    formatted_expression = expression.format(**parsing_values)
+
+    return eval(formatted_expression)
+
 _FORMATTING_RULES = {
-    "$parser_id": _format_parser_id_rule, 
+    "!parser_id": _format_parser_id_rule,
+    "!calculate": _format_calculate_rule
 }

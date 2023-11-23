@@ -1,0 +1,140 @@
+{
+    "$schema": "https://abc",
+    "$id": "https://abc.json",
+    "description": "my example schema",
+    "type": "object",
+    "properties": {
+        "metadata_archive": {
+            "type": "object",
+            "properties": {
+                "program_execution": {
+                    "type": "object",
+                    "properties": {
+                        "real_time_factor": {
+                            "type": "number",
+                            "description": "ratio of wall clock time to simulation time",
+                            "!calculate": {
+                                "expression": "{val1} / {val2}",
+                                "variables": {
+                                    "val1": {
+                                        "!parsing": {
+                                            "keys": [
+                                                "real"
+                                            ]
+                                        },
+                                        "$ref": "#/$defs/time_parser"
+                                    },
+                                    "val2": {
+                                        "!parsing": {
+                                            "keys": [
+                                                "parameters/sim_time"
+                                            ]
+                                        },
+                                        "$ref": "#/$defs/yml_parser"
+                                    }
+                                }
+                            }
+                        },
+                        "model": {
+                            "!parsing": {
+                                "keys": [
+                                    "parameters/scale"
+                                ]
+                            },
+                            "$ref": "#/$defs/yml_parser"
+                        },
+                        "virtual_processes": {
+                            "type": "number",
+                            "description": "total number of digital processing units i.e. #MPI * #threads",
+                            "!calculate": {
+                                "expression": "{val1} * {val2}",
+                                "variables": {
+                                    "val1": {
+                                        "!parsing": {
+                                            "keys": [
+                                                "parameters/num_procs"
+                                            ]
+                                        },
+                                        "$ref": "#/$defs/yml_parser"
+                                    },
+                                    "val2": {
+                                        "!parsing": {
+                                            "keys": [
+                                                "parameters/threads_per_proc"
+                                            ]
+                                        },
+                                        "$ref": "#/$defs/yml_parser"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "$defs": {
+        "node": {
+            "properties": {
+                "anyOf": [
+                    {
+                        "$ref": "#/$defs/time_parser"
+                    },
+                    {
+                        "$ref": "#/$defs/yml_parser"
+                    }
+                ]
+            }
+        },
+        "time_parser": {
+            "type": "object",
+            "properties": {
+                "real": {
+                    "type": "string",
+                    "description": "the time from start to finish of the call"
+                },
+                "user": {
+                    "type": "string",
+                    "description": "amount of CPU time spent in user mode"
+                },
+                "sys": {
+                    "type": "string",
+                    "description": "amount of CPU time spent in kernel mode"
+                },
+                "system": {
+                    "$ref": "#/properties/sys"
+                }
+            }
+        },
+        "yml_parser": {
+            "type": "object",
+            "properties": {
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "sim_time": {
+                            "type": "number",
+                            "description": "total time to simulate"
+                        },
+                        "scale": {
+                            "type": "number",
+                            "description": "model scale"
+                        },
+                        "num_procs": {
+                            "type": "number",
+                            "description": "number of MPI processes"
+                        },
+                        "threads_per_proc": {
+                            "type": "number",
+                            "description": "number of threads used per MPI process"
+                        },
+                        "step_size": {
+                            "type": "number",
+                            "description": "step size for advancing simulation"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

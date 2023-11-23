@@ -51,7 +51,45 @@ class yml_parser(AParser):
     def __init__(self) -> None:
         super().__init__(name='yml_parser',
                          input_file_pattern='config\.yml',
-                         schema={})
+                         schema={
+                            'type': 'object',
+                            'properties': {
+                                'input_files': {
+                                    'type': 'object',
+                                    'properties': {
+                                        'precipitation': {
+                                            'type': 'string',
+                                            'description': 'precipitation input file name'
+                                        },
+                                        'temperature': {
+                                            'type': 'string',
+                                            'description': 'temperature input file name'
+                                        }
+                                    }
+                                },
+                                'parameters': {
+                                    'type': 'object',
+                                    'properties': {
+                                        'a': {
+                                            'type': 'number',
+                                            'description': 'parameter a'
+                                        },
+                                        'b': {
+                                            'type': 'number',
+                                            'description': 'parameter b'
+                                        }
+                                    }
+                                },
+                                'info1': {
+                                    'type': 'string',
+                                    'description': 'this is a  metadata'
+                                },
+                                'info2': {
+                                    'type': 'string',
+                                    'description': 'this as well'
+                                }
+                            }
+                         })
 
     def parse(self, file_path):
         with open(file_path, "r") as stream:
@@ -138,27 +176,27 @@ my_schema = {
         'metadata_archive': {
             'type': 'object',
             'patternProperties': {
-                "^basin_": {
+                "^basin_.*": {
                     "!varname": 'basin',
                     "type": "object",
                     'description': 'some description',
                     "properties": {
                         "basin_information": {
                             "!parsing": {
-                                'path': '*/{basin}/basin.yml',
+                                'path': '.*/{basin}/basin.yml',
                                 'keys': ['river', 'size']
                             },
                             '$ref': '#/$defs/basin_character_parser',
                         },
                     }
                 },
-                "^station_": {
+                "^station_.*": {
                     "!varname": 'station',
                     "type": "object",
                     "properties": {
                         "station_information": {
                             "!parsing": {
-                                'path': '*/{station}/station.yml',
+                                'path': '.*/{station}/station.yml',
                                 'keys': ['river', 'mean_disch']
                             },
                             '$ref': '#/$defs/station_character_parser',

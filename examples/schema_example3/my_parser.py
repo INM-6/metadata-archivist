@@ -177,7 +177,7 @@ my_schema = {
         'metadata_archive': {
             'type': 'object',
             'patternProperties': {
-                "^basin_": {
+                "^basin_.*": {
                     "type": "object",
                     "properties": {
                         "basin_characteristics": {
@@ -196,7 +196,7 @@ my_schema = {
                         }
                     }
                 },
-                "^station_": {
+                "^station_.*": {
                     "type": "object",
                     "properties": {
                         "basin_characteristics": {

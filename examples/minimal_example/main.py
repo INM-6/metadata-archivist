@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 
-Metadata extraction, collection and save pipeline example.
+Metadata parsing, collection and save pipeline example.
 Authors: Matthias K., Jose V.
 
 """
@@ -26,7 +26,7 @@ if __name__ == "__main__":
                     parser=my_parser,
                     **config)
 
-    arch.extract()
+    arch.parse()
     arch.export()
 
     print("\nResulting schema:")

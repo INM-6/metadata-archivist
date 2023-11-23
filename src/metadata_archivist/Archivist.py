@@ -19,7 +19,7 @@ from .Logger import LOG, set_verbose, set_debug
 
 class Archivist():
     """
-    Convenience class for orchestrating the Decompressor, Parser and Exporter.
+    Convenience class for orchestrating the Explorer, Parser and Exporter.
     """
 
     def __init__(self, path: Union[str, Path], parser: Formatter, **kwargs) -> None:
@@ -152,12 +152,12 @@ class Archivist():
 
         return path
 
-    def extract(self) -> dict:
+    def parse(self) -> dict:
         """
-        Coordinates decompression and metadata extraction with internal
-        Parser and Decompressor objects.
-        Generates cache of returned objects by Parser and Decompressor methods.
-        Returns extracted metadata.
+        Coordinates decompression and metadata parsing with internal
+        Parser and Explorer objects.
+        Generates cache of returned objects by Parser and Explorer methods.
+        Returns parsed metadata.
         """
         LOG.info(f'''Extracting:
         Output path: {self._out_dir_path}
@@ -217,7 +217,7 @@ class Archivist():
         return self.metadata_output_file
 
     def _clean_up(self) -> None:
-        """Cleanup method automatically called after metadata extraction (or compilation if lazy_loading)"""
+        """Cleanup method automatically called after metadata parsing (or compilation if lazy_loading)"""
         if self.config["auto_cleanup"]:
             LOG.info("Cleaning extraction directory...")
             #errors = []

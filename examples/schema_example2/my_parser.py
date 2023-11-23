@@ -1,4 +1,4 @@
-from metadata_archivist import AExtractor, Formatter
+from metadata_archivist import AParser, Formatter
 import yaml
 
 
@@ -8,11 +8,11 @@ def key_val_split(string, split_char):
     return {out[0].strip(): out[1].strip()}
 
 
-class time_extractor(AExtractor):
+class time_parser(AParser):
 
     def __init__(self) -> None:
         super().__init__(
-            name='time_extractor',
+            name='time_parser',
             input_file_pattern='time\.txt',
             schema={
                 'type': 'object',
@@ -37,7 +37,7 @@ class time_extractor(AExtractor):
                 }
             })
 
-    def extract(self, file_path) -> dict:
+    def parse(self, file_path) -> dict:
         out = {}
         with file_path.open("r") as fp:
             for line in fp:
@@ -46,14 +46,14 @@ class time_extractor(AExtractor):
         return out
 
 
-class yml_extractor(AExtractor):
+class yml_parser(AParser):
 
     def __init__(self) -> None:
-        super().__init__(name='yml_extractor',
+        super().__init__(name='yml_parser',
                          input_file_pattern='config\.yml',
                          schema={})
 
-    def extract(self, file_path):
+    def parse(self, file_path):
         with open(file_path, "r") as stream:
             try:
                 out = yaml.safe_load(stream)
@@ -62,10 +62,10 @@ class yml_extractor(AExtractor):
                 print(exc)
 
 
-class basin_character_extractor(AExtractor):
+class basin_character_parser(AParser):
 
     def __init__(self) -> None:
-        super().__init__(name='basin_character_extractor',
+        super().__init__(name='basin_character_parser',
                          input_file_pattern='basin\.yml',
                          schema={'type': 'object',
                                 'properties': {
@@ -88,7 +88,7 @@ class basin_character_extractor(AExtractor):
                                 }
                          })
 
-    def extract(self, file_path):
+    def parse(self, file_path):
         with open(file_path, "r") as stream:
             try:
                 out = yaml.safe_load(stream)
@@ -97,10 +97,10 @@ class basin_character_extractor(AExtractor):
                 print(exc)
 
 
-class station_character_extractor(AExtractor):
+class station_character_parser(AParser):
 
     def __init__(self) -> None:
-        super().__init__(name='station_character_extractor',
+        super().__init__(name='station_character_parser',
                          input_file_pattern='station\.yml',
                          schema={'type': 'object',
                                 'properties': {
@@ -120,7 +120,7 @@ class station_character_extractor(AExtractor):
                             }
                          )
 
-    def extract(self, file_path):
+    def parse(self, file_path):
         with open(file_path, "r") as stream:
             try:
                 out = yaml.safe_load(stream)
@@ -148,7 +148,7 @@ my_schema = {
                                 'path': '*/{basin}/basin.yml',
                                 'keys': ['river', 'size']
                             },
-                            '$ref': '#/$defs/basin_character_extractor',
+                            '$ref': '#/$defs/basin_character_parser',
                         },
                     }
                 },
@@ -161,7 +161,7 @@ my_schema = {
                                 'path': '*/{station}/station.yml',
                                 'keys': ['river', 'mean_disch']
                             },
-                            '$ref': '#/$defs/station_character_extractor',
+                            '$ref': '#/$defs/station_character_parser',
                         },
 
                     },
@@ -171,10 +171,10 @@ my_schema = {
     }
 }
 
-my_parser = Formatter(extractors=[
-    time_extractor(),
-    yml_extractor(),
-    station_character_extractor(),
-    basin_character_extractor()
+my_parser = Formatter(parsers=[
+    time_parser(),
+    yml_parser(),
+    station_character_parser(),
+    basin_character_parser()
 ],
                    schema=my_schema)

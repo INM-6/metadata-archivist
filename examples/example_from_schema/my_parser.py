@@ -1,4 +1,4 @@
-from metadata_archivist import AExtractor, Formatter
+from metadata_archivist import AParser, Formatter
 import yaml
 
 
@@ -8,11 +8,11 @@ def key_val_split(string, split_char):
     return {out[0].strip(): out[1].strip()}
 
 
-class time_extractor(AExtractor):
+class time_parser(AParser):
 
     def __init__(self) -> None:
         super().__init__(
-            name='time_extractor',
+            name='time_parser',
             input_file_pattern='time\.txt',
             schema={
                 'type': 'object',
@@ -37,7 +37,7 @@ class time_extractor(AExtractor):
                 }
             })
 
-    def extract(self, file_path) -> dict:
+    def parse(self, file_path) -> dict:
         out = {}
         with file_path.open("r") as fp:
             for line in fp:
@@ -46,10 +46,10 @@ class time_extractor(AExtractor):
         return out
 
 
-class yml_extractor(AExtractor):
+class yml_parser(AParser):
 
     def __init__(self) -> None:
-        super().__init__(name='yml_extractor',
+        super().__init__(name='yml_parser',
                          input_file_pattern='.*\.yml',
                          schema={
                             'type': 'object',
@@ -91,7 +91,7 @@ class yml_extractor(AExtractor):
                             }
                          })
 
-    def extract(self, file_path):
+    def parse(self, file_path):
         with open(file_path, "r") as stream:
             try:
                 out = yaml.safe_load(stream)
@@ -113,10 +113,10 @@ my_schema = {
                     'type': 'object',
                     'properties': {
                         'time_info': {
-                            '$ref': '#/$defs/time_extractor'
+                            '$ref': '#/$defs/time_parser'
                         },
                         'model_configuration': {
-                            '$ref': '#/$defs/yml_extractor'
+                            '$ref': '#/$defs/yml_parser'
                         },
                     }
                 },
@@ -125,6 +125,6 @@ my_schema = {
     }
 }
 
-my_parser = Formatter(extractors=[time_extractor(),
-                               yml_extractor()],
+my_parser = Formatter(parsers=[time_parser(),
+                               yml_parser()],
                    schema=my_schema)

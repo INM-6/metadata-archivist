@@ -20,7 +20,7 @@ arch = Archivist(path=Path('metadata_archive.tar'),
                  auto_cleanup=False,
                  verbose='debug')
 
-arch.extract()
+arch.parse()
 arch.export()
 
 print("\nResulting schema:")

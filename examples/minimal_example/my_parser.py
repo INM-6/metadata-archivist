@@ -7,7 +7,7 @@ Authors: Matthias K., Jose V.
 
 """
 
-from metadata_archivist import AExtractor, Formatter
+from metadata_archivist import AParser, Formatter
 import yaml
 
 
@@ -17,12 +17,12 @@ def key_val_split(string, split_char):
     return {out[0].strip(): out[1].strip()}
 
 
-class time_extractor(AExtractor):
+class time_extractor(AParser):
 
     def __init__(self) -> None:
         super().__init__(name='time_extractor', input_file_pattern='time\.txt', schema={})
 
-    def extract(self, file_path) -> dict:
+    def parse(self, file_path) -> dict:
         out = {}
         with file_path.open("r") as fp:
             for line in fp:
@@ -31,16 +31,16 @@ class time_extractor(AExtractor):
         return out
 
 
-class yml_extractor(AExtractor):
+class yml_extractor(AParser):
 
     def __init__(self) -> None:
         super().__init__(name='yml_extractor', input_file_pattern='.*\.yml', schema={})
 
-    def extract(self, file_path) -> dict:
+    def parse(self, file_path) -> dict:
         out = {}
         with file_path.open("r") as fp:
             out = yaml.safe_load(fp)
         return out
 
 
-my_parser = Formatter(extractors=[time_extractor(), yml_extractor()], lazy_load=True)
+my_parser = Formatter(parsers=[time_extractor(), yml_extractor()], lazy_load=True)

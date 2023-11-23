@@ -171,10 +171,10 @@ from typing import Optional, Any, Dict, Union
 # TODO: Should all the ParserHelpers classes name start with "_" ?
 class Cache:
     """
-    Convenience class for caching extraction results.
-    For each extractor a _CacheExtractor object is created which will store all extraction results.
-    To this end, extractors have to be added through corresponding method.
-    Then _CacheExtractor is obtained through index access i.e. ```[key]``` and used to add _CacheEntry objects.
+    Convenience class for caching parsing results.
+    For each Parser a _ParserCache object is created which will store all parsing results.
+    To this end, Parsers have to be added through the corresponding internal method.
+    Then a _ParserCache is obtained through index access i.e. ```[key]``` and used to add _CacheEntry objects.
     Iteration is possible by using dictionary iterator on the actual cache storage.
     """
 
@@ -184,17 +184,17 @@ class Cache:
         self._cache = dict()
         self._iterator = None
 
-    def add(self, extractor_id) -> None:
-        if extractor_id not in self._cache:
-            self._cache[extractor_id] = _CacheExtractor()
+    def add(self, parser_id) -> None:
+        if parser_id not in self._cache:
+            self._cache[parser_id] = _ParserCache()
         else:
-            raise KeyError(f"Extractor {extractor_id} already exists in cache")
+            raise KeyError(f"Parser {parser_id} already exists in cache")
         
-    def drop(self, extractor_id) -> None:
-        self._cache.pop(extractor_id, None)
+    def drop(self, parser_id) -> None:
+        self._cache.pop(parser_id, None)
 
-    def __getitem__(self, extractor_id):
-        return self._cache[extractor_id]
+    def __getitem__(self, parser_id):
+        return self._cache[parser_id]
 
     def __iter__(self):
         """
@@ -206,7 +206,7 @@ class Cache:
     def __next__(self):
         """
         When iterating over a dictionary keys are returned,
-        here we return the corresponding _CacheExtractor objects.
+        here we return the corresponding _ParserCache objects.
         """
         if self._iterator is None:
             raise StopIteration
@@ -216,11 +216,11 @@ class Cache:
         return len(self._cache) == 0
 
 
-class _CacheExtractor:
+class _ParserCache:
     """
-    Convenience class for caching extraction results.
-    For each extractor a _CacheExtractor object is created which will store all extraction results.
-    _CacheExtractor objects can contain any amount of _CacheEntry objects.
+    Convenience class for caching parsing results.
+    For each Parser a _ParserCache object is created which will store all parsing results.
+    _ParserCache objects can contain any amount of _CacheEntry objects.
     Iteration is possible by using list iterator on the actual entry storage.
     """
 
@@ -248,7 +248,7 @@ class _CacheExtractor:
     def __next__(self):
         """
         When iterating over a dictionary keys are returned,
-        here we return the corresponding _CacheExtractor objects.
+        here we return the corresponding _ParserCache objects.
         """
         if self._iterator is None:
             raise StopIteration
@@ -260,9 +260,9 @@ class _CacheExtractor:
 
 class _CacheEntry:
     """
-    Convenience class for caching extraction results.
-    For each extractor a _CacheExtractor object is created which will store all extraction results.
-    For each file extracted a _CacheEntry object is created, after extraction the results can be
+    Convenience class for caching parsing results.
+    For each Parser a _ParserCache object is created which will store all parsing results.
+    For each extracted file a _CacheEntry object is created, after parsing, the results can be
     lazily stored and a meta_path is generated or the metadata can be directly stored in the entry.
     If the results are lazily stored then calling load_metadata would load them to memory.
     """
@@ -317,48 +317,48 @@ class _CacheEntry:
 class Indexes:
     """
     Class to be handled only by Parser class.
-    Indexing class for storing per extractor:
-        - extractors list index
+    Indexing class for storing indexes per Parser:
+        - Parsers list index
         - input file patterns list index
         - schema properties list index
     """
-    ex_indexes: dict
+    prs_indexes: dict
     ifp_indexes: dict
-    sp_indexes: dict
+    scp_indexes: dict
 
     def __init__(self) -> None:
-        self.ex_indexes = {}
+        self.prs_indexes = {}
         self.ifp_indexes = {}
-        self.sp_indexes = {}
+        self.scp_indexes = {}
 
     def _get_storage(self, storage: str) -> dict:
         """
         Private method for getting specific storage based on storage name string:
         To determine which storage should the index go to:
-            - 'ex' or 'extractors' for extractor index list
+            - 'prs' or 'parsers' for parser index list
             - 'ifp' or 'input_file_patterns' for input file pattern index list
-            - 'sp' or 'schema_properties' for schema property list
+            - 'scp' or 'schema_properties' for schema property list
         """
-        ex_patterns = ["ex", "extractors"]
+        prs_patterns = ["prs", "parsers"]
         ifp_patterns = ["ifp", "input_file_patterns"]
-        sp_patterns = ["sp", "schema_properties"]
-        if storage in ex_patterns:
-            return self.ex_indexes
+        scp_patterns = ["scp", "schema_properties"]
+        if storage in prs_patterns:
+            return self.prs_indexes
         elif storage in ifp_patterns:
             return self.ifp_indexes
-        elif storage in sp_patterns:
-            return self.sp_indexes
+        elif storage in scp_patterns:
+            return self.scp_indexes
 
-        raise ValueError(f"Incorrect value for storage name, got {storage}, accepted {ex_patterns + ifp_patterns + sp_patterns}")
+        raise ValueError(f"Incorrect value for storage name, got {storage}, accepted {prs_patterns + ifp_patterns + scp_patterns}")
         
     
-    def set_index(self, extractor_id: Any, storage: str, index: int) -> None:
+    def set_index(self, parser_id: Any, storage: str, index: int) -> None:
         """
         Generic set index method for all storages.
         """
-        self._get_storage(storage)[extractor_id] = index
+        self._get_storage(storage)[parser_id] = index
 
-    def get_index(self, extractor_id: Any, storage: Optional[str] = None) -> Union[int, Dict[str, int]]:
+    def get_index(self, parser_id: Any, storage: Optional[str] = None) -> Union[int, Dict[str, int]]:
         """
         Generic get index method for all storages.
         If no storage specified, all stored indexes are returned as a dictionary.
@@ -366,19 +366,19 @@ class Indexes:
         if storage is None:
             # TODO: Should we raise an error if the id is not in any/all dictionaries?
             return {
-                "ex": self.ex_indexes.get(extractor_id, None),
-                "ifp": self.ifp_indexes.get(extractor_id, None),
-                "sp": self.sp_indexes.get(extractor_id, None),
+                "ex": self.prs_indexes.get(parser_id, None),
+                "ifp": self.ifp_indexes.get(parser_id, None),
+                "sp": self.scp_indexes.get(parser_id, None),
                 }
         else:
-            return self._get_storage(storage)[extractor_id]
+            return self._get_storage(storage)[parser_id]
         
-    def drop_indexes(self, extractor_id: Any) -> None:
+    def drop_indexes(self, parser_id: Any) -> None:
         """
-        Remove method for an extractor_id in all storages.
+        Remove method for a Parser in all index storages.
         TODO: Should we return values?
         TODO: Should we raise if id is not known?
         """
-        self.ex_indexes.pop(extractor_id, None)
-        self.ifp_indexes.pop(extractor_id, None)
-        self.sp_indexes.pop(extractor_id, None)
+        self.prs_indexes.pop(parser_id, None)
+        self.ifp_indexes.pop(parser_id, None)
+        self.scp_indexes.pop(parser_id, None)

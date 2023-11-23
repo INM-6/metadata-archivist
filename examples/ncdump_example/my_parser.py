@@ -2,12 +2,12 @@
 # -*- coding: utf-8 -*-
 """
 
-Parser and Extractor instances examples.
+Formatter and Parsers instances examples.
 Authors: Matthias K., Jose V.
 
 """
 
-from metadata_archivist import AExtractor, Formatter
+from metadata_archivist import AParser, Formatter
 
 NCDUMP_HS_SCHEMA = {}
 
@@ -49,12 +49,12 @@ def key_val_split_rm_prefix(string, split_char, rm_prefix):
     return {out[0].strip(): out[1].strip()}
 
 
-class ncdump_hs_extractor(AExtractor):
+class ncdump_hs_parser(AParser):
 
     def __init__(self):
-        super().__init__(name='ncdump_hs_extractor', input_file_pattern='ncdump_hs\.out', schema=NCDUMP_HS_SCHEMA)
+        super().__init__(name='ncdump_hs_parser', input_file_pattern='ncdump_hs\.out', schema=NCDUMP_HS_SCHEMA)
 
-    def extract(self, file_path):
+    def parse(self, file_path):
         out = {}
         with file_path.open() as f:
             header = True
@@ -116,4 +116,4 @@ class ncdump_hs_extractor(AExtractor):
         return out
 
 
-my_parser = Formatter(extractors=[ncdump_hs_extractor()])
+my_parser = Formatter(parsers=[ncdump_hs_parser()])

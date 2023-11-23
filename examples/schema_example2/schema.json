@@ -11,16 +11,16 @@
                     "type": "object",
                     "properties": {
                         "basin_characteristics": {
-                            "$ref": "#/$defs/basin_character_extractor"
+                            "$ref": "#/$defs/basin_character_parser"
                         },
                         "simulation": {
                             "type": "object",
                             "properties": {
                                 "time_info": {
-                                    "$ref": "#/$defs/time_extractor"
+                                    "$ref": "#/$defs/time_parser"
                                 },
                                 "model_configuration": {
-                                    "$ref": "#/$defs/yml_extractor"
+                                    "$ref": "#/$defs/yml_parser"
                                 }
                             }
                         }
@@ -30,16 +30,16 @@
                     "type": "object",
                     "properties": {
                         "basin_characteristics": {
-                            "$ref": "#/$defs/station_character_extractor"
+                            "$ref": "#/$defs/station_character_parser"
                         },
                         "simulation": {
                             "type": "object",
                             "properties": {
                                 "time_info": {
-                                    "$ref": "#/$defs/time_extractor"
+                                    "$ref": "#/$defs/time_parser"
                                 },
                                 "model_configuration": {
-                                    "$ref": "#/$defs/yml_extractor"
+                                    "$ref": "#/$defs/yml_parser"
                                 }
                             }
                         }
@@ -49,7 +49,7 @@
         }
     },
     "$defs": {
-        "time_extractor": {
+        "time_parser": {
             "type": "object",
             "properties": {
                 "real": {
@@ -69,8 +69,8 @@
                 }
             }
         },
-        "yml_extractor": {},
-        "basin_character_extractor": {},
-        "station_character_extractor": {}
+        "yml_parser": {},
+        "basin_character_parser": {},
+        "station_character_parser": {}
     }
 }

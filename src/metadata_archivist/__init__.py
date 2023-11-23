@@ -8,7 +8,7 @@ Authors: Matthias K., Jose V.
 """
 
 from .Formatter import Formatter
-from .Extractor import AExtractor
+from .Parser import AParser
 from .Explorer import Explorer
 from .Exporter import Exporter
 from .Archivist import Archivist

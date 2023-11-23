@@ -11,10 +11,10 @@
                     "type": "object",
                     "properties": {
                         "time_info": {
-                            "$ref": "#/$defs/time_extractor"
+                            "$ref": "#/$defs/time_parser"
                         },
                         "model_configuration": {
-                            "$ref": "#/$defs/yml_extractor"
+                            "$ref": "#/$defs/yml_parser"
                         }
                     }
                 }
@@ -22,7 +22,7 @@
         }
     },
     "$defs": {
-        "time_extractor": {
+        "time_parser": {
             "type": "object",
             "properties": {
                 "real": {
@@ -42,7 +42,7 @@
                 }
             }
         },
-        "yml_extractor": {},
+        "yml_parser": {},
         "other_block": {
             "type": "object",
             "properties": {
@@ -50,7 +50,7 @@
                     "type": "object",
                     "properties": {
                         "user_time_info": {
-                            "$ref": "#/$defs/time_extractor/user"
+                            "$ref": "#/$defs/time_parser/user"
                         }
                     }
                 }

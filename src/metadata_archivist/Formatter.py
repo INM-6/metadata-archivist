@@ -2,9 +2,10 @@
 # -*- coding: utf-8 -*-
 """
 
-Extractor class to get metadata from file.
-Parser class for handling Extractors.
-To be specialized by custom parsers made by users.
+Formatter class for handling Parsers.
+Coordinates parsing of files using Explorer output and user defined Parsers.
+If a user schema is provided, formats the metadata output according to the
+defined schema.
 
 Authors: Jose V., Matthias K.
 
@@ -17,7 +18,7 @@ from json import dump, load, dumps
 from typing import Optional, List, NoReturn, Union
 
 from .Logger import LOG
-from .Extractor import AExtractor
+from .Parser import AParser
 from . import FormatterHelpers as helpers
 from .SchemaInterpreter import SchemaInterpreter, SchemaEntry
 from .helper_functions import _update_dict_with_parts, _merge_dicts, _pattern_parts_match
@@ -56,11 +57,11 @@ DEFAULT_PARSER_SCHEMA = {
 
 
 class Formatter():
-    """Parser
-    A Parser creates a metadata object (dict) that
+    """Formatter
+    A Formatter creates a metadata object (dict) that
     is further described by a json schema.
     The json schema describing the metadata object is build using
-    the schema of the Parser and the schema's provided by the extractors.
+    the schema of the Formatter and the schema's provided by the Parsers.
 
     All metadata for a node is put at a corresponding node in the
     metadata dict tree. the directories in the metadata archive (lake)
@@ -69,13 +70,13 @@ class Formatter():
 
     def __init__(self,
                  schema: Optional[Union[dict, Path]] = None,
-                 extractors: Optional[List[AExtractor]] = None,
+                 parsers: Optional[List[AParser]] = None,
                  lazy_load: Optional[bool] = False) -> None:
 
         # Protected
         # These attributes should only be modified through the add, update remove methods
-        self._extractors = []
-        self._input_file_patterns = [] # TODO: Check if this list can/may become a 1D - 2D hybrid list if an extractor accepts multiple patterns
+        self._parsers = []
+        self._input_file_patterns = [] # TODO: Check if this list can/may become a 1D - 2D hybrid list if an parser accepts multiple patterns
         # Can also be completely replaced through set method
         if schema is not None:
             self._use_schema = True
@@ -98,14 +99,14 @@ class Formatter():
         # Used for internal handling:
         # Shouldn't use much memory but TODO: check additional memory usage
 
-        # Used for updating/removing extractors
-        # Indexing is done storing a triplet with extractors, patterns, schema indexes
+        # Used for updating/removing parsers
+        # Indexing is done storing a triplet with parsers, patterns, schema indexes
         self._indexes = helpers.Indexes()
 
         # Set lazy loading
         self._lazy_load = lazy_load
 
-        # For extractor result caching
+        # For parser result caching
         self._cache = helpers.Cache()
 
         # Public
@@ -114,30 +115,30 @@ class Formatter():
         self.combine = lambda parser2, schema=None: _combine(
             parser1=self, parser2=parser2, schema=schema)
 
-        if extractors is not None:
-            for e in extractors:
-                self.add_extractor(e)
+        if parsers is not None:
+            for e in parsers:
+                self.add_parser(e)
 
     @property
-    def extractors(self) -> List[AExtractor]:
-        """Returns list of added extractors (list)."""
-        return self._extractors
+    def parsers(self) -> List[AParser]:
+        """Returns list of added parsers (list)."""
+        return self._parsers
 
-    @extractors.setter
-    def extractors(self, _) -> NoReturn:
+    @parsers.setter
+    def parsers(self, _) -> NoReturn:
         """
-        Forbidden setter for extractors attribute.
+        Forbidden setter for parsers attribute.
         (pythonic indirection for protected attributes)
         """
         raise AttributeError(
-            "Extractors list should be modified through add, update and remove procedures"
+            "parsers list should be modified through add, update and remove procedures"
         )
 
     @property
     def input_file_patterns(self) -> List[str]:
         """
-        Returns list of re.pattern (str) for input files, given by the extractors.
-        The re.patterns are then used by the decompressor to select files.
+        Returns list of re.pattern (str) for input files, given by the parsers.
+        The re.patterns are then used by the explorer to select files.
         """
         return self._input_file_patterns
 
@@ -161,8 +162,8 @@ class Formatter():
         """Sets parser schema (dict)."""
         self._schema = schema
         self._use_schema = True
-        if len(self._extractors) > 0:
-            for ex in self._extractors:
+        if len(self._parsers) > 0:
+            for ex in self._parsers:
                 # TODO: Needs consistency checks
                 self._extend_json_schema(ex)
 
@@ -179,7 +180,7 @@ class Formatter():
         if lazy_load and not self._lazy_load:
             if len(self.metadata) > 0:
                 raise RuntimeError(
-                    "Lazy loading needs to be enabled before metadata extraction"
+                    "Lazy loading needs to be enabled before metadata parsing"
                 )
         else:
             if len(self.metadata) > 0:
@@ -190,9 +191,9 @@ class Formatter():
             self.compile_metadata()
         self._lazy_load = lazy_load
 
-    def _extend_json_schema(self, extractor: AExtractor) -> None:
+    def _extend_json_schema(self, parser: AParser) -> None:
         """
-        Extends parser schema (dict) with a given extractor schema (dict).
+        Extends parser schema (dict) with a given parser schema (dict).
         Indexes schema.
         """
         if "$defs" not in self._schema:
@@ -201,74 +202,74 @@ class Formatter():
             raise TypeError(
                 f"Incorrect schema format, $defs property should be a dictionary, got {type(self._schema['$defs'])}")
         
-        ex_id = extractor.id
-        ex_ref = extractor.ref
-        self._schema["$defs"][ex_id] = extractor.schema
+        pid = parser.id
+        p_ref = parser.ref
+        self._schema["$defs"][pid] = parser.schema
 
         if 'node' not in self._schema["$defs"]:
             self._schema["$defs"].update({"node": {"properties": {"anyOf": []}}})
 
-        self._indexes.set_index(ex_id, "sp",
+        self._indexes.set_index(pid, "scp",
                                 len(self._schema["$defs"]["node"]["properties"]["anyOf"]))
         self._schema["$defs"]["node"]["properties"]["anyOf"].append(
-            {"$ref": ex_ref})
+            {"$ref": p_ref})
 
-    def add_extractor(self, extractor: AExtractor) -> None:
+    def add_parser(self, parser: AParser) -> None:
         """
-        Method to add extractor to list.
-        Indexes extractors list and input files patterns list.
+        Method to add parser to list.
+        Indexes parsers list and input files patterns list.
         """
-        if extractor in self.extractors:
-            raise RuntimeError("Extractor is already in Parser")
-        ex_id = extractor.id
-        self._cache.add(ex_id)
-        self._indexes.set_index(ex_id, "ex", len(self._extractors))
-        self._extractors.append(extractor)
-        self._indexes.set_index(ex_id, "ifp", len(self._input_file_patterns))
-        self._input_file_patterns.append(extractor.input_file_pattern)
-        self._extend_json_schema(extractor)
-        extractor._parsers.append(self)
+        if parser in self.parsers:
+            raise RuntimeError("Parser is already in Formatter")
+        pid = parser.id
+        self._cache.add(pid)
+        self._indexes.set_index(pid, "prs", len(self._parsers))
+        self._parsers.append(parser)
+        self._indexes.set_index(pid, "ifp", len(self._input_file_patterns))
+        self._input_file_patterns.append(parser.input_file_pattern)
+        self._extend_json_schema(parser)
+        parser._parsers.append(self)
 
-    def update_extractor(self, extractor: AExtractor) -> None:
+    def update_parser(self, parser: AParser) -> None:
         """
-        Method to update a known extractor.
+        Method to update a known parser.
         Updates are done in place.
         """
-        if extractor not in self._extractors:
-            raise RuntimeError("Unknown Extractor")
-        ex_id = extractor.id
-        self._schema["$defs"][ex_id] = extractor.schema
-        ifp_index = self._indexes.get_index(ex_id, "ifp")
-        self._input_file_patterns[ifp_index] = extractor.input_file_pattern
-        sp_index = self._indexes.get_index(ex_id, "sp")
-        self._schema["$defs"]["node"]["properties"]["anyOf"][sp_index] = \
-            {"$ref": extractor.ref}
+        if parser not in self._parsers:
+            raise RuntimeError("Unknown Parser")
+        pid = parser.id
+        self._schema["$defs"][pid] = parser.schema
+        ifp_index = self._indexes.get_index(pid, "ifp")
+        self._input_file_patterns[ifp_index] = parser.input_file_pattern
+        scp_index = self._indexes.get_index(pid, "scp")
+        self._schema["$defs"]["node"]["properties"]["anyOf"][scp_index] = \
+            {"$ref": parser.ref}
 
-    def remove_extractor(self, extractor: AExtractor) -> None:
+    def remove_parser(self, parser: AParser) -> None:
         """
-        Removes extractor from extractor list.
+        Removes parser from internal list.
         Reflects removal in schema and input files patterns list.
         """
-        if extractor not in self._extractors:
-            raise RuntimeError("Unknown Extractor")
-        ex_id = extractor.id
-        indexes = self._indexes.get_index(ex_id)
-        self._extractors.pop(indexes["ex"], None)
+        if parser not in self._parsers:
+            raise RuntimeError("Unknown Parser")
+        pid = parser.id
+        indexes = self._indexes.get_index(pid)
+        self._parsers.pop(indexes["prs"], None)
         self._input_file_patterns.pop(indexes["ifp"], None)
-        self._schema["$defs"]["node"]["properties"]["anyOf"].pop(indexes["sp"], None)
-        self._schema["$defs"].pop(ex_id, None)
-        self._indexes.drop_indexes(ex_id)
-        self._cache.drop(ex_id)
-        extractor._parsers.remove(self)
+        self._schema["$defs"]["node"]["properties"]["anyOf"].pop(indexes["scp"], None)
+        self._schema["$defs"].pop(pid, None)
+        self._indexes.drop_indexes(pid)
+        self._cache.drop(pid)
+        parser._parsers.remove(self)
 
-    def get_extractor(self, extractor_name: str) -> AExtractor:
+    def get_parser(self, parser_name: str) -> AParser:
         """
-        helper method returns extractor given a extractor name
+        helper method returns Parser given its name
         """
-        for ex in self.extractors:
-            if ex.name == extractor_name:
+        for ex in self.parsers:
+            if ex.name == parser_name:
                 return ex
-        LOG.warning(f"No extractor with name: {extractor_name} exist")
+        LOG.warning(f"No Parser with name: {parser_name} exist")
 
     # TODO: Check whether we want to keep this or not:
     # def _update_metadata_tree(self, decompress_path: Path,
@@ -330,42 +331,42 @@ class Formatter():
                     override_meta_files: bool = True) -> List[Path]:
         """
         Add metadata from input files to metadata object,
-        usually by sending calling all extract's linked to the file-name or regexp of files names.
+        usually by sending calling all parsers linked to the file-name or regexp of files names.
 
         :param file_paths: list of file paths (Path)
         """
-        to_extract = {}
+        to_parse = {}
         meta_files = []
         # TODO: Think about parallelization scheme with ProcessPoolExecutor
         # Would it be worth it in terms of performance?
-        for extractor in self._extractors:
-            ex_id = extractor.id
-            to_extract[ex_id] = []
-            LOG.debug(f'    preparing extractor: {ex_id}')
+        for parser in self._parsers:
+            pid = parser.id
+            to_parse[pid] = []
+            LOG.debug(f'    preparing parser: {pid}')
             for fp in file_paths:
-                pattern = extractor.input_file_pattern.split("/")
+                pattern = parser.input_file_pattern.split("/")
                 pattern.reverse()
                 if _pattern_parts_match(pattern, list(reversed(fp.parts))):
-                    to_extract[ex_id].append(fp)
+                    to_parse[pid].append(fp)
 
         # TODO: Think about parallelization scheme with ProcessPoolExecutor
         # For instance this loop is trivially parallelizable if there is no file usage overlap
-        for ex_id in to_extract:
-            for file_path in to_extract[ex_id]:
-                # Get extractor and extract metadata
-                ex_index = self._indexes.get_index(ex_id, "ex")
-                extractor = self._extractors[ex_index]
-                metadata = extractor.extract_metadata_from_file(file_path)
+        for pid in to_parse:
+            for file_path in to_parse[pid]:
+                # Get parser and parse metadata
+                pix = self._indexes.get_index(pid, "prs")
+                parser = self._parsers[pix]
+                metadata = parser.parse_file(file_path)
 
                 if not self._lazy_load:
                     # self._update_metadata_tree_with_path_hierarchy(metadata, decompress_path, file_path)
-                    self._cache[ex_id].add(
+                    self._cache[pid].add(
                         decompress_path,
                         file_path,
                         metadata
                     )
                 else:
-                    entry = self._cache[ex_id].add(
+                    entry = self._cache[pid].add(
                         decompress_path,
                         file_path
                     )
@@ -374,7 +375,7 @@ class Formatter():
                             LOG.warning(f"Metadata file {entry.meta_path} exists, overriding.")
                         else:
                             raise FileExistsError(
-                                f"Unable to save extracted metadata: {entry.meta_path} exists")
+                                f"Unable to save parsed metadata: {entry.meta_path} exists")
                     with entry.meta_path.open("w") as mp:
                         dump(metadata, mp, indent=4)
                     meta_files.append(entry.meta_path)
@@ -506,8 +507,8 @@ class Formatter():
         """
         Recursively generate metadata file using interpreted_schema obtained with SchemaInterpreter.
         Designed to mimic structure of interpreted_schema where each SchemaEntry is a branching node in the metadata
-        and whenever an extractor context is found the branch terminates.
-        Handles additional context like extractor directives (!extractor) and directory directives (!varname).
+        and whenever an parsing context is found the branch terminates.
+        Handles additional context like parsing directives (!extractor) and directory directives (!varname).
 
         While recursing over the tree branches, the branch path i.e. all the parent nodes are tracked in order
         to use patternProperties without path directives.
@@ -570,37 +571,37 @@ class Formatter():
 
                 branch.pop()
 
-            # If entry corresponds to an extractor reference
+            # If entry corresponds to an parser reference
             elif key == "$extractor_id" and isinstance(value, str):
 
-                # Currently only one extractor reference per entry is allowed
+                # Currently only one parser reference per entry is allowed
                 # and if a reference exists it must be the only content in the entry
                 if len(interpreted_schema.items()) > 1:
                     LOG.debug(dumps(interpreted_schema._content, indent=4, default=vars))
                     raise RuntimeError(f"Invalid entry content {interpreted_schema.key}: {interpreted_schema._content}")
 
-                # Get extractor and its cache
-                extractor = self.get_extractor(value)
-                cache_extractor = self._cache[value]
+                # Get parser and its cache
+                parser = self.get_parser(value)
+                parser_cache = self._cache[value]
 
-                # Extractor may have processed multiple files
-                extracted_metadata = None
+                # Parser may have processed multiple files
+                parsed_metadata = None
 
                 # For all cache entries
-                for cache_entry in cache_extractor:
+                for cache_entry in parser_cache:
 
                     # If in a regex context match file path to branch position
                     if "useRegex" in context:
 
-                        # Extracted metadata should be structured in a dictionary
+                        # Parsed metadata should be structured in a dictionary
                         # where keys are filenames and values are metadata
-                        if extracted_metadata is None:
-                            extracted_metadata = {}
-                        elif not isinstance(extracted_metadata, dict):
-                            LOG.debug(f"extracted metadata: {extracted_metadata}\n\ncontext: {context}")
-                            raise RuntimeError(f"Incorrect extracted_metadata initialization type: {extracted_metadata}")
+                        if parsed_metadata is None:
+                            parsed_metadata = {}
+                        elif not isinstance(parsed_metadata, dict):
+                            LOG.debug(f"parsed metadata: {parsed_metadata}\n\ncontext: {context}")
+                            raise RuntimeError(f"Incorrect parsed_metadata initialization type: {parsed_metadata}")
 
-                        # We skip the last element as it represents the node name of the extracted metadata
+                        # We skip the last element as it represents the node name of the parsed metadata
                         # not to be included in the path of the tree
                         file_path_parts = list(reversed(cache_entry.rel_path.parent.parts))
                         reversed_branch = list(reversed(branch[:len(branch) - 1]))
@@ -609,16 +610,16 @@ class Formatter():
                         if not _pattern_parts_match(reversed_branch, file_path_parts):
                             continue
 
-                    # If path information is present in extractor directives match file path to given regex path
+                    # If path information is present in parser directives match file path to given regex path
                     if "!extractor" in context and "path" in context["!extractor"]:
 
-                        # Extracted metadata should be structured in a dictionary
+                        # Parsed metadata should be structured in a dictionary
                         # where keys are filenames and values are metadata
-                        if extracted_metadata is None:
-                            extracted_metadata = {}
-                        elif not isinstance(extracted_metadata, dict):
-                            LOG.debug(f"extracted metadata: {extracted_metadata}\n\ncontext: {context}")
-                            raise RuntimeError(f"Incorrect extracted_metadata initialization type: {extracted_metadata}")
+                        if parsed_metadata is None:
+                            parsed_metadata = {}
+                        elif not isinstance(parsed_metadata, dict):
+                            LOG.debug(f"parsed metadata: {parsed_metadata}\n\ncontext: {context}")
+                            raise RuntimeError(f"Incorrect parsed_metadata initialization type: {parsed_metadata}")
 
                         # In this case the name of the file should be taken into account in the context path
                         file_path_parts = list(reversed(cache_entry.rel_path.parts))
@@ -629,39 +630,39 @@ class Formatter():
                         if not _pattern_parts_match(regex_path, file_path_parts, context):
                             continue
 
-                    # If not in a regex/path context then extracted metadata is structured
+                    # If not in a regex/path context then parsed metadata is structured
                     # in a list and metadata is appended to it
-                    if extracted_metadata is None:
-                        extracted_metadata = []
+                    if parsed_metadata is None:
+                        parsed_metadata = []
 
                     # Lazy loading handling
                     metadata = cache_entry.load_metadata()
                     
                     # Compute additional directives if given
                     if "!extractor" in context and "keys" in context["!extractor"]:
-                        metadata = extractor.filter_metadata(
+                        metadata = parser.filter_metadata(
                             metadata, context["!extractor"]["keys"],
                             **kwargs)
 
-                    # Update extracted metadata
-                    # When in a regex context then resulting extracted metadata is a dict
-                    if isinstance(extracted_metadata, dict):
+                    # Update parsed metadata
+                    # When in a regex context then resulting parsed metadata is a dict
+                    if isinstance(parsed_metadata, dict):
 
-                        # When updating the extracted metadata dict,
+                        # When updating the parsed metadata dict,
                         # the relative path to cache entry is used,
                         # however the filename is changed to the name of key of the interpreted_schema key.
                         relative_path = cache_entry.rel_path.parent / interpreted_schema.key
-                        _update_dict_with_parts(extracted_metadata, metadata, list(relative_path.parts))
+                        _update_dict_with_parts(parsed_metadata, metadata, list(relative_path.parts))
 
                     # Else by default we append to a list
                     else:
-                        extracted_metadata.append(metadata)
+                        parsed_metadata.append(metadata)
 
                 # Update tree according to metadata retrieved
-                if isinstance(extracted_metadata, list):
-                    tree = extracted_metadata[0] if len(extracted_metadata) == 1 else extracted_metadata
+                if isinstance(parsed_metadata, list):
+                    tree = parsed_metadata[0] if len(parsed_metadata) == 1 else parsed_metadata
                 else:
-                    tree = extracted_metadata
+                    tree = parsed_metadata
             
             # Nodes should not be of a different type than SchemaEntry
             else:
@@ -693,8 +694,8 @@ class Formatter():
             self.metadata = self._update_metadata_tree_with_schema2(interpreted_schema, **kwargs)
 
         else:
-            for extractor_cache in self._cache:
-                for cache_entry in extractor_cache:
+            for parser_cache in self._cache:
+                for cache_entry in parser_cache:
                     cache_entry.load_metadata()
                     _update_dict_with_parts(
                         self.metadata,
@@ -710,7 +711,7 @@ def _combine(parser1: Formatter,
     """
     Function used to combine two different parsers.
     Combination is never done in-place.
-    Needs an englobing schema that will take into account the combination of extractors.
+    Needs an englobing schema that will take into account the combination of parsers.
     """
     ll = False
     if parser1.lazy_load != parser2.lazy_load:
@@ -719,8 +720,8 @@ def _combine(parser1: Formatter,
     else:
         ll = parser1.lazy_load
     combined_parser = Formatter(schema=schema,
-                             extractors=parser1.extractors +
-                             parser2.extractors,
+                             parsers=parser1.parsers +
+                             parser2.parsers,
                              lazy_load=ll)
 
     if len(parser1.metadata) > 0 or len(parser2.metadata) > 0:

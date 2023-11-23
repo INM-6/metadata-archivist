@@ -12,9 +12,8 @@ Authors: Jose V., Matthias K.
 """
 
 from pathlib import Path
-from re import fullmatch
 from copy import deepcopy
-from json import dump, load, dumps
+from json import dump, load
 from typing import Optional, List, NoReturn, Union
 
 from .Logger import LOG

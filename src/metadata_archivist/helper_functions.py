@@ -9,9 +9,7 @@ Authors: Jose V., Matthias K.
 """
 
 from json import dumps
-from pathlib import Path
 from re import fullmatch
-from re import match, fullmatch
 from collections.abc import Iterable
 from typing import Optional, Union, Any
 

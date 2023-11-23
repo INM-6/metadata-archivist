@@ -10,7 +10,6 @@ Authors: Jose V., Matthias K.
 import zipfile
 import tarfile
 
-from re import fullmatch
 from pathlib import Path
 from collections.abc import Callable
 from typing import Optional, List, Tuple, NoReturn, Union

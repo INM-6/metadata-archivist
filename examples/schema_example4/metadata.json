@@ -1,11 +1,7 @@
 {
-    "metadata_archive": {
-        "program_execution": {
-            "real_time_factor": 0.02596,
-            "model": {
-                "scale": 10
-            },
-            "virtual_processes": 16
-        }
-    }
+    "real_time_factor": 0.02596,
+    "model": {
+        "scale": 10
+    },
+    "virtual_processes": 16
 }

@@ -9,7 +9,9 @@ def time_parser_sec(string):
     milis = int(second_split[1][:-1])
     return (minutes + seconds + milis) / 1000
 
-def key_val_split(string, split_char, functor):
+def key_val_split(string, split_char, functor=None):
+    if functor is None:
+        functor = lambda x: x
     string = string.strip()
     out = string.split(split_char)
     return {out[0].strip(): functor(out[1].strip())}
@@ -103,72 +105,63 @@ my_schema = {
     'description': 'my example schema',
     'type': 'object',
     'properties': {
-        'metadata_archive': {
-            'type': 'object',
-            'properties': {
-                'program_execution': {
-                    'type': 'object',
-                    'properties': {
-                        'real_time_factor': {
-                            'type': 'number',
-                            'description': 'ratio of wall clock time to simulation time',
-                            '!calculate': {
-                                'expression': '{val1} / {val2}',
-                                'variables': {
-                                    'val1': {
-                                        '!parsing': {
-                                            'keys': ['real'],
-                                            'unpack': 1
-                                        },
-                                        '$ref': '#/$defs/time_parser'
-                                    },
-                                    'val2': {
-                                        '!parsing': {
-                                            'keys': ['parameters/sim_time'],
-                                            'unpack': 2
-                                        },
-                                        '$ref': '#/$defs/yml_parser'
-                                    }
-                                }
-                            }
+        'real_time_factor': {
+            'type': 'number',
+            'description': 'ratio of wall clock time to simulation time',
+            '!calculate': {
+                'expression': '{val1} / {val2}',
+                'variables': {
+                    'val1': {
+                        '!parsing': {
+                            'keys': ['real'],
+                            'unpack': 1
                         },
-                        'model': {
-                            '!parsing': {
-                                'keys': ['parameters/scale'],
-                                'unpack': 1
-                            },
-                            '$ref': '#/$defs/yml_parser'
+                        '$ref': '#/$defs/time_parser'
+                    },
+                    'val2': {
+                        '!parsing': {
+                            'keys': ['parameters/sim_time'],
+                            'unpack': 2
                         },
-                        'virtual_processes': {
-                            'type': 'number',
-                            'description': 'total number of digital processing units i.e. #MPI * #threads',
-                            '!calculate': {
-                                'expression': '{val1} * {val2}',
-                                'variables': {
-                                    'val1': {
-                                        '!parsing': {
-                                            'keys': ['parameters/num_procs'],
-                                            'unpack': True
-                                        },
-                                        '$ref': '#/$defs/yml_parser'
-                                    },
-                                    'val2': {
-                                        '!parsing': {
-                                            'keys': ['parameters/threads_per_proc'],
-                                            'unpack': True
-                                        },
-                                        '$ref': '#/$defs/yml_parser'
-                                    }
-                                }
-                            }
-                        }
+                        '$ref': '#/$defs/yml_parser'
                     }
-                },
-            },
+                }
+            }
         },
+        'model': {
+            '!parsing': {
+                'keys': ['parameters/scale'],
+                'unpack': 1
+            },
+            '$ref': '#/$defs/yml_parser'
+        },
+        'virtual_processes': {
+            'type': 'number',
+            'description': 'total number of digital processing units i.e. #MPI * #threads',
+            '!calculate': {
+                'expression': '{val1} * {val2}',
+                'variables': {
+                    'val1': {
+                        '!parsing': {
+                            'keys': ['parameters/num_procs'],
+                            'unpack': True
+                        },
+                        '$ref': '#/$defs/yml_parser'
+                    },
+                    'val2': {
+                        '!parsing': {
+                            'keys': ['parameters/threads_per_proc'],
+                            'unpack': True
+                        },
+                        '$ref': '#/$defs/yml_parser'
+                    }
+                }
+            }
+        }
     }
 }
 
 my_parser = Formatter(parsers=[time_parser(),
                                yml_parser()],
-                   schema=my_schema)
+                   schema=my_schema,
+                   lazy_load=True)

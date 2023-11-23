@@ -149,7 +149,7 @@ def _pattern_parts_match(pattern_parts: list, actual_parts: list, context: Optio
                 break
         
         # Match against varname
-        elif fullmatch('.*{[a-zA-Z0-9_]+}.*', part) and context is not None:
+        elif fullmatch('.*\{[a-zA-Z0-9_]+\}.*', part) and context is not None:
             # !varname should always be in context in this case
             if "!varname" not in context:
                 # TODO: should we instead raise an error?

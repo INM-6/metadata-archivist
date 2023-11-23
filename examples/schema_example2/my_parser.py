@@ -144,7 +144,7 @@ my_schema = {
                     'description': 'some description',
                     "properties": {
                         "basin_information": {
-                            "!extractor": {
+                            "!parsing": {
                                 'path': '*/{basin}/basin.yml',
                                 'keys': ['river', 'size']
                             },
@@ -157,7 +157,7 @@ my_schema = {
                     "type": "object",
                     "properties": {
                         "station_information": {
-                            "!extractor": {
+                            "!parsing": {
                                 'path': '*/{station}/station.yml',
                                 'keys': ['river', 'mean_disch']
                             },

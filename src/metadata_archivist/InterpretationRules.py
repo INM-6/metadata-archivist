@@ -33,8 +33,8 @@ def _process_pattern_property(interpreter, prop_val: dict, prop_key: str, parent
 
     return interpreter._interpret_schema(prop_val, parent_key, entry)
 
-def _process_parser_directive(interpreter: SchemaInterpreter, prop_val: Union[str, dict], prop_key: str, parent_key: str, entry: SchemaEntry) -> SchemaEntry:
-    # We create an !extractor context but keep on with current recursion level
+def _process_parsing_directive(interpreter: SchemaInterpreter, prop_val: Union[str, dict], prop_key: str, parent_key: str, entry: SchemaEntry) -> SchemaEntry:
+    # We create an !parsing context but keep on with current recursion level
     # Contents of this dictionary are not supposed to be handled by the interpreter.
     entry.context.update({prop_key: prop_val})
 
@@ -85,7 +85,7 @@ def _process_refs(definitions: dict, prop_val: str, entry: SchemaEntry) -> Schem
     
     # Add identified Parser to context
     LOG.debug(f"processing reference to: {pid}")
-    entry["$extractor_id"] = pid
+    entry["$parser_id"] = pid
 
     # Further process reference e.g. filters, internal property references -> links
     sub_schema = definitions[pid]["properties"]
@@ -99,7 +99,7 @@ _INTERPRETATION_RULES = {
     "unevaluatedProperties": _process_simple_property,
     "additionalProperties": _process_simple_property,
     "patternProperties": _process_pattern_property,
-    "!extractor": _process_parser_directive,
+    "!parsing": _process_parsing_directive,
     "$ref": _process_reference,
     "!varname": _process_varname,
 }

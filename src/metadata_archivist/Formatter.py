@@ -508,7 +508,7 @@ class Formatter():
         Recursively generate metadata file using interpreted_schema obtained with SchemaInterpreter.
         Designed to mimic structure of interpreted_schema where each SchemaEntry is a branching node in the metadata
         and whenever an parsing context is found the branch terminates.
-        Handles additional context like parsing directives (!extractor) and directory directives (!varname).
+        Handles additional context like parsing directives (!parsing) and directory directives (!varname).
 
         While recursing over the tree branches, the branch path i.e. all the parent nodes are tracked in order
         to use patternProperties without path directives.
@@ -572,7 +572,7 @@ class Formatter():
                 branch.pop()
 
             # If entry corresponds to an parser reference
-            elif key == "$extractor_id" and isinstance(value, str):
+            elif key == "$parser_id" and isinstance(value, str):
 
                 # Currently only one parser reference per entry is allowed
                 # and if a reference exists it must be the only content in the entry
@@ -611,7 +611,7 @@ class Formatter():
                             continue
 
                     # If path information is present in parser directives match file path to given regex path
-                    if "!extractor" in context and "path" in context["!extractor"]:
+                    if "!parsing" in context and "path" in context["!parsing"]:
 
                         # Parsed metadata should be structured in a dictionary
                         # where keys are filenames and values are metadata
@@ -623,7 +623,7 @@ class Formatter():
 
                         # In this case the name of the file should be taken into account in the context path
                         file_path_parts = list(reversed(cache_entry.rel_path.parts))
-                        regex_path = context["!extractor"]["path"].split("/")
+                        regex_path = context["!parsing"]["path"].split("/")
                         regex_path.reverse()
                                     
                         # If the match is negative then we skip the current cache entry
@@ -639,9 +639,9 @@ class Formatter():
                     metadata = cache_entry.load_metadata()
                     
                     # Compute additional directives if given
-                    if "!extractor" in context and "keys" in context["!extractor"]:
+                    if "!parsing" in context and "keys" in context["!parsing"]:
                         metadata = parser.filter_metadata(
-                            metadata, context["!extractor"]["keys"],
+                            metadata, context["!parsing"]["keys"],
                             **kwargs)
 
                     # Update parsed metadata

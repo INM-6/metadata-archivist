@@ -106,7 +106,7 @@ class SchemaInterpreter:
         If the dictionary is a simple property then recursion is called on its contents
         without creating a new branch.
         If the dictionary is a special property then: either it is a composite directive
-        e.g. !extractor in which case context is added then the current recursion will
+        e.g. !parsing in which case context is added then the current recursion will
         continue until arriving at a leaf (str) and leaf processing is in charge of using
         the enriched entry. Otherwise, the property indicates a new recursion with additional
         context e.g. patternProperties indicate a new recursion with regular expression file

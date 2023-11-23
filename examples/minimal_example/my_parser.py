@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 
-Parser and Extractor instances examples.
+Formatter and Parsers instances examples.
 Authors: Matthias K., Jose V.
 
 """
@@ -17,10 +17,10 @@ def key_val_split(string, split_char):
     return {out[0].strip(): out[1].strip()}
 
 
-class time_extractor(AParser):
+class time_parser(AParser):
 
     def __init__(self) -> None:
-        super().__init__(name='time_extractor', input_file_pattern='time\.txt', schema={})
+        super().__init__(name='time_parser', input_file_pattern='time\.txt', schema={})
 
     def parse(self, file_path) -> dict:
         out = {}
@@ -31,10 +31,10 @@ class time_extractor(AParser):
         return out
 
 
-class yml_extractor(AParser):
+class yml_parser(AParser):
 
     def __init__(self) -> None:
-        super().__init__(name='yml_extractor', input_file_pattern='.*\.yml', schema={})
+        super().__init__(name='yml_parser', input_file_pattern='.*\.yml', schema={})
 
     def parse(self, file_path) -> dict:
         out = {}
@@ -43,4 +43,4 @@ class yml_extractor(AParser):
         return out
 
 
-my_parser = Formatter(parsers=[time_extractor(), yml_extractor()], lazy_load=True)
+my_parser = Formatter(parsers=[time_parser(), yml_parser()], lazy_load=True)

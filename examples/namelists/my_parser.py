@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 
-Parser and Extractor instances examples.
+Formatter and Parsers instances examples.
 Authors: Matthias K., Jose V.
 
 """
@@ -13,20 +13,20 @@ import f90nml
 NML_SCHEMA = {}
 
 
-class nml_extractor(AParser):
+class nml_parser(AParser):
 
     def __init__(self):
-        super().__init__(name='nml_extractor', input_file_pattern='.*\.nml', schema=NML_SCHEMA)
+        super().__init__(name='nml_parser', input_file_pattern='.*\.nml', schema=NML_SCHEMA)
 
     def parse(self, f):
         nml = f90nml.read(f)
         return nml.todict()
 
 
-my_parser = Formatter(parsers=[nml_extractor()])
+my_parser = Formatter(parsers=[nml_parser()])
 
-# xx = nml_extractor()
+# xx = nml_parser()
 
 # with open('metadata_archive/mhm.nml') as ff:
-#     yy = xx.extract(ff)
+#     yy = xx.parser(ff)
 # print(yy)

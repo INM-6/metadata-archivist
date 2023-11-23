@@ -55,7 +55,7 @@ DEFAULT_PARSER_SCHEMA = {
 }
 
 
-class Parser():
+class Formatter():
     """Parser
     A Parser creates a metadata object (dict) that
     is further described by a json schema.
@@ -704,9 +704,9 @@ class Parser():
         return self.metadata
 
 
-def _combine(parser1: Parser,
-             parser2: Parser,
-             schema: Optional[dict] = None) -> Parser:
+def _combine(parser1: Formatter,
+             parser2: Formatter,
+             schema: Optional[dict] = None) -> Formatter:
     """
     Function used to combine two different parsers.
     Combination is never done in-place.
@@ -718,7 +718,7 @@ def _combine(parser1: Parser,
             f"Lazy load configuration mismatch. Setting to default: {ll}")
     else:
         ll = parser1.lazy_load
-    combined_parser = Parser(schema=schema,
+    combined_parser = Formatter(schema=schema,
                              extractors=parser1.extractors +
                              parser2.extractors,
                              lazy_load=ll)
@@ -730,4 +730,4 @@ def _combine(parser1: Parser,
     return combined_parser
 
 
-Parser.combine = _combine
+Formatter.combine = _combine

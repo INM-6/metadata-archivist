@@ -7,7 +7,7 @@ Authors: Matthias K., Jose V.
 
 """
 
-from metadata_archivist import AExtractor, Parser
+from metadata_archivist import AExtractor, Formatter
 import f90nml
 
 NML_SCHEMA = {}
@@ -23,7 +23,7 @@ class nml_extractor(AExtractor):
         return nml.todict()
 
 
-my_parser = Parser(extractors=[nml_extractor()])
+my_parser = Formatter(extractors=[nml_extractor()])
 
 # xx = nml_extractor()
 

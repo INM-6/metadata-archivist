@@ -1,4 +1,4 @@
-from metadata_archivist import AExtractor, Parser
+from metadata_archivist import AExtractor, Formatter
 import yaml
 
 
@@ -171,7 +171,7 @@ my_schema = {
     }
 }
 
-my_parser = Parser(extractors=[
+my_parser = Formatter(extractors=[
     time_extractor(),
     yml_extractor(),
     station_character_extractor(),

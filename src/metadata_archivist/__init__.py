@@ -7,7 +7,7 @@ Authors: Matthias K., Jose V.
 
 """
 
-from .Parser import Parser
+from .Formatter import Formatter
 from .Extractor import AExtractor
 from .Explorer import Explorer
 from .Exporter import Exporter

@@ -7,7 +7,7 @@ Authors: Matthias K., Jose V.
 
 """
 
-from metadata_archivist import AExtractor, Parser
+from metadata_archivist import AExtractor, Formatter
 import yaml
 
 
@@ -43,4 +43,4 @@ class yml_extractor(AExtractor):
         return out
 
 
-my_parser = Parser(extractors=[time_extractor(), yml_extractor()], lazy_load=True)
+my_parser = Formatter(extractors=[time_extractor(), yml_extractor()], lazy_load=True)

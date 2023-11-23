@@ -7,7 +7,7 @@ Authors: Matthias K., Jose V.
 
 """
 
-from metadata_archivist import AExtractor, Parser
+from metadata_archivist import AExtractor, Formatter
 
 NCDUMP_HS_SCHEMA = {}
 
@@ -116,4 +116,4 @@ class ncdump_hs_extractor(AExtractor):
         return out
 
 
-my_parser = Parser(extractors=[ncdump_hs_extractor()])
+my_parser = Formatter(extractors=[ncdump_hs_extractor()])

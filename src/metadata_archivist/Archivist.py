@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Union
 from shutil import rmtree
 
-from .Parser import Parser
+from .Formatter import Formatter
 from .Exporter import Exporter
 from .Explorer import Explorer
 from .Logger import LOG, set_verbose, set_debug
@@ -22,7 +22,7 @@ class Archivist():
     Convenience class for orchestrating the Decompressor, Parser and Exporter.
     """
 
-    def __init__(self, path: Union[str, Path], parser: Parser, **kwargs) -> None:
+    def __init__(self, path: Union[str, Path], parser: Formatter, **kwargs) -> None:
         """
         Initialization method of Archivist class.
 

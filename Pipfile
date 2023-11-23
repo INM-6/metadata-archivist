@@ -8,6 +8,7 @@ pipenv = "*"
 jsonschema = "*"
 metadata-archivist = {file = ".", editable = true}
 pyyaml = "*"
+f90nml = "*"
 
 [dev-packages]
 

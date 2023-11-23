@@ -97,10 +97,25 @@ def _format_parser_id_rule(formatter: Formatter, interpreted_schema: SchemaEntry
         metadata = cache_entry.load_metadata()
         
         # Compute additional directives if given
-        if "!parsing" in context and "keys" in context["!parsing"]:
-            metadata = parser.filter_metadata(
-                metadata, context["!parsing"]["keys"],
-                **kwargs)
+        if "!parsing" in context:
+            if "keys" in context["!parsing"]:
+                metadata = parser.filter_metadata(
+                    metadata, context["!parsing"]["keys"],
+                    **kwargs)
+            # Unpacking should only be done for singular nested values i.e. only one key per nesting level
+            if "unpack" in context["!parsing"]:
+                if isinstance(context["!parsing"]["unpack"], bool):
+                    if not context["!parsing"]["unpack"]:
+                        # TODO: should we raise error instead?
+                        LOG.warning(f"Incorrect unpacking configuration in !parsing context: unpack={False}")
+                    else:
+                        metadata = _unpack_singular_nested_value(metadata)
+                elif isinstance(context["!parsing"]["unpack"], int):
+                    if context["!parsing"]["unpack"] == 0:
+                        # TODO: should we raise error instead?
+                        LOG.warning(f"Incorrect unpacking configuration in !parsing context: unpack={0}")
+                    else:
+                        metadata = _unpack_singular_nested_value(metadata, context["!parsing"]["unpack"])
 
         # Update parsed metadata
         # When in a regex context then resulting parsed metadata is a dict
@@ -146,9 +161,7 @@ def _format_calculate_rule(formatter: Formatter, interpreted_schema: SchemaEntry
         if not len(entry.items()) == 1:
             raise ValueError(f"Incorrect variable entry found while formatting calculation: {entry}")
         
-        parsed_value = _format_parser_id_rule(formatter, entry, branch, entry["!parser_id"], **kwargs)
-
-        parsing_values[variable] = _unpack_singular_nested_value(parsed_value)
+        parsing_values[variable] = _format_parser_id_rule(formatter, entry, branch, entry["!parser_id"], **kwargs)
 
     formatted_expression = expression.format(**parsing_values)
 

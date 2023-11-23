@@ -3,9 +3,7 @@
         "program_execution": {
             "real_time_factor": 0.02596,
             "model": {
-                "parameters": {
-                    "scale": 10
-                }
+                "scale": 10
             },
             "virtual_processes": 16
         }

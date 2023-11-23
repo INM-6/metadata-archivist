@@ -117,13 +117,15 @@ my_schema = {
                                 'variables': {
                                     'val1': {
                                         '!parsing': {
-                                            'keys': ['real']
+                                            'keys': ['real'],
+                                            'unpack': 1
                                         },
                                         '$ref': '#/$defs/time_parser'
                                     },
                                     'val2': {
                                         '!parsing': {
-                                            'keys': ['parameters/sim_time']
+                                            'keys': ['parameters/sim_time'],
+                                            'unpack': 2
                                         },
                                         '$ref': '#/$defs/yml_parser'
                                     }
@@ -132,7 +134,8 @@ my_schema = {
                         },
                         'model': {
                             '!parsing': {
-                                'keys': ['parameters/scale']
+                                'keys': ['parameters/scale'],
+                                'unpack': 1
                             },
                             '$ref': '#/$defs/yml_parser'
                         },
@@ -144,13 +147,15 @@ my_schema = {
                                 'variables': {
                                     'val1': {
                                         '!parsing': {
-                                            'keys': ['parameters/num_procs']
+                                            'keys': ['parameters/num_procs'],
+                                            'unpack': True
                                         },
                                         '$ref': '#/$defs/yml_parser'
                                     },
                                     'val2': {
                                         '!parsing': {
-                                            'keys': ['parameters/threads_per_proc']
+                                            'keys': ['parameters/threads_per_proc'],
+                                            'unpack': True
                                         },
                                         '$ref': '#/$defs/yml_parser'
                                     }

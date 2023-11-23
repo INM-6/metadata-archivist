@@ -35,23 +35,12 @@ class Archivist():
         self.config = {}
         self._init_config(**kwargs)
 
-        # Set explorer
-        self.explorer = Explorer(path, self.config)
-
-        # Set parser
-        self.parser = parser
-
         # Check and get paths for internal handling
         self._dc_dir_path = self._check_dir(
             self.config["extraction_directory"], allow_existing=False)
         self._out_dir_path = self._check_dir(self.config["output_directory"],
                                              allow_existing=True)
 
-        # Set exporter
-        # TODO: use output format for better handling?
-        f_format = self.config["output_file"][self.config["output_file"].
-                                              find(".") + 1:]
-        self.exporter = Exporter(f_format)
         self.metadata_output_file = self._out_dir_path / Path(
             self.config["output_file"])
         if self.metadata_output_file.exists():
@@ -71,6 +60,20 @@ class Archivist():
 
         # Operational memory
         self._cache = {}
+
+        # Set explorer
+        self.explorer = Explorer(path, self.config)
+        self._cache["decompression"] = self.explorer.path_is_archive
+
+        # Set parser
+        self.parser = parser
+
+        # Set exporter
+        # TODO: use output format for better handling?
+        f_format = self.config["output_file"][self.config["output_file"].
+                                              find(".") + 1:]
+        self.exporter = Exporter(f_format)
+
 
     def _init_config(self, **kwargs) -> None:
         """
@@ -219,39 +222,25 @@ class Archivist():
     def _clean_up(self) -> None:
         """Cleanup method automatically called after metadata parsing (or compilation if lazy_loading)"""
         if self.config["auto_cleanup"]:
-            LOG.info("Cleaning extraction directory...")
-            #errors = []
-            #files = self._cache["decompressed_files"] + self._cache[
-            #    "meta_files"]
-            dirs = self._cache["decompressed_dirs"]
-            if str(self._dc_dir_path) != '.':
-                dirs.insert(0, self._dc_dir_path)
+            if self._cache["decompression"]:
+                dirs = self._cache["decompressed_dirs"]
+                if str(self._dc_dir_path) != '.':
+                    dirs.insert(0, self._dc_dir_path)
+                LOG.info(f"Cleaning extraction directory: {str(dirs[0])}")
+                try:
+                    rmtree(dirs[0])
+                except Exception as e:
+                        LOG.warning(
+                            f"error cleaning {str(dirs[0])}: {e.message if hasattr(e, 'message') else str(e)}")
 
-            rmtree(dirs[0])
-
-            #LOG.info(f"    cleaning files:")
-            #for f in files:
-            #    LOG.info(f"        {str(f)}")
-            #    try:
-            #        f.unlink()
-            #    except Exception as e:
-            #        errors.append(
-            #            (str(f),
-            #             e.message if hasattr(e, "message") else str(e)))
-
-            #LOG.info(f"    cleaning directories:")
-            #for d in dirs:
-            #    LOG.info(f"        {str(d)}")
-            #    try:
-            #        d.rmdir()
-            #    except Exception as e:
-            #        errors.append(
-            #            (str(d),
-            #             e.message if hasattr(e, "message") else str(e)))
-
-            #if len(errors) > 0:
-            #    for e in errors:
-            #        LOG.warning(
-            #            f"    error cleaning:\n        {e[0]} -- {e[1]}")
+            elif len(self._cache["meta_files"]) > 0:
+                for fp in self._cache["meta_files"]:
+                    LOG.info(f"Cleaning meta file: {str(fp)}")
+                    try:
+                        fp.unlink()
+                    except Exception as e:
+                        LOG.warning(f"error cleaning {str(fp)}: {e.message if hasattr(e, 'message') else str(e)}")
+            else:
+                return
 
             LOG.info("Done!")

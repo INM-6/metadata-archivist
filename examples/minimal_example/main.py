@@ -22,7 +22,7 @@ if __name__ == "__main__":
     with config_path.open("r") as f:
         config = load(f)
 
-    arch = Archivist(archive_path=Path('metadata_archive.tar'),
+    arch = Archivist(path=Path('metadata_archive.tar'),
                     parser=my_parser,
                     **config)
 

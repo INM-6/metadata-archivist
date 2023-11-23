@@ -13,7 +13,7 @@ from shutil import rmtree
 
 from .Parser import Parser
 from .Exporter import Exporter
-from .Decompressor import Decompressor
+from .Explorer import Explorer
 from .Logger import LOG, set_verbose, set_debug
 
 
@@ -22,7 +22,7 @@ class Archivist():
     Convenience class for orchestrating the Decompressor, Parser and Exporter.
     """
 
-    def __init__(self, archive_path: Union[str, Path], parser: Parser, **kwargs) -> None:
+    def __init__(self, path: Union[str, Path], parser: Parser, **kwargs) -> None:
         """
         Initialization method of Archivist class.
 
@@ -35,8 +35,8 @@ class Archivist():
         self.config = {}
         self._init_config(**kwargs)
 
-        # Set decompressor
-        self.decompressor = Decompressor(archive_path, self.config)
+        # Set explorer
+        self.explorer = Explorer(path, self.config)
 
         # Set parser
         self.parser = parser
@@ -167,7 +167,7 @@ class Archivist():
         LOG.info("Unpacking archive...")
         LOG.debug(f'    using patterns: {self.parser.input_file_patterns}')
 
-        decompress_path, decompressed_dirs, decompressed_files = self.decompressor.decompress(
+        decompress_path, decompressed_dirs, decompressed_files = self.explorer.explore(
             self.parser.input_file_patterns)
 
         LOG.info(f'''Done!\nparsing files ...''')

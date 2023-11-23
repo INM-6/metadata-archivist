@@ -1,10 +1,5 @@
 {
     "extraction_directory": "tmp",
     "output_directory": "./",
-    "output_format": "JSON",
-    "metdata":"PATH",
-    "parsing_rules": {
-        "mode": "standard",
-        "module": "./custom_parse.py"
-    }
+    "output_file": "metadata.json"
 }

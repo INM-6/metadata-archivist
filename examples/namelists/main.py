@@ -7,7 +7,7 @@ Authors: Matthias K., Jose V.
 
 """
 
-from json import load
+from json import load, dumps
 from pathlib import Path
 
 from my_parser import my_parser
@@ -22,9 +22,15 @@ if __name__ == "__main__":
     with config_path.open("r") as f:
         config = load(f)
 
-    arch = Archivist(archive_path=Path('metadata_archive.tar'),
+    arch = Archivist(path=Path('metadata_archive.tar'),
                     parser=my_parser,
                     **config)
 
     arch.extract()
     arch.export()
+
+    print("\nResulting schema:")
+    print(dumps(my_parser.schema, indent=4))
+
+    print("\nResulting metadata:")
+    print(dumps(arch.get_metadata(), indent=4))

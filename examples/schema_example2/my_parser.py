@@ -13,7 +13,7 @@ class time_extractor(AExtractor):
     def __init__(self) -> None:
         super().__init__(
             name='time_extractor',
-            input_file_pattern='time.txt',
+            input_file_pattern='time\.txt',
             schema={
                 'type': 'object',
                 'properties': {
@@ -50,7 +50,7 @@ class yml_extractor(AExtractor):
 
     def __init__(self) -> None:
         super().__init__(name='yml_extractor',
-                         input_file_pattern='config.yml',
+                         input_file_pattern='config\.yml',
                          schema={})
 
     def extract(self, file_path):
@@ -66,7 +66,7 @@ class basin_character_extractor(AExtractor):
 
     def __init__(self) -> None:
         super().__init__(name='basin_character_extractor',
-                         input_file_pattern='basin.yml',
+                         input_file_pattern='basin\.yml',
                          schema={'type': 'object',
                                 'properties': {
                                     'river': {
@@ -101,7 +101,7 @@ class station_character_extractor(AExtractor):
 
     def __init__(self) -> None:
         super().__init__(name='station_character_extractor',
-                         input_file_pattern='station.yml',
+                         input_file_pattern='station\.yml',
                          schema={'type': 'object',
                                 'properties': {
                                     'river': {

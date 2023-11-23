@@ -9,6 +9,6 @@ Authors: Matthias K., Jose V.
 
 from .Parser import Parser
 from .Extractor import AExtractor
-from .Decompressor import Decompressor
+from .Explorer import Explorer
 from .Exporter import Exporter
 from .Archivist import Archivist

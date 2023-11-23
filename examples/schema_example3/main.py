@@ -11,7 +11,7 @@ tmpdir = Path('tmp')
 if tmpdir.exists():
     shutil.rmtree(tmpdir)
 
-arch = Archivist(archive_path=Path('metadata_archive.tar'),
+arch = Archivist(path=Path('metadata_archive.tar'),
                  extraction_directory='tmp',
                  parser=my_parser,
                  output_directory="./",

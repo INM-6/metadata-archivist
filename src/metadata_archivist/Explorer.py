@@ -18,7 +18,7 @@ from typing import Optional, List, Tuple, NoReturn, Union
 from .Logger import LOG
 from .helper_functions import _pattern_parts_match
 
-class Decompressor():
+class Explorer():
     """
     Class containing all methods around processing compressed archives
 
@@ -28,48 +28,49 @@ class Decompressor():
     """
 
     def __init__(self,
-                 archive_path: Path,
+                 path: Path,
                  config: dict) -> None:
-        
-        # Protected
-        self._archive_path, self._decompress = self._check_archive(archive_path)
-
         # Public
+        self.path = path
         self.config = config
 
     @property
-    def archive_path(self) -> Path:
+    def path(self) -> Path:
         """Returns path to archive (Path)."""
-        return self._archive_path
+        return self._path
 
-    @archive_path.setter
-    def archive_path(self, archive_path: Union[str, Path]) -> None:
+    @path.setter
+    def path(self, file_path: Union[str, Path]) -> None:
         """Sets new archive path after checking."""
-        self._archive_path, self._decompress = self._check_archive(archive_path)
+
+        if isinstance(file_path, str):
+            file_path = Path(file_path)
+        elif not isinstance(file_path, Path):
+            raise TypeError(f"Incorrect type format for file path: {file_path!r}")
+        
+        if file_path.is_dir():
+            self._path, self._explore = file_path, self._dir_explore
+        else:
+            self._path, self._explore = self._check_archive(file_path)
 
     @property
-    def decompress(self) -> Callable:
+    def explore(self) -> Callable:
         """Returns appropriate decompress function wrt. archive format."""
-        return self._decompress
+        return self._explore
     
-    @decompress.setter
-    def decompress(self, _) -> NoReturn:
+    @explore.setter
+    def explore(self, _) -> NoReturn:
         """
         Forbidden setter for decompress attribute.
         (pythonic indirection for protected attributes)
         """
         raise AttributeError("decompress method can only be set through archive path checking")
 
-    def _check_archive(self, file_path: Union[str, Path]) -> Tuple[Path, Callable]:
+    def _check_archive(self, file_path: Path) -> Tuple[Path, Callable]:
         """
         Internal method to check archive format.
         If archive is in correct format then path to archive and decompression method are returned.
         """
-
-        if isinstance(file_path, str):
-            file_path = Path(file_path)
-        elif not isinstance(file_path, Path):
-            raise TypeError(f"Incorrect type format for file path: {file_path!r}")
 
         if not file_path.is_file():
             raise FileNotFoundError(f"Incorrect path to file: {file_path}")
@@ -96,7 +97,7 @@ class Decompressor():
         Args:
         """
         if archive_path is None:
-            archive_path = self._archive_path
+            archive_path = self._path
         if extraction_path is None:
             extraction_path = Path(self.config["extraction_directory"])
         LOG.info(f"Decompression of archive: {archive_path.name}")
@@ -134,3 +135,6 @@ class Decompressor():
 
         # Returned paths are used for parsing and automatic clean-up.
         return decompress_path, decompressed_dirs, decompressed_files
+
+    def _dir_explore(self):
+        return

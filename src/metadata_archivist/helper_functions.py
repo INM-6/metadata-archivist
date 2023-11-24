@@ -133,7 +133,7 @@ def _pattern_parts_match(pattern_parts: list, actual_parts: list, context: Optio
     # We match through looping over the regex path in reverse order
     for i, part in enumerate(pattern_parts):
         # Match against varname
-        if fullmatch(r'\{(\w_?-?)+\}', part) and context is not None:
+        if fullmatch(r'\{\w+\}', part) and context is not None:
             # !varname should always be in context in this case
             if "!varname" not in context:
                 # TODO: should we instead raise an error?
@@ -183,3 +183,74 @@ def _unpack_singular_nested_value(iterable: Any, level: Optional[int] = None) ->
             return _unpack_singular_nested_value(next(iter(iterable.values())), level)
         else:
             return _unpack_singular_nested_value(next(iter(iterable)), level)
+
+def _math_check(expression: str):
+    """
+    Stack machine for checking basic math expressions.
+    """
+    parenthesis = 0
+    operand = False
+    variables = set()
+    variable = False
+    number = False
+    trace = ""
+    for s in expression:
+        if s == "(":
+            if variable or number:
+                return False, None
+            else:
+                parenthesis += 1
+                operand = False
+        elif s == ")":
+            if variable or operand:
+                return False, None
+            elif number:
+                if not fullmatch(r'\d+.?\d*', trace):
+                    return False, None
+                else:
+                    trace = ""
+                    number = False
+            # Anyway
+            parenthesis -= 1
+        elif s == "{":
+            if variable or number:
+                return False, None
+            else:
+                variable = True
+                operand = False
+        elif s == "}":
+            if not variable or number or operand:
+                return False, None
+            else:
+                if not fullmatch(r'\w+', trace):
+                    return False, None
+                else:
+                    variables.add(trace)
+                    trace = ""
+                    variable = False
+        elif s == ".":
+            if not number or variable or operand:
+                return False, None
+            else:
+                trace += s
+        elif fullmatch(r"[+\-*/%]", s):
+            if variable or number or operand:
+                return False, None
+            else:
+                operand = True
+        elif fullmatch(r"\w", s):
+            if variable:
+                trace += s
+            elif fullmatch(r"\d", s):
+                number = True
+                trace += s
+                operand = False
+            else:
+                return False, None
+        else:
+            return False, None
+
+    if parenthesis != 0 or trace != "":
+        return False, None
+    else:
+        return True, variables

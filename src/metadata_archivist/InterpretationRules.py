@@ -11,11 +11,12 @@ Authors: Jose V., Matthias K.
 
 """
 
+from re import sub
 from copy import deepcopy
-from re import findall, fullmatch
 from typing import Optional, Union
 
 from .Logger import LOG
+from .helper_functions import _math_check
 from .SchemaInterpreter import SchemaInterpreter, SchemaEntry
 
 """
@@ -105,20 +106,18 @@ def _interpret_calculate_directive_rule(interpreter: SchemaInterpreter, prop_val
     expression = prop_val["expression"]
     if not isinstance(prop_val["expression"], str):
         raise TypeError(f"Incorrect expression type in !calculate directive: expression={expression}")
-    
-    expression_pattern = r'(\{\w+\} ?[+/*%]? ?)+'
-    var_pattern = r'\{(\w+)\}'
 
-    if not fullmatch(expression_pattern, expression):
-        raise ValueError(f"Incorrect expression in !calculate directive: expression={expression}")
+    cleaned_expr = sub(r"\s", "", expression)
+    correct, variable_names = _math_check(cleaned_expr)
+    if not correct:
+        raise ValueError(f"Incorrect expression in !calculate directive: expression={cleaned_expr}")
     
     variables = prop_val["variables"]
     if not isinstance(variables, dict):
         raise TypeError(f"Incorrect variables type in !calculate directive: variables={variables}")
     
-    variable_names = findall(var_pattern, expression)
     if len(variable_names) != len(variables):
-        raise RuntimeError(f"Variables count mismatch in !calculate directive: expression={expression}, variables={variables}")
+        raise RuntimeError(f"Variables count mismatch in !calculate directive: expression={expression}, variables={variables}, names={variable_names}")
     
     # At this point we check if each variable entry corresponds to a reference to a parser
     variable_entries = {}
@@ -144,7 +143,7 @@ def _interpret_calculate_directive_rule(interpreter: SchemaInterpreter, prop_val
         variable_entries[variable] = new_entry
 
     entry[prop_key] = {
-        "expression": expression,
+        "expression": cleaned_expr,
         "variables": variable_entries
     }
 

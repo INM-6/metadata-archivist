@@ -187,70 +187,109 @@ def _unpack_singular_nested_value(iterable: Any, level: Optional[int] = None) ->
 def _math_check(expression: str):
     """
     Stack machine for checking basic math expressions.
+    transition rules:
+        start -> variable
+        start -> number
+        start => par_count += 1
+        blank -> end
+        blank -> IF new_var THEN new_var = False & -> operand
+        blank -> IF new_var THEN new_var = False & par_count -= 1
+        variable -> variable
+        variable => new_var = True & -> blank
+        number -> number
+        number => new_var = True & -> operand
+        number => new_var = True & par_count -= 1 & -> blank
+        number => new_var = True & -> end
+        operand -> variable
+        operand -> number
+        operand => par_count += 1
+    
+    Return True if par_count is 0 and state is blank and no malformed traces exists and number of variables found is above 0.
     """
-    parenthesis = 0
-    operand = False
+    state = -1 # -1: start, 0: blank|stop, 1: read operand, 2: compiling variable, 3: compiling number
+    par_count = 0
     variables = set()
-    variable = False
-    number = False
+    new_vals = True
     trace = ""
     for s in expression:
         if s == "(":
-            if variable or number:
-                return False, None
+            if state == -1 or state == 1: # start => par_count += 1 || operand => par_count += 1
+                par_count += 1
             else:
-                parenthesis += 1
-                operand = False
+                return False, None
         elif s == ")":
-            if variable or operand:
-                return False, None
-            elif number:
-                if not fullmatch(r'\d+.?\d*', trace):
-                    return False, None
-                else:
+            if state == 3: # number => new_var = True & par_count -= 1 & -> blank
+                if fullmatch(r'\d+.?\d*', trace):
                     trace = ""
-                    number = False
-            # Anyway
-            parenthesis -= 1
-        elif s == "{":
-            if variable or number:
-                return False, None
-            else:
-                variable = True
-                operand = False
-        elif s == "}":
-            if not variable or number or operand:
-                return False, None
-            else:
-                if not fullmatch(r'\w+', trace):
-                    return False, None
+                    state = 0
+                    par_count -= 1
+                    new_vals = True
                 else:
+                    return False, None
+            elif state == 0 and new_vals: # blank -> IF new_var THEN new_var = False & par_count -= 1
+                    par_count -= 1
+                    new_vals = False
+            else:
+                return False, None
+        elif s == "{":
+            if state == -1 or state == 1: # start -> variable || operand -> variable
+                state = 2
+            else:
+                return False, None
+        elif s == "}":
+            if state == 2: # variable => new_var = True & -> blank
+                if fullmatch(r'\w+', trace):
                     variables.add(trace)
                     trace = ""
-                    variable = False
+                    state = 0
+                    new_vals = True
+                else:
+                    return False, None
+            else: 
+                return False, None
         elif s == ".":
-            if not number or variable or operand:
-                return False, None
-            else:
+            if state == 3: # number -> number
                 trace += s
+            else:
+                return False, None
         elif fullmatch(r"[+\-*/%]", s):
-            if variable or number or operand:
-                return False, None
+            if state == 3: # number => new_var = True & -> operand
+                if fullmatch(r'\d+.?\d*', trace):
+                    trace = ""
+                    state = 1
+                    new_vals = True
+                else:
+                    return False, None
+            elif state == 0 and new_vals: # blank -> IF new_var THEN new_var = False & -> operand
+                state = 1
+                new_vals = False
             else:
-                operand = True
+                return False, None
+        elif fullmatch(r"\d", s):
+            if state == -1 or state == 1 or state == 3: # start -> number || operand -> number || number -> number
+                trace += s
+                state = 3
+            elif state == 2: # variable -> variable
+                trace += s
+            else:
+                return False, None
         elif fullmatch(r"\w", s):
-            if variable:
+            if state == 2: # variable -> variable
                 trace += s
-            elif fullmatch(r"\d", s):
-                number = True
-                trace += s
-                operand = False
             else:
                 return False, None
         else:
             return False, None
+    else:
+        if state == 3: # number => new_var = True & -> end
+            if fullmatch(r'\d+.?\d*', trace):
+                trace = ""
+                state = 0
+                new_vals = True
+            else:
+                return False, None
 
-    if parenthesis != 0 or trace != "":
+    if par_count != 0 or trace != "" or state != 0 or len(variables) == 0:
         return False, None
     else:
         return True, variables

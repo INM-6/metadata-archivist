@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 
-Collection of helper classes for Parser module.
+Collection of helper classes for Formatter module.
 
 Authors: Jose V., Matthias K.
 
@@ -316,7 +316,7 @@ class _CacheEntry:
 
 class Indexes:
     """
-    Class to be handled only by Parser class.
+    Class to be handled only by Formatter class.
     Indexing class for storing indexes per Parser:
         - Parsers list index
         - input file patterns list index

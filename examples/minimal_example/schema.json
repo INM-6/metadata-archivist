@@ -1,6 +1,6 @@
 {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://example.com/product.schema.json",
+    "$schema": "https://abc",
+    "$id": "https://abc.json",
     "description": "A plain schema for directory structures",
     "type": "object",
     "properties": {
@@ -13,22 +13,27 @@
                 "$ref": "#"
             }
         },
-        "node" : {
+        "node": {
             "$ref": "#/$defs/node"
         }
     },
     "$defs": {
         "node": {
             "$id": "/schemas/address",
-            "$schema": "http://json-schema.org/draft-07/schema#",
+            "$schema": "http://abc",
             "type": "object",
             "properties": {
                 "anyOf": [
-                    { "$ref": "#/$defs/name" }
+                    {
+                        "$ref": "#/$defs/time_parser"
+                    },
+                    {
+                        "$ref": "#/$defs/yml_parser"
+                    }
                 ]
             }
         },
-        "subschema1": {
-        }
+        "time_parser": {},
+        "yml_parser": {}
     }
 }

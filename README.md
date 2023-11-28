@@ -4,6 +4,7 @@
 At the end of the beNNch workflow one archive containing the metadata files for each simulation run during the benchmarking is generated. An example of this archive can be found in the example folder. The code in this directory is meant to handle the extraction of said archive, the collection/parsing of the metadata files and the generation of a metadata collection which is saved to a JSON or odML file (format can be passed as argument).
 
 ## Modules:
+TODO: Needs update
 * extractor.py: Module containing archive extraction procedures.
 * extraction_rules.py: Module containing per archive format extraction rules.
 * collector.py: Module containing metadata collection procedures.
@@ -34,24 +35,23 @@ an interpretable data structure is needed to convert implicit schema definitions
 * Metadata archive:
   * Compressed directory containing a tree structure of sub-directories (branches) and raw metadata files (leafs).
   * The tree structure can be flat i.e. only contain leafs or have an arbitrary number of branches each containing at least one leaf.
-* Extractor/extraction results:
- * An extractor is the entity reading from raw metadata files and extracting the information as defined by the user.
- * Extraction results are the output of the extractor on a given raw metadata file.
- * Each extractor produces results in its own structure as defined by the user.
-* Parser/parsing result:
- * The parser is the entity gathering all the extraction results from all the defined extractors and merging it together in an unified metadata file.
- * The parsing result is the output metadata file.
- * The parser produces results on either a default structure following the metadata archive tree or a JSON schema can be provided to specify the structure and contents.
+* Parser/parsing results:
+ * A Parser is the entity reading from raw metadata files and parsing the information as defined by the user.
+ * The parsing results are the output of the Parser on a given raw metadata file.
+ * Each Parser produces results in its own structure as defined by the user.
+* Formatter/formatting result:
+ * The Formatter is the entity gathering all the parsing results from all the defined Parsers and merging it together in an unified metadata file.
+ * The formatting result is the output metadata file.
+ * The Formatter produces results on either a default structure following the metadata archive tree or a JSON schema can be provided to specify the structure and contents.
 * JSON schema:
   * Through the properties (and only the properties) of the schema the user can define the structure of the unified metadata file.
   * On a broad perspective, the properties (tree) of the schema are composed of either acyclic nested structure (branches) or simple values (leafs).
-  * Extractors and their results can be referenced by defining references (leafs) at bottom level structures.
+  * Parsers and their results can be referenced by defining references (leafs) at bottom level structures.
 
 ### Basic premise
-The structure of the unified metadata file can be separated by structure stemming from the parsing results and structure stemming from the extraction results.
-When using a schema, the structure of the parsing results are solely dictated by the schema.
-Hence, when exploring the schema to generate the interpretable data structure one can consider the branching in the schema structure as branching of the metadata structure
-and the extractor structure as a terminal value.
+The structure of the unified metadata file can be separated by structure stemming from the formatting results and structure stemming from the parsing results.
+When using a schema, the structure of the formatting results are solely dictated by the schema.
+Hence, when exploring the schema to generate the interpretable data structure one can consider the branching in the schema structure as branching of the metadata structure and the parsing structure as a terminal value.
 
 ### Technical assumptions
 - There are only two valid data types in the schema, dictionaries and strings i.e. the schema is composed of key[str] -> value[dict|str],
@@ -64,7 +64,7 @@ and the extractor structure as a terminal value.
   - !varname instructions are considered as additional contextual information.
   - !varname instructions can only be found in a patterProperty context.
 - Exploring starts from the properties at the root of the schema and a recursion is applied over every dictionary found inside.
-- An extractor must always be introduced inside a named dictionary containing an optional !extractor instruction and a mandatory reference to its definition (structure name -> {(!extractor: dict)?, $ref: $def})
+- A PArser must always be introduced inside a named dictionary containing an optional !parsing instruction and a mandatory reference to its definition (structure name -> {(!parsing: dict)?, $ref: $def})
   - Only one reference to a definition is accepted per named dictionary. (TODO: expand on the future?)
-  - !extractor instructions point to dictionaries but this are not considered branches of the metadata structure, instead are considered as additional contextual information.
-  - !extractor instructions must always precede the reference.
+  - !parsing instructions point to dictionaries but this are not considered branches of the metadata structure, instead are considered as additional contextual information.
+  - !parsing instructions must always precede the reference.

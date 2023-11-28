@@ -9,11 +9,9 @@ Authors: Jose V., Matthias K.
 """
 
 from json import dumps
-from pathlib import Path
 from re import fullmatch
-from typing import Optional
-from re import match, fullmatch
 from collections.abc import Iterable
+from typing import Optional, Union, Any
 
 from .Logger import LOG
 
@@ -134,22 +132,8 @@ def _pattern_parts_match(pattern_parts: list, actual_parts: list, context: Optio
     is_match = False
     # We match through looping over the regex path in reverse order
     for i, part in enumerate(pattern_parts):
-
-        # Expand star pattern
-        if part == "*":
-
-            # If star at end of regex path then match is true
-            if (i + 1) == len(pattern_parts):
-                continue
-
-            # Else match against same index element in file path
-            # TODO: star matching should always be true, is this necessary?
-            elif not match('.*', actual_parts[i]):
-                LOG.debug(f"{part} did not match against {actual_parts[i]}")
-                break
-        
         # Match against varname
-        elif fullmatch('.*{[a-zA-Z0-9_]+}.*', part) and context is not None:
+        if fullmatch(r'\{\w+\}', part) and context is not None:
             # !varname should always be in context in this case
             if "!varname" not in context:
                 # TODO: should we instead raise an error?
@@ -162,12 +146,12 @@ def _pattern_parts_match(pattern_parts: list, actual_parts: list, context: Optio
                 raise RuntimeError("!varname in context but no regexp found")
 
             # Else match against same index element in file path
-            elif not match(part.format(**{context["!varname"]: context["regexp"]}), actual_parts[i]):
+            elif not fullmatch(part.format(**{context["!varname"]: context["regexp"]}), actual_parts[i]):
                 LOG.debug(f"{part} did not match against {actual_parts[i]}")
                 break
 
         # Else literal matching
-        elif not match(part, actual_parts[i]):
+        elif not fullmatch(part, actual_parts[i]):
             LOG.debug(f"{part} did not match against {actual_parts[i]}")
             break
     
@@ -176,3 +160,136 @@ def _pattern_parts_match(pattern_parts: list, actual_parts: list, context: Optio
         is_match = True
 
     return is_match
+
+def _unpack_singular_nested_value(iterable: Any, level: Optional[int] = None) -> Union[str, int, float, bool]:
+    """
+    Helper function to unpack any type of singular nested value
+    i.e. unpacking a nested container where each nesting level contains a single value until a primitive is found.
+    """
+    if isinstance(iterable, (str, int, float, bool)):
+        if level is not None and level > 0:
+            # TODO: Should we raise error?
+            LOG.warning(f"Finished unpacking before 0 level reached.")
+        return iterable
+    elif isinstance(iterable, Iterable):
+        if len(iterable) > 1:
+            raise IndexError(f"Multiple possible values found when unpacking singular nested value")
+        if level is not None:
+            if level > 0:
+                level -= 1
+            else:
+                return iterable
+        if isinstance(iterable, dict):
+            return _unpack_singular_nested_value(next(iter(iterable.values())), level)
+        else:
+            return _unpack_singular_nested_value(next(iter(iterable)), level)
+
+def _math_check(expression: str):
+    """
+    Stack machine for checking basic math expressions.
+    transition rules:
+        start -> variable
+        start -> number
+        start => par_count += 1
+        blank -> end
+        blank -> IF new_var THEN new_var = False & -> operand
+        blank -> IF new_var THEN new_var = False & par_count -= 1
+        variable -> variable
+        variable => new_var = True & -> blank
+        number -> number
+        number => new_var = True & -> operand
+        number => new_var = True & par_count -= 1 & -> blank
+        number => new_var = True & -> end
+        operand -> variable
+        operand -> number
+        operand => par_count += 1
+    
+    Return True if par_count is 0 and state is blank and no malformed traces exists and number of variables found is above 0.
+    """
+    state = -1 # -1: start, 0: blank|stop, 1: read operand, 2: compiling variable, 3: compiling number
+    par_count = 0
+    variables = set()
+    new_vals = True
+    trace = ""
+    for s in expression:
+        if s == "(":
+            if state == -1 or state == 1: # start => par_count += 1 || operand => par_count += 1
+                par_count += 1
+            else:
+                return False, None
+        elif s == ")":
+            if state == 3: # number => new_var = True & par_count -= 1 & -> blank
+                if fullmatch(r'\d+.?\d*', trace):
+                    trace = ""
+                    state = 0
+                    par_count -= 1
+                    new_vals = True
+                else:
+                    return False, None
+            elif state == 0 and new_vals: # blank -> IF new_var THEN new_var = False & par_count -= 1
+                    par_count -= 1
+                    new_vals = False
+            else:
+                return False, None
+        elif s == "{":
+            if state == -1 or state == 1: # start -> variable || operand -> variable
+                state = 2
+            else:
+                return False, None
+        elif s == "}":
+            if state == 2: # variable => new_var = True & -> blank
+                if fullmatch(r'\w+', trace):
+                    variables.add(trace)
+                    trace = ""
+                    state = 0
+                    new_vals = True
+                else:
+                    return False, None
+            else: 
+                return False, None
+        elif s == ".":
+            if state == 3: # number -> number
+                trace += s
+            else:
+                return False, None
+        elif fullmatch(r"[+\-*/%]", s):
+            if state == 3: # number => new_var = True & -> operand
+                if fullmatch(r'\d+.?\d*', trace):
+                    trace = ""
+                    state = 1
+                    new_vals = True
+                else:
+                    return False, None
+            elif state == 0 and new_vals: # blank -> IF new_var THEN new_var = False & -> operand
+                state = 1
+                new_vals = False
+            else:
+                return False, None
+        elif fullmatch(r"\d", s):
+            if state == -1 or state == 1 or state == 3: # start -> number || operand -> number || number -> number
+                trace += s
+                state = 3
+            elif state == 2: # variable -> variable
+                trace += s
+            else:
+                return False, None
+        elif fullmatch(r"\w", s):
+            if state == 2: # variable -> variable
+                trace += s
+            else:
+                return False, None
+        else:
+            return False, None
+    else:
+        if state == 3: # number => new_var = True & -> end
+            if fullmatch(r'\d+.?\d*', trace):
+                trace = ""
+                state = 0
+                new_vals = True
+            else:
+                return False, None
+
+    if par_count != 0 or trace != "" or state != 0 or len(variables) == 0:
+        return False, None
+    else:
+        return True, variables

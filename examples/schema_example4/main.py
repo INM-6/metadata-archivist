@@ -5,14 +5,8 @@ from metadata_archivist import Archivist
 from my_parser import my_parser
 from pathlib import Path
 from json import dumps, dump
-import shutil
 
-tmpdir = Path('tmp')
-if tmpdir.exists():
-    shutil.rmtree(tmpdir)
-
-arch = Archivist(path=Path('metadata_archive.tar'),
-                 extraction_directory='tmp',
+arch = Archivist(path=Path('raw_metadata'),
                  formatter=my_parser,
                  output_directory="./",
                  output_file="metadata.json",

@@ -1,4 +1,4 @@
-from metadata_archivist import AExtractor, Parser
+from metadata_archivist import AParser, Formatter
 import yaml
 
 
@@ -8,12 +8,12 @@ def key_val_split(string, split_char):
     return {out[0].strip(): out[1].strip()}
 
 
-class time_extractor(AExtractor):
+class time_parser(AParser):
 
     def __init__(self) -> None:
         super().__init__(
-            name='time_extractor',
-            input_file_pattern='time.txt',
+            name='time_parser',
+            input_file_pattern='time\.txt',
             schema={
                 'type': 'object',
                 'properties': {
@@ -37,7 +37,7 @@ class time_extractor(AExtractor):
                 }
             })
 
-    def extract(self, file_path) -> dict:
+    def parse(self, file_path) -> dict:
         out = {}
         with file_path.open("r") as fp:
             for line in fp:
@@ -46,14 +46,52 @@ class time_extractor(AExtractor):
         return out
 
 
-class yml_extractor(AExtractor):
+class yml_parser(AParser):
 
     def __init__(self) -> None:
-        super().__init__(name='yml_extractor',
-                         input_file_pattern='config.yml',
-                         schema={})
+        super().__init__(name='yml_parser',
+                         input_file_pattern='config\.yml',
+                         schema={
+                            'type': 'object',
+                            'properties': {
+                                'input_files': {
+                                    'type': 'object',
+                                    'properties': {
+                                        'precipitation': {
+                                            'type': 'string',
+                                            'description': 'precipitation input file name'
+                                        },
+                                        'temperature': {
+                                            'type': 'string',
+                                            'description': 'temperature input file name'
+                                        }
+                                    }
+                                },
+                                'parameters': {
+                                    'type': 'object',
+                                    'properties': {
+                                        'a': {
+                                            'type': 'number',
+                                            'description': 'parameter a'
+                                        },
+                                        'b': {
+                                            'type': 'number',
+                                            'description': 'parameter b'
+                                        }
+                                    }
+                                },
+                                'info1': {
+                                    'type': 'string',
+                                    'description': 'this is a  metadata'
+                                },
+                                'info2': {
+                                    'type': 'string',
+                                    'description': 'this as well'
+                                }
+                            }
+                         })
 
-    def extract(self, file_path):
+    def parse(self, file_path):
         with open(file_path, "r") as stream:
             try:
                 out = yaml.safe_load(stream)
@@ -62,11 +100,11 @@ class yml_extractor(AExtractor):
                 print(exc)
 
 
-class basin_character_extractor(AExtractor):
+class basin_character_parser(AParser):
 
     def __init__(self) -> None:
-        super().__init__(name='basin_character_extractor',
-                         input_file_pattern='basin.yml',
+        super().__init__(name='basin_character_parser',
+                         input_file_pattern='basin\.yml',
                          schema={'type': 'object',
                                 'properties': {
                                     'river': {
@@ -88,7 +126,7 @@ class basin_character_extractor(AExtractor):
                                 }
                          })
 
-    def extract(self, file_path):
+    def parse(self, file_path):
         with open(file_path, "r") as stream:
             try:
                 out = yaml.safe_load(stream)
@@ -97,11 +135,11 @@ class basin_character_extractor(AExtractor):
                 print(exc)
 
 
-class station_character_extractor(AExtractor):
+class station_character_parser(AParser):
 
     def __init__(self) -> None:
-        super().__init__(name='station_character_extractor',
-                         input_file_pattern='station.yml',
+        super().__init__(name='station_character_parser',
+                         input_file_pattern='station\.yml',
                          schema={'type': 'object',
                                 'properties': {
                                     'river': {
@@ -120,7 +158,7 @@ class station_character_extractor(AExtractor):
                             }
                          )
 
-    def extract(self, file_path):
+    def parse(self, file_path):
         with open(file_path, "r") as stream:
             try:
                 out = yaml.safe_load(stream)
@@ -138,30 +176,30 @@ my_schema = {
         'metadata_archive': {
             'type': 'object',
             'patternProperties': {
-                "^basin_": {
+                "^basin_.*": {
                     "!varname": 'basin',
                     "type": "object",
                     'description': 'some description',
                     "properties": {
                         "basin_information": {
-                            "!extractor": {
-                                'path': '*/{basin}/basin.yml',
+                            "!parsing": {
+                                'path': '.*/{basin}/basin.yml',
                                 'keys': ['river', 'size']
                             },
-                            '$ref': '#/$defs/basin_character_extractor',
+                            '$ref': '#/$defs/basin_character_parser',
                         },
                     }
                 },
-                "^station_": {
+                "^station_.*": {
                     "!varname": 'station',
                     "type": "object",
                     "properties": {
                         "station_information": {
-                            "!extractor": {
-                                'path': '*/{station}/station.yml',
+                            "!parsing": {
+                                'path': '.*/{station}/station.yml',
                                 'keys': ['river', 'mean_disch']
                             },
-                            '$ref': '#/$defs/station_character_extractor',
+                            '$ref': '#/$defs/station_character_parser',
                         },
 
                     },
@@ -171,10 +209,10 @@ my_schema = {
     }
 }
 
-my_parser = Parser(extractors=[
-    time_extractor(),
-    yml_extractor(),
-    station_character_extractor(),
-    basin_character_extractor()
+my_parser = Formatter(parsers=[
+    time_parser(),
+    yml_parser(),
+    station_character_parser(),
+    basin_character_parser()
 ],
                    schema=my_schema)

@@ -11,18 +11,18 @@ from pathlib import Path
 from typing import Union
 from shutil import rmtree
 
-from .Parser import Parser
+from .Formatter import Formatter
 from .Exporter import Exporter
-from .Decompressor import Decompressor
+from .Explorer import Explorer
 from .Logger import LOG, set_verbose, set_debug
 
 
 class Archivist():
     """
-    Convenience class for orchestrating the Decompressor, Parser and Exporter.
+    Convenience class for orchestrating the Explorer, Parser and Exporter.
     """
 
-    def __init__(self, archive_path: Union[str, Path], parser: Parser, **kwargs) -> None:
+    def __init__(self, path: Union[str, Path], formatter: Formatter, **kwargs) -> None:
         """
         Initialization method of Archivist class.
 
@@ -35,23 +35,12 @@ class Archivist():
         self.config = {}
         self._init_config(**kwargs)
 
-        # Set decompressor
-        self.decompressor = Decompressor(archive_path, self.config)
-
-        # Set parser
-        self.parser = parser
-
         # Check and get paths for internal handling
         self._dc_dir_path = self._check_dir(
             self.config["extraction_directory"], allow_existing=False)
         self._out_dir_path = self._check_dir(self.config["output_directory"],
                                              allow_existing=True)
 
-        # Set exporter
-        # TODO: use output format for better handling?
-        f_format = self.config["output_file"][self.config["output_file"].
-                                              find(".") + 1:]
-        self.exporter = Exporter(f_format)
         self.metadata_output_file = self._out_dir_path / Path(
             self.config["output_file"])
         if self.metadata_output_file.exists():
@@ -71,6 +60,20 @@ class Archivist():
 
         # Operational memory
         self._cache = {}
+
+        # Set explorer
+        self.explorer = Explorer(path, self.config)
+        self._cache["decompression"] = self.explorer.path_is_archive
+
+        # Set formatter
+        self.formatter = formatter
+
+        # Set exporter
+        # TODO: use output format for better handling?
+        f_format = self.config["output_file"][self.config["output_file"].
+                                              find(".") + 1:]
+        self.exporter = Exporter(f_format)
+
 
     def _init_config(self, **kwargs) -> None:
         """
@@ -152,12 +155,12 @@ class Archivist():
 
         return path
 
-    def extract(self) -> dict:
+    def parse(self) -> dict:
         """
-        Coordinates decompression and metadata extraction with internal
-        Parser and Decompressor objects.
-        Generates cache of returned objects by Parser and Decompressor methods.
-        Returns extracted metadata.
+        Coordinates decompression and metadata parsing with internal
+        Parser and Explorer objects.
+        Generates cache of returned objects by Parser and Explorer methods.
+        Returns parsed metadata.
         """
         LOG.info(f'''Extracting:
         Output path: {self._out_dir_path}
@@ -165,14 +168,14 @@ class Archivist():
         Remove extracted: {self.config["auto_cleanup"]}''')
 
         LOG.info("Unpacking archive...")
-        LOG.debug(f'    using patterns: {self.parser.input_file_patterns}')
+        LOG.debug(f'    using patterns: {self.formatter.input_file_patterns}')
 
-        decompress_path, decompressed_dirs, decompressed_files = self.decompressor.decompress(
-            self.parser.input_file_patterns)
+        decompress_path, decompressed_dirs, decompressed_files = self.explorer.explore(
+            self.formatter.input_file_patterns)
 
         LOG.info(f'''Done!\nparsing files ...''')
 
-        meta_files = self.parser.parse_files(decompress_path,
+        meta_files = self.formatter.parse_files(decompress_path,
                                              decompressed_files)
 
         LOG.info(f'''Done!''')
@@ -198,7 +201,7 @@ class Archivist():
         if self._cache["compile_metadata"]:
             LOG.info(f'''Compiling metadata...''')
             self._cache["compile_metadata"] = False
-            self._cache["metadata"] = self.parser.compile_metadata(**kwargs)
+            self._cache["metadata"] = self.formatter.compile_metadata(**kwargs)
             LOG.info("Done!")
             self._clean_up()
 
@@ -217,41 +220,27 @@ class Archivist():
         return self.metadata_output_file
 
     def _clean_up(self) -> None:
-        """Cleanup method automatically called after metadata extraction (or compilation if lazy_loading)"""
+        """Cleanup method automatically called after metadata parsing (or compilation if lazy_loading)"""
         if self.config["auto_cleanup"]:
-            LOG.info("Cleaning extraction directory...")
-            #errors = []
-            #files = self._cache["decompressed_files"] + self._cache[
-            #    "meta_files"]
-            dirs = self._cache["decompressed_dirs"]
-            if str(self._dc_dir_path) != '.':
-                dirs.insert(0, self._dc_dir_path)
+            if self._cache["decompression"]:
+                dirs = self._cache["decompressed_dirs"]
+                if str(self._dc_dir_path) != '.':
+                    dirs.insert(0, self._dc_dir_path)
+                LOG.info(f"Cleaning extraction directory: {str(dirs[0])}")
+                try:
+                    rmtree(dirs[0])
+                except Exception as e:
+                        LOG.warning(
+                            f"error cleaning {str(dirs[0])}: {e.message if hasattr(e, 'message') else str(e)}")
 
-            rmtree(dirs[0])
-
-            #LOG.info(f"    cleaning files:")
-            #for f in files:
-            #    LOG.info(f"        {str(f)}")
-            #    try:
-            #        f.unlink()
-            #    except Exception as e:
-            #        errors.append(
-            #            (str(f),
-            #             e.message if hasattr(e, "message") else str(e)))
-
-            #LOG.info(f"    cleaning directories:")
-            #for d in dirs:
-            #    LOG.info(f"        {str(d)}")
-            #    try:
-            #        d.rmdir()
-            #    except Exception as e:
-            #        errors.append(
-            #            (str(d),
-            #             e.message if hasattr(e, "message") else str(e)))
-
-            #if len(errors) > 0:
-            #    for e in errors:
-            #        LOG.warning(
-            #            f"    error cleaning:\n        {e[0]} -- {e[1]}")
+            elif len(self._cache["meta_files"]) > 0:
+                for fp in self._cache["meta_files"]:
+                    LOG.info(f"Cleaning meta file: {str(fp)}")
+                    try:
+                        fp.unlink()
+                    except Exception as e:
+                        LOG.warning(f"error cleaning {str(fp)}: {e.message if hasattr(e, 'message') else str(e)}")
+            else:
+                return
 
             LOG.info("Done!")

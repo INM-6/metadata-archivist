@@ -1,0 +1,97 @@
+{
+    "$schema": "https://abc",
+    "$id": "https://abc.json",
+    "description": "my example schema",
+    "type": "object",
+    "properties": {
+        "metadata_archive": {
+            "type": "object",
+            "properties": {
+                "program_execution": {
+                    "type": "object",
+                    "properties": {
+                        "time_info": {
+                            "$ref": "#/$defs/time_parser"
+                        },
+                        "model_configuration": {
+                            "$ref": "#/$defs/yml_parser"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "$defs": {
+        "node": {
+            "properties": {
+                "anyOf": [
+                    {
+                        "$ref": "#/$defs/time_parser"
+                    },
+                    {
+                        "$ref": "#/$defs/yml_parser"
+                    }
+                ]
+            }
+        },
+        "time_parser": {
+            "type": "object",
+            "properties": {
+                "real": {
+                    "type": "string",
+                    "description": "the time from start to finish of the call"
+                },
+                "user": {
+                    "type": "string",
+                    "description": "amount of CPU time spent in user mode"
+                },
+                "sys": {
+                    "type": "string",
+                    "description": "amount of CPU time spent in kernel mode"
+                },
+                "system": {
+                    "$ref": "#/properties/sys"
+                }
+            }
+        },
+        "yml_parser": {
+            "type": "object",
+            "properties": {
+                "input_files": {
+                    "type": "object",
+                    "properties": {
+                        "precipitation": {
+                            "type": "string",
+                            "description": "precipitation input file name"
+                        },
+                        "temperature": {
+                            "type": "string",
+                            "description": "temperature input file name"
+                        }
+                    }
+                },
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "a": {
+                            "type": "number",
+                            "description": "parameter a"
+                        },
+                        "b": {
+                            "type": "number",
+                            "description": "parameter b"
+                        }
+                    }
+                },
+                "info1": {
+                    "type": "string",
+                    "description": "this is a  metadata"
+                },
+                "info2": {
+                    "type": "string",
+                    "description": "this as well"
+                }
+            }
+        }
+    }
+}

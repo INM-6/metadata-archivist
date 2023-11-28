@@ -2,12 +2,12 @@
 # -*- coding: utf-8 -*-
 """
 
-Metadata extraction, collection and save pipeline example.
+Metadata parsing, collection and save pipeline example.
 Authors: Matthias K., Jose V.
 
 """
 
-from json import load
+from json import load, dumps, dump
 from pathlib import Path
 
 from my_parser import my_parser
@@ -22,9 +22,17 @@ if __name__ == "__main__":
     with config_path.open("r") as f:
         config = load(f)
 
-    arch = Archivist(archive_path=Path('metadata_archive.tar'),
-                    parser=my_parser,
+    arch = Archivist(path=Path('metadata_archive.tar'),
+                    formatter=my_parser,
                     **config)
 
-    arch.extract()
+    arch.parse()
     arch.export()
+
+    print("\nResulting schema:")
+    print(dumps(my_parser.schema, indent=4))
+    with Path("schema.json").open("w") as f:
+        dump(my_parser.schema, f, indent=4)
+
+    print("\nResulting metadata:")
+    print(dumps(arch.get_metadata(), indent=4))

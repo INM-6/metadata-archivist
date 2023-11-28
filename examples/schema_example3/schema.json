@@ -1,45 +1,45 @@
 {
     "$schema": "https://abc",
     "$id": "https://abc.json",
-    "description": "my example schema",
+    "description": "my example schema 3",
     "type": "object",
     "properties": {
         "metadata_archive": {
             "type": "object",
             "patternProperties": {
-                "^basin_": {
+                "^basin_.*": {
                     "type": "object",
                     "properties": {
                         "basin_characteristics": {
-                            "$ref": "#/$defs/basin_character_extractor"
+                            "$ref": "#/$defs/basin_character_parser"
                         },
                         "simulation": {
                             "type": "object",
                             "properties": {
                                 "time_info": {
-                                    "$ref": "#/$defs/time_extractor"
+                                    "$ref": "#/$defs/time_parser"
                                 },
                                 "model_configuration": {
-                                    "$ref": "#/$defs/yml_extractor"
+                                    "$ref": "#/$defs/yml_parser"
                                 }
                             }
                         }
                     }
                 },
-                "^station_": {
+                "^station_.*": {
                     "type": "object",
                     "properties": {
                         "basin_characteristics": {
-                            "$ref": "#/$defs/station_character_extractor"
+                            "$ref": "#/$defs/station_character_parser"
                         },
                         "simulation": {
                             "type": "object",
                             "properties": {
                                 "time_info": {
-                                    "$ref": "#/$defs/time_extractor"
+                                    "$ref": "#/$defs/time_parser"
                                 },
                                 "model_configuration": {
-                                    "$ref": "#/$defs/yml_extractor"
+                                    "$ref": "#/$defs/yml_parser"
                                 }
                             }
                         }
@@ -49,7 +49,25 @@
         }
     },
     "$defs": {
-        "time_extractor": {
+        "node": {
+            "properties": {
+                "anyOf": [
+                    {
+                        "$ref": "#/$defs/time_parser"
+                    },
+                    {
+                        "$ref": "#/$defs/yml_parser"
+                    },
+                    {
+                        "$ref": "#/$defs/station_character_parser"
+                    },
+                    {
+                        "$ref": "#/$defs/basin_character_parser"
+                    }
+                ]
+            }
+        },
+        "time_parser": {
             "type": "object",
             "properties": {
                 "real": {
@@ -69,8 +87,82 @@
                 }
             }
         },
-        "yml_extractor": {},
-        "basin_character_extractor": {},
-        "station_character_extractor": {}
+        "yml_parser": {
+            "type": "object",
+            "properties": {
+                "input_files": {
+                    "type": "object",
+                    "properties": {
+                        "precipitation": {
+                            "type": "string",
+                            "description": "precipitation input file name"
+                        },
+                        "temperature": {
+                            "type": "string",
+                            "description": "temperature input file name"
+                        }
+                    }
+                },
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "a": {
+                            "type": "number",
+                            "description": "parameter a"
+                        },
+                        "b": {
+                            "type": "number",
+                            "description": "parameter b"
+                        }
+                    }
+                },
+                "info1": {
+                    "type": "string",
+                    "description": "this is a  metadata"
+                },
+                "info2": {
+                    "type": "string",
+                    "description": "this as well"
+                }
+            }
+        },
+        "station_character_parser": {
+            "type": "object",
+            "properties": {
+                "river": {
+                    "type": "string",
+                    "description": "name of the river"
+                },
+                "grdc_id": {
+                    "type": "string",
+                    "description": "grdc id"
+                },
+                "mean_disch": {
+                    "type": "number",
+                    "description": "mean annual discharge in m^3s^-1"
+                }
+            }
+        },
+        "basin_character_parser": {
+            "type": "object",
+            "properties": {
+                "river": {
+                    "type": "string",
+                    "description": "name of the river"
+                },
+                "length": {
+                    "type": "integer",
+                    "description": "length in km"
+                },
+                "size": {
+                    "type": "integer",
+                    "description": "flow accumulation in km^2"
+                },
+                "max_depth": {
+                    "type": "integer",
+                    "description": "maximum depth in m"
+                }
+            }
+        }
     }
 }

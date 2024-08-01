@@ -9,6 +9,7 @@ jsonschema = "*"
 metadata-archivist = {file = ".", editable = true}
 pyyaml = "*"
 f90nml = "*"
+jupyter = "*"
 
 [dev-packages]
 

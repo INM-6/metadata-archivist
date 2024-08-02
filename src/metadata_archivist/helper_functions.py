@@ -10,27 +10,42 @@ Authors: Jose V., Matthias K.
 
 from json import dumps
 from re import fullmatch
+from pathlib import Path
 from collections.abc import Iterable
 from typing import Optional, Union, Any
 
 from .Logger import LOG
 
 
-#def defs2dict(defs, search_dict: Optional[dict] = None):
-#    sep = '/'
-#    if sep not in defs and search_dict is None:
-#        return defs
-#    elif sep not in defs and search_dict:
-#        return search_dict[defs]
-#    key, val = defs.split(sep, 1)
-#    if search_dict is None:
-#        return {key: defs2dict(val, None)}
-#    else:
-#        return {key: defs2dict(val, search_dict[key])}
-#
-#
-#def deep_get(dictionary, *keys):
-#    return reduce(lambda d, key: d.get(key) if d else None, keys, dictionary)
+def _check_dir(dir_path: str, allow_existing: bool = False) -> Path:
+    """
+    Checks directory path.
+    If a directory with the same name already exists then continue.
+
+    Arguments:
+        dir_path: String path to output directory.
+
+    Keyword arguments:
+        allow_existing: Control boolean to allow the use of existing folders. Default: False.
+
+    Returns:
+        Path object to output directory.
+    """
+
+    path = Path(dir_path)
+
+    if str(path) != '.':
+        if path.exists():
+            if not allow_existing:
+                raise RuntimeError(f"Directory already exists: {path}")
+            if not path.is_dir():
+                raise NotADirectoryError(
+                    f"Incorrect path to directory: {path}")
+        else:
+            path.mkdir(parents=True)
+
+    return path
+
 
 def _update_dict_with_parts(target_dict: dict, value: dict, parts: list) -> None:
     """
@@ -49,6 +64,7 @@ def _update_dict_with_parts(target_dict: dict, value: dict, parts: list) -> None
         relative_root = relative_root[part]
     else:
         relative_root[parts[-1]] = value
+
 
 def _merge_dicts(dict1: dict, dict2: dict) -> dict:
     """
@@ -93,6 +109,7 @@ def _merge_dicts(dict1: dict, dict2: dict) -> dict:
 
     return merged_dict
 
+
 def _deep_get_from_schema(schema, keys: list):
     # if len(keys) > 0:
     k = keys.pop(0)
@@ -119,6 +136,7 @@ def _deep_get_from_schema(schema, keys: list):
     else:
         print(schema[k])
         return schema[k]
+
 
 def _pattern_parts_match(pattern_parts: list, actual_parts: list, context: Optional[dict] = None) -> bool:
     """
@@ -161,6 +179,7 @@ def _pattern_parts_match(pattern_parts: list, actual_parts: list, context: Optio
 
     return is_match
 
+
 def _unpack_singular_nested_value(iterable: Any, level: Optional[int] = None) -> Union[str, int, float, bool]:
     """
     Helper function to unpack any type of singular nested value
@@ -183,6 +202,7 @@ def _unpack_singular_nested_value(iterable: Any, level: Optional[int] = None) ->
             return _unpack_singular_nested_value(next(iter(iterable.values())), level)
         else:
             return _unpack_singular_nested_value(next(iter(iterable)), level)
+
 
 def _math_check(expression: str):
     """

@@ -60,7 +60,7 @@ class Archivist:
         export: procedure that triggers export method
     """
 
-    def __init__(self, path: str, parsers: List[AParser] = None, schema: Optional[Union[dict, str]] = None, **kwargs) -> None:
+    def __init__(self, path: str, parsers: List[AParser], schema: Optional[Union[dict, str]] = None, **kwargs) -> None:
         """
         Constructor of Archivist class.
 

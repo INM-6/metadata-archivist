@@ -17,7 +17,7 @@ from collections.abc import Callable
 from tarfile import is_tarfile, open as t_open
 
 from .Logger import LOG
-from .helper_functions import _pattern_parts_match
+from .helper_functions import _pattern_parts_match, _check_dir
 
 
 # Accepted archive file formats
@@ -72,7 +72,7 @@ class Explorer:
             self.explore = partial(_dir_explore, directory_path=n_path)
             self.path_is_archive = False
         else:
-            self.explore = _check_archive(n_path, self.config["extraction_directory"])
+            self.explore = _check_archive(n_path, _check_dir(self.config["extraction_directory"]))
             self.path_is_archive = True
 
         self._path = n_path

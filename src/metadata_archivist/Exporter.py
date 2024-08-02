@@ -3,6 +3,10 @@
 """
 
 Metadata to file exporter.
+
+exports:
+    Exporter class
+
 Authors: Jose V., Matthias K.
 
 """
@@ -11,34 +15,83 @@ from json import dump
 from pathlib import Path
 
 from .Logger import LOG
+from .helper_functions import _check_dir
 
-class Exporter():
+
+class Exporter:
     """
     Convenience class for handling different export formats.
-    Currently only available export format is JSON.
+
+    WIP: Currently only available export format is JSON.
+
+    Attributes:
+        config: Dictionary containing configuration parameters.
+
+    Methods:
+        export: exporting procedure corresponding to output format in configuration.
     """
 
-    def __init__(self, format: str) -> None:
-        if format.upper() == "JSON":
-            self.export = self._export_json
-        else:
-            raise RuntimeError("Unknown export format type.")
-
-
-    def _export_json(self, metadata: dict, outfile: Path) -> None:
+    def __init__(self, config) -> None:
         """
-        Saves metadata to file as JSON.
+        Constructor of Exporter class.
 
-        Args:
-            metadata: Dictionary containing metadata.
-            outfile: Path object to target file.
-            form: String target form.
-            verb: Boolean to control verbose output.
+        Arguments:
+            config: dictionary containing configuration parameters
         """
 
-        LOG.info(f"Saving metadata to file: {outfile}")
+        self.config = config
 
-        with outfile.open("w") as f:
-            dump(metadata, f, indent=4)
+    def export(self, metadata: dict) -> None:
+        """
+        Exports given metadata dictionary to file.
+        Uses configuration parameters inside of internal dictionary.
 
-        LOG.info("Saved metadata file.")
+        Arguments:
+            metadata: dictionary to export.
+        """
+
+
+        export_format = self.config["output_format"].upper()
+        if export_format not in _KNOWN_FORMATS:
+            raise RuntimeError(f"Unknown export format type: {export_format}")
+        export_directory = _check_dir(self.config["output_directory"], allow_existing=True)
+        export_file = export_directory / self.config["output_file"]
+
+        if export_file.exists():
+            if export_file.is_file():
+                if self.config["overwrite"]:
+                    LOG.warning(
+                        f"Metadata output file exists: '{export_file}', overwriting."
+                    )
+                else:
+                    raise RuntimeError(
+                        f"Metadata output file exists: '{export_file}', overwriting not allowed."
+                    )
+            else:
+                raise RuntimeError(
+                    f"'{export_file}' exists and is not a file, cannot overwrite."
+                )
+            
+        _KNOWN_FORMATS[export_format](metadata, export_file)
+
+
+def _export_json(json_object: dict, outfile: Path) -> None:
+    """
+    Exports JSON object to file.
+    
+    Arguments:
+        object: JSON object to export.
+        outfile: Path object to target file.
+    """
+
+    LOG.info(f"Saving metadata to file: {outfile}")
+
+    with outfile.open("w") as f:
+        dump(json_object, f, indent=4)
+
+    LOG.info("Saved metadata file.")
+
+
+_KNOWN_FORMATS = {
+    "JSON": _export_json
+}

@@ -26,6 +26,9 @@ class Archivist():
     these can be configured through keyword arguments passed through
     the class constructor.
 
+    Attributes:
+        config
+
     Methods:
         parse
         get_metadata
@@ -49,48 +52,41 @@ class Archivist():
         self._init_config(**kwargs)
 
         # Check and get paths for internal handling
-        self._dc_dir_path = self._check_dir(
-            self.config["extraction_directory"], allow_existing=False)
-        self._out_dir_path = self._check_dir(self.config["output_directory"],
-                                             allow_existing=True)
+        self._extraction_dir_path = self._check_dir(self.config["extraction_directory"], allow_existing=False)
+        self._output_dir_path = self._check_dir(self.config["output_directory"], allow_existing=True)
 
-        self.metadata_output_file = self._out_dir_path / Path(
-            self.config["output_file"])
-        if self.metadata_output_file.exists():
-            if self.metadata_output_file.is_file():
-                if self.config["overwrite"]:
-                    LOG.warning(
-                        f"Metadata output file exists: '{self.metadata_output_file}', overwriting."
-                    )
-                else:
-                    raise RuntimeError(
-                        f"Metadata output file exists: '{self.metadata_output_file}', overwriting not allowed"
-                    )
-            else:
-                raise RuntimeError(
-                    f"'{self.metadata_output_file}' exists and is not a file, cannot overwrite"
-                )
+        self._metadata_output_file = self._output_dir_path / Path(self.config["output_file"])
 
         # Operational memory
         self._cache = {}
 
         # Set explorer
-        self.explorer = Explorer(path, self.config)
-        self._cache["decompression"] = self.explorer.path_is_archive
+        self._explorer = Explorer(path, self.config)
+        self._cache["decompression"] = self._explorer.path_is_archive
 
         # Set formatter
-        self.formatter = formatter
+        self._formatter = formatter
 
         # Set exporter
-        # TODO: use output format for better handling?
-        f_format = self.config["output_file"][self.config["output_file"].find(".") + 1:]
-        self.exporter = Exporter(f_format)
+        self._exporter = Exporter(self.config["output_format"])
 
 
     def _init_config(self, **kwargs) -> None:
         """
         Method used to initialise configuration dictionary from keyword arguments passed to class constructor.
         If no appropriate arguments found then initializes with default values.
+
+        Keyword arguments:
+            "extraction_directory": string path to extraction directory (not used if exploring a directory)
+            "output_directory": string path to output directory
+            "output_file": string name of resulting metadata file
+            "overwrite": control boolean to allow overwriting existing metadata file
+            "auto_cleanup": control boolean to clean up (delete extracted files and parsed files if lazy loading) after generating metadata
+            "verbose": string value of verbosity level
+            'add_description': control boolean to add schema description attributes to resulting metadata
+            'add_type': control boolean to add schema type attributes to resulting metadata
+            "output_format": "string value of metadata file output format
+            
         """
         self.config = {
             "extraction_directory": ".",
@@ -100,7 +96,8 @@ class Archivist():
             "auto_cleanup": True,
             "verbose": 'info',  # TODO: change to None after development phase is done.
             'add_description': True,
-            'add_type': False
+            'add_type': False,
+            "output_format": "JSON"
         }
         key_list = list(self.config.keys())
 
@@ -175,19 +172,19 @@ class Archivist():
         """
 
         LOG.info(f'''Extracting:
-        Output path: {self._out_dir_path}
-        Extraction path: {self._dc_dir_path}
+        Output path: {self._output_dir_path}
+        Extraction path: {self._extraction_dir_path}
         Remove extracted: {self.config["auto_cleanup"]}''')
 
         LOG.info("Unpacking archive...")
-        LOG.debug(f'    using patterns: {self.formatter.input_file_patterns}')
+        LOG.debug(f'    using patterns: {self._formatter.input_file_patterns}')
 
-        decompress_path, decompressed_dirs, decompressed_files = self.explorer.explore(
-            self.formatter.input_file_patterns)
+        decompress_path, decompressed_dirs, decompressed_files = self._explorer.explore(
+            self._formatter.input_file_patterns)
 
         LOG.info(f'''Done!\nparsing files ...''')
 
-        meta_files = self.formatter.parse_files(decompress_path,
+        meta_files = self._formatter.parse_files(decompress_path,
                                              decompressed_files)
 
         LOG.info(f'''Done!''')
@@ -205,7 +202,7 @@ class Archivist():
 
         return metadata
 
-    def get_metadata(self, **kwargs) -> dict:
+    def get_metadata(self) -> dict:
         """
         Fetches generated metadata as dictionary.
         If needed, uses parser to first compile metadata.
@@ -216,7 +213,7 @@ class Archivist():
         if self._cache["compile_metadata"]:
             LOG.info(f'''Compiling metadata...''')
             self._cache["compile_metadata"] = False
-            self._cache["metadata"] = self.formatter.compile_metadata(**kwargs)
+            self._cache["metadata"] = self._formatter.compile_metadata(**self.config)
             LOG.info("Done!")
             self._clean_up()
 
@@ -229,26 +226,38 @@ class Archivist():
         Returns:
             Path object pointing to exported file.
         """
+
+        if self._metadata_output_file.exists():
+            if self._metadata_output_file.is_file():
+                if self.config["overwrite"]:
+                    LOG.warning(
+                        f"Metadata output file exists: '{self._metadata_output_file}', overwriting."
+                    )
+                else:
+                    raise RuntimeError(
+                        f"Metadata output file exists: '{self._metadata_output_file}', overwriting not allowed"
+                    )
+            else:
+                raise RuntimeError(
+                    f"'{self._metadata_output_file}' exists and is not a file, cannot overwrite"
+                )
+
         LOG.info(f'''Exporting metadata...''')
-        self.exporter.export(self.get_metadata(),
-                             self.metadata_output_file)
+        self._exporter.export(self.get_metadata(), self._metadata_output_file)
         LOG.info("Done!")
 
-        return self.metadata_output_file
+        return self._metadata_output_file
 
     def _clean_up(self) -> None:
         """Cleanup method automatically called after metadata parsing (or compilation if lazy_loading)"""
         if self.config["auto_cleanup"]:
             if self._cache["decompression"]:
-                dirs = self._cache["decompressed_dirs"]
-                if str(self._dc_dir_path) != '.':
-                    dirs.insert(0, self._dc_dir_path)
-                LOG.info(f"Cleaning extraction directory: {str(dirs[0])}")
+                LOG.info(f"Cleaning extraction directory: {str(self._extraction_dir_path)}")
                 try:
-                    rmtree(dirs[0])
+                    rmtree(self._extraction_dir_path)
                 except Exception as e:
                         LOG.warning(
-                            f"error cleaning {str(dirs[0])}: {e.message if hasattr(e, 'message') else str(e)}")
+                            f"error cleaning {str(self._extraction_dir_path)}: {e.message if hasattr(e, 'message') else str(e)}")
 
             elif len(self._cache["meta_files"]) > 0:
                 for fp in self._cache["meta_files"]:

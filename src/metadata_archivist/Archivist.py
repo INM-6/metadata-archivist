@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-
 Metadata archive integrating class.
-Authors: Matthias K., Jose V.
 
+exports:
+    Archivist class
+
+Authors: Matthias K., Jose V.
 """
 
 from pathlib import Path
@@ -14,21 +16,32 @@ from shutil import rmtree
 from .Formatter import Formatter
 from .Exporter import Exporter
 from .Explorer import Explorer
-from .Logger import LOG, set_verbose, set_debug
+from .Logger import LOG, set_level, is_debug
 
 
 class Archivist():
     """
-    Convenience class for orchestrating the Explorer, Parser and Exporter.
+    Convenience class for orchestrating the Explorer, Exporter, Formatter.
+    Automatically instantiates Explorer and Exporter,
+    these can be configured through keyword arguments passed through
+    the class constructor.
+
+    Methods:
+        parse
+        get_metadata
+        export
     """
 
     def __init__(self, path: Union[str, Path], formatter: Formatter, **kwargs) -> None:
         """
-        Initialization method of Archivist class.
+        Constructor of Archivist class.
 
-        :param config: path to config file as str or config as dict
-        :param archive: path to archive (str)
-        :param verbose: print verbose information (bool)
+        Arguments:
+            path: string or Path object pointing to exploration target
+            formatter: Formatter object containing parsers and schema (optional)
+        
+        Keyword arguments:
+            key (as string), value pairs used for configuration, see _init_config method.
         """
 
         # Initialize configuration
@@ -70,8 +83,7 @@ class Archivist():
 
         # Set exporter
         # TODO: use output format for better handling?
-        f_format = self.config["output_file"][self.config["output_file"].
-                                              find(".") + 1:]
+        f_format = self.config["output_file"][self.config["output_file"].find(".") + 1:]
         self.exporter = Exporter(f_format)
 
 
@@ -84,11 +96,9 @@ class Archivist():
             "extraction_directory": ".",
             "output_directory": ".",
             "output_file": "metadata.json",
-            "overwrite":
-            True,  # TODO: change to False after development phase is done. 
+            "overwrite": True,
             "auto_cleanup": True,
-            "verbose":
-            'debug',  # TODO: change to None after development phase is done.
+            "verbose": 'info',  # TODO: change to None after development phase is done.
             'add_description': True,
             'add_type': False
         }
@@ -106,10 +116,7 @@ class Archivist():
             key_list.remove("verbose")
             kwargs.pop("verbose", None)
 
-        if self.config["verbose"] == 'info':
-            set_verbose()
-        elif self.config["verbose"] == 'debug':
-            set_debug()
+        set_level(self.config["verbose"])
 
         # Init rest of config params
         for key in kwargs:
@@ -122,9 +129,9 @@ class Archivist():
             else:
                 LOG.info(f"Unused argument: {key}")
 
-        if self.config["verbose"] in ['debug', 'info']:
+        if is_debug():
             for key in key_list:
-                LOG.info(
+                LOG.debug(
                     f"No argument found for: '{key}' initializing by default: '{self.config[key]}'"
                 )
 
@@ -133,9 +140,11 @@ class Archivist():
         Checks directory path.
         If a directory with the same name already exists then continue.
 
-        Args:
+        Arguments:
             dir_path: String path to output directory.
-            allow_existing: Control boolean to allow the use of existing folders.
+
+        Keyword arguments:
+            allow_existing: Control boolean to allow the use of existing folders. Default: False.
 
         Returns:
             Path object to output directory.
@@ -158,10 +167,13 @@ class Archivist():
     def parse(self) -> dict:
         """
         Coordinates decompression and metadata parsing with internal
-        Parser and Explorer objects.
-        Generates cache of returned objects by Parser and Explorer methods.
-        Returns parsed metadata.
+        Formatter and Explorer objects.
+        Generates internal cache of returned objects by Parser and Explorer methods.
+
+        Returns:
+            parsed metadata as dictionary or None if lazy loading is enabled.
         """
+
         LOG.info(f'''Extracting:
         Output path: {self._out_dir_path}
         Extraction path: {self._dc_dir_path}
@@ -195,8 +207,11 @@ class Archivist():
 
     def get_metadata(self, **kwargs) -> dict:
         """
-        Returns generated metadata as a dictionary.
+        Fetches generated metadata as dictionary.
         If needed, uses parser to first compile metadata.
+
+        Returns:
+            parsed metadata as dictionary.
         """
         if self._cache["compile_metadata"]:
             LOG.info(f'''Compiling metadata...''')
@@ -210,7 +225,9 @@ class Archivist():
     def export(self) -> Path:
         """
         Exports generated metadata to file using internal Exporter object.
-        Returns path to exported file.
+
+        Returns:
+            Path object pointing to exported file.
         """
         LOG.info(f'''Exporting metadata...''')
         self.exporter.export(self.get_metadata(),

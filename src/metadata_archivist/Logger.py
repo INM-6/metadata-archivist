@@ -1,17 +1,22 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-
 Log manager.
 Initializes logger from logging module
-Authors: Jose V., Matthias K.
+and sets custom message formatter.
 
+exports:
+    LOG: logger object, default logging level: warning
+    set_level: function to change logging level of LOG object
+    is_debug: function to test DEBUG level of LOG object
+
+Authors: Jose V., Matthias K.
 """
 
 import logging
 
 
-class Formatter(logging.Formatter):
+class _LogFormatter(logging.Formatter):
     """
     Specialization of logging module Formatter class.
     Designed to have a specific format style depending on record level.
@@ -27,21 +32,26 @@ class Formatter(logging.Formatter):
         return super().format(record)
 
 
-HANDLER = logging.StreamHandler()
-HANDLER.setFormatter(Formatter())
-logging.basicConfig(handlers=[HANDLER], level=logging.WARNING)
+_HANDLER = logging.StreamHandler()
+_HANDLER.setFormatter(_LogFormatter())
+logging.basicConfig(handlers=[_HANDLER], level=logging.WARNING)
 LOG = logging.getLogger()
-LOG.addHandler(HANDLER)
+LOG.addHandler(_HANDLER)
 
+def set_level(level: str) -> None:
+    """
+    Function used to set LOG object logging level.
 
-def set_verbose() -> None:
-    """Function used to set LOG object logging level to INFO"""
-    LOG.setLevel(logging.INFO)
+    Arguments:
+        level: logging level as string, available levels: info, debug
+    """
+    if level == "info":
+        LOG.setLevel(logging.INFO)
+    elif level == "debug":
+        LOG.setLevel(logging.DEBUG)
+    else:
+        LOG.warning(f"Incorrect logging level: {level}")
 
-
-def set_debug() -> None:
-    """Function used to set LOG object logging level to DEBUG"""
-    LOG.setLevel(logging.DEBUG)
 
 def is_debug() -> bool:
     """Status function which returns true if logging level is defined to DEBUG"""

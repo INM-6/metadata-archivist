@@ -12,9 +12,9 @@ Authors: Jose V., Matthias K.
 from pathlib import Path
 from functools import partial
 from zipfile import is_zipfile
+from typing import List, Tuple
 from collections.abc import Callable
 from tarfile import is_tarfile, open as t_open
-from typing import Optional, List, Tuple, NoReturn, Union
 
 from .Logger import LOG
 from .helper_functions import _pattern_parts_match
@@ -57,22 +57,25 @@ class Explorer:
         return self._path
 
     @path.setter
-    def path(self, path: str) -> None:
-        """Sets new archive path after checking type."""
+    def path(self, explore_path: str) -> None:
+        """
+        Sets new archive path after checking type.
 
-        if not isinstance(path, str):
-            raise TypeError(f"Incorrect type format for file path: {path!r}")
-
-        path = Path(path)
+        Arguments:
+            explore_path: string of path to exploration target.
         
-        if path.is_dir():
-            self.explore = partial(_dir_explore, directory_path=path)
+        """
+
+        n_path = Path(explore_path)
+        
+        if n_path.is_dir():
+            self.explore = partial(_dir_explore, directory_path=n_path)
             self.path_is_archive = False
         else:
-            self.explore = _check_archive(path, self.config["extraction_directory"])
+            self.explore = _check_archive(n_path, self.config["extraction_directory"])
             self.path_is_archive = True
 
-        self._path = path
+        self._path = n_path
 
 
 def _check_archive(file_path: Path, extraction_path: Path) -> Tuple[Path, Callable]:

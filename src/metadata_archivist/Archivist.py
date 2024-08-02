@@ -10,21 +10,49 @@ Authors: Matthias K., Jose V.
 """
 
 from pathlib import Path
-from typing import Union
 from shutil import rmtree
+from copy import deepcopy
+from typing import Union, List, Optional, Dict
 
-from .Formatter import Formatter
+from .Parser import AParser
 from .Exporter import Exporter
 from .Explorer import Explorer
+from .Formatter import Formatter
 from .Logger import LOG, set_level, is_debug
 
 
-class Archivist():
+"""
+Default configuration parameters for the Archivist class:
+"extraction_directory": string path to extraction directory (not used if exploring a directory). Default "." .
+"output_directory": string path to output directory. Default "." .
+"output_file": string name of resulting metadata file. Default "metadata.json" .
+"lazy_load": control boolean to enable parser lazy loading. Needs compilation after parsing. Default False.
+"overwrite": control boolean to allow overwriting existing metadata file. Default True.
+"auto_cleanup": control boolean to clean up (delete extracted files and parsed files if lazy loading) after generating metadata. Default True.
+"verbose": string value of verbosity level. Default info.
+'add_description': control boolean to add schema description attributes to resulting metadata. Default True.
+'add_type': control boolean to add schema type attributes to resulting metadata. Default False.
+"output_format": "string value of metadata file output format. Default "JSON".
+"""
+_DEFAULT_CONFIG = {
+            "extraction_directory": ".",
+            "output_directory": ".",
+            "output_file": "metadata.json",
+            "lazy_load": False,
+            "overwrite": True,
+            "auto_cleanup": True,
+            "verbose": 'info',
+            'add_description': True,
+            'add_type': False,
+            "output_format": "JSON"
+}
+
+
+class Archivist:
     """
     Convenience class for orchestrating the Explorer, Exporter, Formatter.
     Automatically instantiates Explorer and Exporter,
-    these can be configured through keyword arguments passed through
-    the class constructor.
+    these can be configured through keyword arguments passed through the class constructor.
 
     Attributes:
         config
@@ -35,13 +63,14 @@ class Archivist():
         export
     """
 
-    def __init__(self, path: Union[str, Path], formatter: Formatter, **kwargs) -> None:
+    def __init__(self, path: str, parsers: List[AParser] = None, schema: Optional[Union[dict, str]] = None, **kwargs) -> None:
         """
         Constructor of Archivist class.
 
         Arguments:
-            path: string or Path object pointing to exploration target
-            formatter: Formatter object containing parsers and schema (optional)
+            path: string of path pointing to exploration target.
+            parsers: list of parsers to be used.
+            schema: Optional. Dictionary containing structuring schema. If string is provided, assumes string path to file containing dictionary.
         
         Keyword arguments:
             key (as string), value pairs used for configuration, see _init_config method.
@@ -65,7 +94,7 @@ class Archivist():
         self._cache["decompression"] = self._explorer.path_is_archive
 
         # Set formatter
-        self._formatter = formatter
+        self._formatter = Formatter(parsers, schema, self.config["lazy_load"])
 
         # Set exporter
         self._exporter = Exporter(self.config["output_format"])
@@ -76,44 +105,17 @@ class Archivist():
         Method used to initialise configuration dictionary from keyword arguments passed to class constructor.
         If no appropriate arguments found then initializes with default values.
 
-        Keyword arguments:
-            "extraction_directory": string path to extraction directory (not used if exploring a directory)
-            "output_directory": string path to output directory
-            "output_file": string name of resulting metadata file
-            "overwrite": control boolean to allow overwriting existing metadata file
-            "auto_cleanup": control boolean to clean up (delete extracted files and parsed files if lazy loading) after generating metadata
-            "verbose": string value of verbosity level
-            'add_description': control boolean to add schema description attributes to resulting metadata
-            'add_type': control boolean to add schema type attributes to resulting metadata
-            "output_format": "string value of metadata file output format
-            
+        Keyword arguments: new values for _DEFAULT_CONFIG dict
         """
-        self.config = {
-            "extraction_directory": ".",
-            "output_directory": ".",
-            "output_file": "metadata.json",
-            "overwrite": True,
-            "auto_cleanup": True,
-            "verbose": 'info',  # TODO: change to None after development phase is done.
-            'add_description': True,
-            'add_type': False,
-            "output_format": "JSON"
-        }
+        self.config = deepcopy(_DEFAULT_CONFIG)
         key_list = list(self.config.keys())
 
         # Init logger object with verbose configuration
         if "verbose" in kwargs:
-            if kwargs["verbose"] is not None and kwargs["verbose"] not in [
-                    'debug', 'info'
-            ]:
-                raise RuntimeError(
-                    f"Incorrect value for argument: verbose, expected None, debug or info"
-                )
-            self.config["verbose"] = kwargs["verbose"]
+            if set_level(kwargs["verbose"]):
+                self.config["verbose"] = kwargs["verbose"]
             key_list.remove("verbose")
             kwargs.pop("verbose", None)
-
-        set_level(self.config["verbose"])
 
         # Init rest of config params
         for key in kwargs:
@@ -122,9 +124,9 @@ class Archivist():
                     self.config[key] = kwargs[key]
                     key_list.remove(key)
                 else:
-                    raise RuntimeError(f"Incorrect value for argument: {key}")
+                    LOG.warning(f"Incorrect type for argument: {key}, ignoring value")
             else:
-                LOG.info(f"Unused argument: {key}")
+                LOG.warning(f"Unused argument: {key}")
 
         if is_debug():
             for key in key_list:
@@ -161,14 +163,10 @@ class Archivist():
 
         return path
 
-    def parse(self) -> dict:
+    def parse(self) -> None:
         """
-        Coordinates decompression and metadata parsing with internal
-        Formatter and Explorer objects.
+        Coordinates decompression and metadata parsing with internal Formatter and Explorer objects.
         Generates internal cache of returned objects by Parser and Explorer methods.
-
-        Returns:
-            parsed metadata as dictionary or None if lazy loading is enabled.
         """
 
         LOG.info(f'''Extracting:
@@ -182,10 +180,9 @@ class Archivist():
         decompress_path, decompressed_dirs, decompressed_files = self._explorer.explore(
             self._formatter.input_file_patterns)
 
-        LOG.info(f'''Done!\nparsing files ...''')
+        LOG.info(f'''Done!\nParsing files ...''')
 
-        meta_files = self._formatter.parse_files(decompress_path,
-                                             decompressed_files)
+        meta_files = self._formatter.parse_files(decompress_path, decompressed_files)
 
         LOG.info(f'''Done!''')
 
@@ -194,13 +191,6 @@ class Archivist():
         self._cache["decompressed_dirs"] = decompressed_dirs
         self._cache["meta_files"] = meta_files
         self._cache["compile_metadata"] = True
-
-        if len(self._cache["meta_files"]) == 0:
-            metadata = self.get_metadata(**self.config)
-        else:
-            metadata = None
-
-        return metadata
 
     def get_metadata(self) -> dict:
         """
@@ -219,12 +209,9 @@ class Archivist():
 
         return self._cache["metadata"]
 
-    def export(self) -> Path:
+    def export(self) -> None:
         """
         Exports generated metadata to file using internal Exporter object.
-
-        Returns:
-            Path object pointing to exported file.
         """
 
         if self._metadata_output_file.exists():
@@ -246,10 +233,11 @@ class Archivist():
         self._exporter.export(self.get_metadata(), self._metadata_output_file)
         LOG.info("Done!")
 
-        return self._metadata_output_file
-
     def _clean_up(self) -> None:
-        """Cleanup method automatically called after metadata parsing (or compilation if lazy_loading)"""
+        """
+        Cleanup method automatically called in get_metadata,
+        deletes extraction dir (if decompression happened) and meta files (if lazy loading).
+        """
         if self.config["auto_cleanup"]:
             if self._cache["decompression"]:
                 LOG.info(f"Cleaning extraction directory: {str(self._extraction_dir_path)}")

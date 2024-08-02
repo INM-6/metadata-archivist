@@ -9,10 +9,9 @@ exports:
 Authors: Matthias K., Jose V.
 """
 
-from pathlib import Path
 from shutil import rmtree
 from copy import deepcopy
-from typing import Union, List, Optional, Dict
+from typing import Union, List, Optional
 
 from .Parser import AParser
 from .Exporter import Exporter
@@ -26,13 +25,13 @@ Default configuration parameters for the Archivist class:
 "extraction_directory": string path to extraction directory (not used if exploring a directory). Default "." .
 "output_directory": string path to output directory. Default "." .
 "output_file": string name of resulting metadata file. Default "metadata.json" .
-"lazy_load": control boolean to enable parser lazy loading. Needs compilation after parsing. Default False.
-"overwrite": control boolean to allow overwriting existing metadata file. Default True.
-"auto_cleanup": control boolean to clean up (delete extracted files and parsed files if lazy loading) after generating metadata. Default True.
-"verbose": string value of verbosity level. Default info.
-'add_description': control boolean to add schema description attributes to resulting metadata. Default True.
-'add_type': control boolean to add schema type attributes to resulting metadata. Default False.
-"output_format": "string value of metadata file output format. Default "JSON".
+"lazy_load": control boolean to enable parser lazy loading. Needs compilation after parsing. Default False .
+"overwrite": control boolean to allow overwriting existing metadata file. Default True .
+"auto_cleanup": control boolean to clean up (delete extracted files and parsed files if lazy loading) after generating metadata. Default True .
+"verbose": string value of verbosity level. Default "info" .
+"add_description": control boolean to add schema description attributes to resulting metadata. Default True .
+"add_type": control boolean to add schema type attributes to resulting metadata. Default False .
+"output_format": "string value of metadata file output format. Default "JSON" .
 """
 _DEFAULT_CONFIG = {
             "extraction_directory": ".",
@@ -41,26 +40,24 @@ _DEFAULT_CONFIG = {
             "lazy_load": False,
             "overwrite": True,
             "auto_cleanup": True,
-            "verbose": 'info',
-            'add_description': True,
-            'add_type': False,
+            "verbose": "info",
+            "add_description": True,
+            "add_type": False,
             "output_format": "JSON"
 }
 
 
 class Archivist:
     """
-    Convenience class for orchestrating the Explorer, Exporter, Formatter.
-    Automatically instantiates Explorer and Exporter,
-    these can be configured through keyword arguments passed through the class constructor.
+    Convenience class for orchestrating the Explorer, Exporter, and Formatter.
 
     Attributes:
-        config
+        config: Dictionary containing configuration parameters
 
     Methods:
-        parse
-        get_metadata
-        export
+        parse: procedure that orchestrates exploration and parsing
+        get_metadata: procedure that orchestrates structuring and metadata compiling
+        export: procedure that triggers export method
     """
 
     def __init__(self, path: str, parsers: List[AParser] = None, schema: Optional[Union[dict, str]] = None, **kwargs) -> None:
@@ -80,12 +77,6 @@ class Archivist:
         self.config = {}
         self._init_config(**kwargs)
 
-        # Check and get paths for internal handling
-        self._extraction_dir_path = self._check_dir(self.config["extraction_directory"], allow_existing=False)
-        self._output_dir_path = self._check_dir(self.config["output_directory"], allow_existing=True)
-
-        self._metadata_output_file = self._output_dir_path / Path(self.config["output_file"])
-
         # Operational memory
         self._cache = {}
 
@@ -94,19 +85,19 @@ class Archivist:
         self._cache["decompression"] = self._explorer.path_is_archive
 
         # Set formatter
-        self._formatter = Formatter(parsers, schema, self.config["lazy_load"])
+        self._formatter = Formatter(parsers, schema, self.config)
 
         # Set exporter
-        self._exporter = Exporter(self.config["output_format"])
-
+        self._exporter = Exporter(self.config)
 
     def _init_config(self, **kwargs) -> None:
         """
         Method used to initialise configuration dictionary from keyword arguments passed to class constructor.
         If no appropriate arguments found then initializes with default values.
 
-        Keyword arguments: new values for _DEFAULT_CONFIG dict
+        Keyword arguments: new values for _DEFAULT_CONFIG dict copy.
         """
+
         self.config = deepcopy(_DEFAULT_CONFIG)
         key_list = list(self.config.keys())
 
@@ -134,57 +125,21 @@ class Archivist:
                     f"No argument found for: '{key}' initializing by default: '{self.config[key]}'"
                 )
 
-    def _check_dir(self, dir_path: str, allow_existing: bool = False) -> Path:
-        """
-        Checks directory path.
-        If a directory with the same name already exists then continue.
-
-        Arguments:
-            dir_path: String path to output directory.
-
-        Keyword arguments:
-            allow_existing: Control boolean to allow the use of existing folders. Default: False.
-
-        Returns:
-            Path object to output directory.
-        """
-
-        path = Path(dir_path)
-
-        if str(path) != '.':
-            if path.exists():
-                if not allow_existing:
-                    raise RuntimeError(f"Directory already exists: {path}")
-                if not path.is_dir():
-                    raise NotADirectoryError(
-                        f"Incorrect path to directory: {path}")
-            else:
-                path.mkdir(parents=True)
-
-        return path
-
     def parse(self) -> None:
         """
-        Coordinates decompression and metadata parsing with internal Formatter and Explorer objects.
-        Generates internal cache of returned objects by Parser and Explorer methods.
+        Coordinates exploration and metadata parsing with internal Explorer and Formatter.
+        Generates internal cache of returned objects.
         """
 
-        LOG.info(f'''Extracting:
-        Output path: {self._output_dir_path}
-        Extraction path: {self._extraction_dir_path}
-        Remove extracted: {self.config["auto_cleanup"]}''')
-
-        LOG.info("Unpacking archive...")
-        LOG.debug(f'    using patterns: {self._formatter.input_file_patterns}')
+        LOG.info("Unpacking archive ...")
+        LOG.debug(f"    using patterns: {self._formatter.input_file_patterns}")
 
         decompress_path, decompressed_dirs, decompressed_files = self._explorer.explore(
             self._formatter.input_file_patterns)
 
-        LOG.info(f'''Done!\nParsing files ...''')
+        LOG.info("Done!\nParsing files ...")
 
         meta_files = self._formatter.parse_files(decompress_path, decompressed_files)
-
-        LOG.info(f'''Done!''')
 
         self._cache["decompress_path"] = decompress_path
         self._cache["decompressed_files"] = decompressed_files
@@ -192,16 +147,19 @@ class Archivist:
         self._cache["meta_files"] = meta_files
         self._cache["compile_metadata"] = True
 
+        LOG.info(f"Done!")
+
     def get_metadata(self) -> dict:
         """
-        Fetches generated metadata as dictionary.
-        If needed, uses parser to first compile metadata.
+        Fetches generated metadata.
+        If needed, uses Formatter once to compile metadata.
 
         Returns:
-            parsed metadata as dictionary.
+            dictionary of parsed metadata.
         """
+
         if self._cache["compile_metadata"]:
-            LOG.info(f'''Compiling metadata...''')
+            LOG.info("Compiling metadata ...")
             self._cache["compile_metadata"] = False
             self._cache["metadata"] = self._formatter.compile_metadata(**self.config)
             LOG.info("Done!")
@@ -211,42 +169,30 @@ class Archivist:
 
     def export(self) -> None:
         """
-        Exports generated metadata to file using internal Exporter object.
+        Exports generated metadata to file using internal Exporter.
         """
 
-        if self._metadata_output_file.exists():
-            if self._metadata_output_file.is_file():
-                if self.config["overwrite"]:
-                    LOG.warning(
-                        f"Metadata output file exists: '{self._metadata_output_file}', overwriting."
-                    )
-                else:
-                    raise RuntimeError(
-                        f"Metadata output file exists: '{self._metadata_output_file}', overwriting not allowed"
-                    )
-            else:
-                raise RuntimeError(
-                    f"'{self._metadata_output_file}' exists and is not a file, cannot overwrite"
-                )
-
-        LOG.info(f'''Exporting metadata...''')
-        self._exporter.export(self.get_metadata(), self._metadata_output_file)
+        LOG.info("Exporting metadata ...")
+        self._exporter.export(self.get_metadata())
         LOG.info("Done!")
 
     def _clean_up(self) -> None:
         """
         Cleanup method automatically called in get_metadata,
-        deletes extraction dir (if decompression happened) and meta files (if lazy loading).
+        deletes extraction directory (if decompression) and meta files (if lazy loading).
         """
+
         if self.config["auto_cleanup"]:
             if self._cache["decompression"]:
-                LOG.info(f"Cleaning extraction directory: {str(self._extraction_dir_path)}")
+                root_extraction_path = self._cache["decompress_path"]
+                LOG.info(f"Cleaning extraction directory: {str(root_extraction_path)}")
                 try:
-                    rmtree(self._extraction_dir_path)
+                    rmtree(root_extraction_path)
                 except Exception as e:
                         LOG.warning(
-                            f"error cleaning {str(self._extraction_dir_path)}: {e.message if hasattr(e, 'message') else str(e)}")
+                            f"error cleaning {str(root_extraction_path)}: {e.message if hasattr(e, 'message') else str(e)}")
 
+            # TODO: output meta files to specific directory such as to only invoke rmtree on it
             elif len(self._cache["meta_files"]) > 0:
                 for fp in self._cache["meta_files"]:
                     LOG.info(f"Cleaning meta file: {str(fp)}")
@@ -255,6 +201,7 @@ class Archivist:
                     except Exception as e:
                         LOG.warning(f"error cleaning {str(fp)}: {e.message if hasattr(e, 'message') else str(e)}")
             else:
+                LOG.info("Nothing to clean.")
                 return
 
             LOG.info("Done!")

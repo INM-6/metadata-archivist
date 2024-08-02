@@ -34,23 +34,32 @@ class _LogFormatter(logging.Formatter):
 
 _HANDLER = logging.StreamHandler()
 _HANDLER.setFormatter(_LogFormatter())
-logging.basicConfig(handlers=[_HANDLER], level=logging.WARNING)
+logging.basicConfig(handlers=[_HANDLER], level=logging.INFO)
 LOG = logging.getLogger()
 LOG.addHandler(_HANDLER)
 
-def set_level(level: str) -> None:
+
+def set_level(level: str) -> bool:
     """
     Function used to set LOG object logging level.
 
     Arguments:
-        level: logging level as string, available levels: info, debug
+        level: logging level as string, available levels: warning, info, debug
+
+    Returns:
+        success boolean
     """
-    if level == "info":
+    if level == "warning":
+        LOG.setLevel(logging.WARNING)
+    elif level == "info":
         LOG.setLevel(logging.INFO)
     elif level == "debug":
         LOG.setLevel(logging.DEBUG)
     else:
-        LOG.warning(f"Incorrect logging level: {level}")
+        LOG.warning(f"Trying to set incorrect logging level: {level}, staying at current level.")
+        return False
+    
+    return True
 
 
 def is_debug() -> bool:

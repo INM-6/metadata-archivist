@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 
-Additional helper functions.
+Additional helper functions for internal use.
 
 Authors: Jose V., Matthias K.
 
@@ -47,19 +47,24 @@ def _check_dir(dir_path: str, allow_existing: bool = False) -> Path:
     return path
 
 
-def _update_dict_with_parts(target_dict: dict, value: dict, parts: list) -> None:
+def _update_dict_with_parts(target_dict: dict, value: Any, parts: list) -> None:
     """
-    In place dict update.
-    Generates and dynamically fills the metadata tree with path hierarchy.
-    The hierarchy is based on decompressed directory.
+    In place, deep dictionary update.
+    Generates and dynamically fills the target dictionary tree following a key sequence.
+
+    Arguments:
+        target_dict: dictionary where update takes place.
+        value: object to insert.
+        parts: list of keys used to sequentially nest the tree. Last part is always used as key of value.
     """
+    
     # Get the parts of the relative path
     relative_root = target_dict
     for part in parts[:len(parts) - 1]:
         if part not in relative_root:
             relative_root[part] = {}
         elif not isinstance(relative_root[part], dict):
-            LOG.debug(f"key: {part}\n\nrelative root: {dumps(relative_root, indent=4, default=vars)}")
+            LOG.debug(f"key: {part}\nrelative root:\n{dumps(relative_root, indent=4, default=vars)}")
             raise RuntimeError("Duplicate key with incorrect found while updating tree with path hierarchy.")
         relative_root = relative_root[part]
     else:
@@ -69,7 +74,15 @@ def _update_dict_with_parts(target_dict: dict, value: dict, parts: list) -> None
 def _merge_dicts(dict1: dict, dict2: dict) -> dict:
     """
     Recursively merges dictionaries going in depth for nested structures.
+
+    Arguments:
+        dict1: base dictionary.
+        dict2: dictionary to merge with.
+
+    Returns:
+        dictionary combining both inputs.
     """
+
     keys1 = list(dict1.keys())
     keys2 = list(dict2.keys())
     merged_dict = {}
@@ -110,8 +123,19 @@ def _merge_dicts(dict1: dict, dict2: dict) -> dict:
     return merged_dict
 
 
-def _deep_get_from_schema(schema, keys: list):
-    # if len(keys) > 0:
+def _deep_get_from_schema(schema: dict, keys: list) -> Any:
+    """
+    Fetches value located in depth of the schema.
+    Uses a sequence of keys to navigate tree.
+
+    Arguments:
+        schema: schema dictionary (possibly with nested Properties)
+        keys: list of keys to follow in schema. Last key is used to retrieve value directly
+
+    Returns:
+        object found at last key position in schema
+    """
+
     k = keys.pop(0)
     if len(keys) > 0:
         if k in schema.keys():
@@ -145,8 +169,15 @@ def _pattern_parts_match(pattern_parts: list, actual_parts: list, context: Optio
     Both provided paths need to come as a list of parts in reverse order.
     A context can be provided to process !varname instructions.
 
-    Returns True if all parts of the pattern matched.
+    Arguments:
+        pattern_pars: list of regex pattern parts.
+        actual_parts: list of parts to compare with.
+        context: Optional context dictionary.
+
+    Returns:
+        True if all parts of the pattern matched False otherwise
     """
+
     is_match = False
     # We match through looping over the regex path in reverse order
     for i, part in enumerate(pattern_parts):
@@ -184,7 +215,15 @@ def _unpack_singular_nested_value(iterable: Any, level: Optional[int] = None) ->
     """
     Helper function to unpack any type of singular nested value
     i.e. unpacking a nested container where each nesting level contains a single value until a primitive is found.
+
+    Arguments:
+        iterable: iterable type of container to unpack
+        level: Optional recursion level to stop unpacking
+
+    Returns:
+        primitive value found at last depth (or given level)
     """
+
     if isinstance(iterable, (str, int, float, bool)):
         if level is not None and level > 0:
             # TODO: Should we raise error?
@@ -223,9 +262,16 @@ def _math_check(expression: str):
         operand -> variable
         operand -> number
         operand => par_count += 1
+
+    Arguments:
+        expression: string expression to validate
     
-    Return True if par_count is 0 and state is blank and no malformed traces exists and number of variables found is above 0.
+    Returns:
+        tuple of:
+            valid state boolean (True if par_count is 0 and state is blank and no malformed traces exists and number of variables found is above 0.)
+            variables found in expression only if expression is correct otherwise None
     """
+
     state = -1 # -1: start, 0: blank|stop, 1: read operand, 2: compiling variable, 3: compiling number
     par_count = 0
     variables = set()

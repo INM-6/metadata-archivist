@@ -37,17 +37,23 @@ class Explorer:
     cleans them up.
 
     Attributes:
-        path_is_archive: True if exploration target is an archive type.
         path: string of path to exploration target.
-        config: Dictionary containing configuration parameters
+        path_is_archive: True if exploration target is an archive type.
+        config: dictionary containing configuration parameters
 
     Methods:
         explore: exploration procedure on either archive or directory
     """
 
-    def __init__(self,
-                 path: str,
-                 config: dict) -> None:
+    def __init__(self, path: str, config: dict) -> None:
+        """
+        Constructor of Explorer class.
+
+        Arguments:
+            path: string of path to exploration target.
+            config: dictionary containing configuration parameters
+        """
+        
         self.path = path
         self.config = config
 

@@ -12,8 +12,8 @@ Authors: Jose V., Matthias K.
 from pathlib import Path
 from functools import partial
 from zipfile import is_zipfile
-from typing import List, Tuple
 from collections.abc import Callable
+from typing import List, Tuple, Union
 from tarfile import is_tarfile, open as t_open
 
 from .Logger import LOG
@@ -73,25 +73,27 @@ class Explorer:
         """
 
         n_path = Path(explore_path)
+        if not n_path.exists():
+            raise RuntimeError(f"Nothing found in exploration target path: {explore_path}")
         
         if n_path.is_dir():
             self.explore = partial(_dir_explore, directory_path=n_path)
             self.path_is_archive = False
         else:
-            self.explore = _check_archive(n_path, _check_dir(self.config["extraction_directory"]))
+            self.explore = _check_archive(n_path, self.config["extraction_directory"])
             self.path_is_archive = True
 
         self._path = n_path
 
 
-def _check_archive(file_path: Path, extraction_path: Path) -> Tuple[Path, Callable]:
+def _check_archive(file_path: Path, extraction_directory: str) -> Tuple[Path, Callable]:
     """
     Internal method to check archive format.
     If archive is in correct format then path to archive and decompression method are returned.
 
     Arguments:
         file_path: Path object to file.
-        extraction_path: Path object to extraction directory.
+        extraction_directory: string of path to extraction directory.
 
     Returns:
         callable method to decompress corresponding archive type.
@@ -103,7 +105,7 @@ def _check_archive(file_path: Path, extraction_path: Path) -> Tuple[Path, Callab
     if is_zipfile(file_path):
         raise NotImplementedError("ZIP extractor not yet implemented")
     elif is_tarfile(file_path):
-        decompress_method = partial(_decompress_tar, archive_path=file_path, extraction_path=extraction_path)
+        decompress_method = partial(_decompress_tar, archive_path=file_path, extraction_directory=extraction_directory)
     else:
         raise RuntimeError(f'Unknown archive format: {file_path.name}')
 
@@ -113,7 +115,7 @@ def _check_archive(file_path: Path, extraction_path: Path) -> Tuple[Path, Callab
 
 def _decompress_tar(output_file_patterns: List[str],
                     archive_path: Path,
-                    extraction_path: Path) -> Tuple[Path, List[Path], List[Path]]:
+                    extraction_directory: Union[str, Path]) -> Tuple[Path, List[Path], List[Path]]:
     """
     Decompresses files found in archive pointed by self.path.
     If an archive is found inside then operation is recursively called on it.
@@ -121,7 +123,7 @@ def _decompress_tar(output_file_patterns: List[str],
     Arguments:
         output_file_patterns: list of string of patterns of files to decompress.
         archive_path: Path object of archive to decompress.
-        extraction_path: Path object of extraction directory.
+        extraction_directory: string or Path to extraction directory.
 
     Returns:
         triplet containing:
@@ -130,10 +132,13 @@ def _decompress_tar(output_file_patterns: List[str],
             2. list of Path objects of decompressed files.
     """
 
+    if not isinstance(extraction_directory, Path):
+        extraction_directory = _check_dir(extraction_directory)
+
     LOG.info(f"Decompression of archive: {archive_path.name}")
 
     archive_name = archive_path.stem.split(".")[0]
-    directory_path = extraction_path.joinpath(archive_name)
+    directory_path = extraction_directory.joinpath(archive_name)
     explored_dirs = [directory_path]
     explored_files = []
 
@@ -148,8 +153,7 @@ def _decompress_tar(output_file_patterns: List[str],
                     t.extract(item, path=directory_path)
                     _, new_explored_dirs, new_explored_files = _decompress_tar(output_file_patterns,
                                                     archive_path=item_path,
-                                                    extraction_path=directory_path)
-                    # Reverse ordering of dirs to correctly remove them
+                                                    extraction_directory=directory_path)
                     explored_dirs.extend(new_explored_dirs)
                     explored_files.extend(new_explored_files)
                     item_path.unlink()
@@ -199,7 +203,6 @@ def _dir_explore(output_file_patterns: List[str],
                 explored_dirs.append(item_path.parent)
         else:
             _, new_explored_dirs, new_explored_files = _dir_explore(output_file_patterns, item_path)
-            # Reverse ordering of dirs to correctly remove them
             explored_dirs.extend(new_explored_dirs)
             explored_files.extend(new_explored_files)
 

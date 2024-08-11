@@ -15,44 +15,62 @@ from copy import deepcopy
 from typing import Optional, Any
 from collections.abc import Iterable
 
-from .Logger import LOG, is_debug
+from .Logger import _LOG, _is_debug
 
-class SchemaEntry:
+
+class _SchemaEntry:
     """
     Convenience superset of dictionary class.
     Used to recursively generate nested dictionary structure to serve as an intermediary between schema and metadata file.
     Contains additional context dictionary for a given tree level and the name of the root node.
     For initial root node, no name is defined, however for subsequent nodes there should always be a name.
     Get, set, and iteration access is redirected to internal storage.
+
+    Attributes:
+        key: schema key used as entry name.
+        context: dictionary containing information of schema properties where entry is created.
+
+    Methods:
+        items: returns key value pair item view of entry content.
+        is_empty: returns True is entry content is empty.
     """
 
-    key: str
-    context: dict
-    _content: dict
-
     def __init__(self, key: Optional[str] = None, context: Optional[dict] = None) -> None:
-       self.key = key
-       self.context = context if context is not None else {}
-       self._content = {}
-       self._iterator = None
+        """
+        Constructor for schema entry.
+        
+        Arguments:
+            key: schema key used as entry name.
+            context: dictionary containing information of schema properties where entry is created.
+        """
+
+        self.key = key
+        self.context = context if context is not None else {}
+        self._content = {}
+        self._iterator = None
 
     def __getitem__(self, key) -> Any:
+        """Value retrieval method for entry content using key."""
         return self._content[key]
     
     def __setitem__(self, key, value) -> None:
+        """Value insertion method for entry content using key."""
         self._content[key] = value
 
     def __contains__(self, key) -> bool:
+        """Key presence test for entry content."""
         return key in self._content
     
     def items(self):
+        """Entry content items get method."""
         return self._content.items()
     
     def is_empty(self) -> bool:
+        """Entry empty content test."""
         return len(self._content) == 0
 
 
-class SchemaInterpreter:
+class _SchemaInterpreter:
     """
     Functionality class used for interpreting the schema.
     When defining the JSON schema with additional directives,
@@ -60,13 +78,23 @@ class SchemaInterpreter:
     To this end, this class is used to generate an intermediary structure
     that respects the schema and its directives while being functionally
     usable as a mirror for structuring the final metadata file.
+
+    Attributes:
+        structure: root SchemaEntry used for interpretation.
+        rules: dictionary of interpretation rules.
+
+    Methods:
+        generate: convenience method to generate schema interpretation.
     """
 
-    _schema: dict
-    structure: SchemaEntry
-    
-
     def __init__(self, schema: dict) -> None:
+        """
+        Constructor of SchemaInterpreter.
+
+        Arguments:
+            schema: dictionary containing schema to interpret.
+        """
+
         if not isinstance(schema, dict):
             raise RuntimeError(
                 f'Incorrect schema used for iterator {schema}'
@@ -83,7 +111,7 @@ class SchemaInterpreter:
             )
 
         self._schema = schema
-        self.structure = SchemaEntry()
+        self.structure = _SchemaEntry()
 
         # We load INTERPRETATION_RULES directly in instance to avoid circular importing issues
         from .InterpretationRules import _INTERPRETATION_RULES
@@ -91,8 +119,8 @@ class SchemaInterpreter:
 
     def _interpret_schema(self,
                          properties: dict,
-                         parent_key: Optional[str] = None,
-                         relative_root: Optional[SchemaEntry] = None):
+                         _parent_key: Optional[str] = None,
+                         _relative_root: Optional[_SchemaEntry] = None):
         """
         Recursive method to explore JSON schema.
         Following the technical assumptions made (cf. README.md/SchemaInterpreter),
@@ -120,9 +148,14 @@ class SchemaInterpreter:
         in which case it is ignored or they can be additional directives e.g. $ref or !varname
         Both of which are specially processed to enriched the context.
 
+        Arguments:
+            properties: dictionary of schema properties to interpret.
+            _parent_key: key of parent property where method was called.
+            _relative_root: relative SchemaEntry where method was called. Defaults to self contained structure.
         """
-        if relative_root is None:
-            relative_root = self.structure
+
+        if _relative_root is None:
+            _relative_root = self.structure
 
         # For all the properties in the given schema
         for key, val in properties.items():
@@ -133,46 +166,49 @@ class SchemaInterpreter:
                 # This error is only raised if an interpretation rule is found at root of schema properties
                 # rules must be defined in individual items of the properties, hence a parent key should
                 # always be present.
-                if parent_key is None:
-                    LOG.debug(dumps(relative_root, indent=4, default=vars))
+                if _parent_key is None:
+                    _LOG.debug(dumps(_relative_root, indent=4, default=vars))
                     raise RuntimeError("Cannot interpret rule without parent key.")
-                relative_root = self.rules[key](self, val, key, parent_key, relative_root)
+                _relative_root = self.rules[key](self, val, key, _parent_key, _relative_root)
 
             else:
                 # Case dict i.e. branch
                 if isinstance(val, dict):
-                    relative_root[key] = self._interpret_schema(val, key, SchemaEntry(key=key, context=deepcopy(relative_root.context)))
+                    _relative_root[key] = self._interpret_schema(val, key, _SchemaEntry(key=key, context=deepcopy(_relative_root.context)))
 
                 # Case str i.e. leaf
                 elif isinstance(val, str):
-                    LOG.debug(f"Ignoring key value pair: {key}: {val}")
+                    _LOG.debug(f"Ignoring key value pair: {key}: {val}")
 
                 # Else not-implemented/ignored
                 else:
                     if isinstance(val, Iterable):
                         raise NotImplementedError(f"Unknown iterable type: {key}: {type(val)}")
                     else:
-                        LOG.debug(f"Ignoring key value pair: {key}: {val}")
+                        _LOG.debug(f"Ignoring key value pair: {key}: {val}")
 
-        return relative_root
+        return _relative_root
     
-    def generate(self) -> SchemaEntry:
+    def generate(self) -> _SchemaEntry:
         """
         Convenience function to launch interpretation recursion over the schema.
         Results is also internally stored for future access.
+
+        Returns:
+            self contained SchemaEntry
         """
-        if is_debug():
+        if _is_debug():
             # Passing through dumps for pretty printing,
             # however can be costly, so checking if debug is enabled first
-            LOG.debug(dumps(self._schema, indent=4, default=vars))
+            _LOG.debug(dumps(self._schema, indent=4, default=vars))
 
         if self.structure.is_empty():
             self.structure = self._interpret_schema(self._schema["properties"])
 
-        if is_debug():
+        if _is_debug():
             # Passing through dumps for pretty printing,
             # however can be costly, so checking if debug is enabled first
-            LOG.debug(dumps(self.structure, indent=4, default=vars))
+            _LOG.debug(dumps(self.structure, indent=4, default=vars))
         
         return self.structure
         

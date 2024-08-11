@@ -135,16 +135,16 @@ class Archivist:
         _LOG.info("Unpacking archive ...")
         _LOG.debug(f"    using patterns: {self._formatter.input_file_patterns}")
 
-        decompress_path, decompressed_dirs, decompressed_files = self._explorer.explore(
+        explored_path, explored_dirs, explored_files = self._explorer.explore(
             self._formatter.input_file_patterns)
 
         _LOG.info("Done!\nParsing files ...")
 
-        meta_files = self._formatter.parse_files(decompress_path, decompressed_files)
+        meta_files = self._formatter.parse_files(explored_path, explored_files)
 
-        self._cache["decompress_path"] = decompress_path
-        self._cache["decompressed_files"] = decompressed_files
-        self._cache["decompressed_dirs"] = decompressed_dirs
+        self._cache["explored_path"] = explored_path
+        self._cache["explored_files"] = explored_files
+        self._cache["explored_dirs"] = explored_dirs
         self._cache["meta_files"] = meta_files
         self._cache["compile_metadata"] = True
 
@@ -185,7 +185,7 @@ class Archivist:
 
         if self.config["auto_cleanup"]:
             if self._cache["decompression"]:
-                root_extraction_path = self._cache["decompress_path"]
+                root_extraction_path = self._cache["explored_path"]
                 _LOG.info(f"Cleaning extraction directory: {str(root_extraction_path)}")
                 try:
                     rmtree(root_extraction_path)

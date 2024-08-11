@@ -8,19 +8,31 @@ the FORMATTING_RULES dictionary.
 
 All rule functions must have the same arguments.
 
+Arguments:
+    formatter: instance of Formatter calling the rule.
+    interpreted_schema: interpreted (context-rich) SchemaEntry on which rule is called.
+    branch: list of keys used to structure rule output, where each index is equivalent to a depth level.
+    value: item value of current formatting entry.
+
+Keyword arguments:
+    additional context provided to rule by formatter.
+
+Returns:
+    formatted item value according to rule.
+
 Authors: Jose V., Matthias K.
 
 """
 
 from json import dumps
-from typing import Union, Any
+from typing import Union
 
-from .Logger import LOG
+from .Logger import _LOG
 from .Formatter import Formatter
-from .SchemaInterpreter import SchemaEntry
+from .SchemaInterpreter import _SchemaEntry
 from .helper_functions import _pattern_parts_match, _update_dict_with_parts, _unpack_singular_nested_value
 
-def _format_parser_id_rule(formatter: Formatter, interpreted_schema: SchemaEntry, branch: list, value: Any, **kwargs) -> dict:
+def _format_parser_id_rule(formatter: Formatter, interpreted_schema: _SchemaEntry, branch: list, value: str, **kwargs) -> dict:
     # Formats metadata with parsing result.
     # As parsing results can be filtered by file name or file path,
     # file matching and dictionary branching are matched against existing filters in context.
@@ -32,7 +44,7 @@ def _format_parser_id_rule(formatter: Formatter, interpreted_schema: SchemaEntry
     # Currently only one parser reference per entry is allowed
     # and if a reference exists it must be the only content in the entry
     if len(interpreted_schema.items()) > 1:
-        LOG.debug(dumps(interpreted_schema._content, indent=4, default=vars))
+        _LOG.debug(dumps(interpreted_schema._content, indent=4, default=vars))
         raise RuntimeError(f"Invalid entry content {interpreted_schema.key}: {interpreted_schema._content}")
     
     # Get context
@@ -56,7 +68,7 @@ def _format_parser_id_rule(formatter: Formatter, interpreted_schema: SchemaEntry
             if parsed_metadata is None:
                 parsed_metadata = {}
             elif not isinstance(parsed_metadata, dict):
-                LOG.debug(f"parsed metadata: {parsed_metadata}\n\ncontext: {context}")
+                _LOG.debug(f"parsed metadata: {parsed_metadata}\ncontext: {context}")
                 raise RuntimeError(f"Incorrect parsed_metadata initialization type: {parsed_metadata}")
 
             # We skip the last element as it represents the node name of the parsed metadata
@@ -76,7 +88,7 @@ def _format_parser_id_rule(formatter: Formatter, interpreted_schema: SchemaEntry
             if parsed_metadata is None:
                 parsed_metadata = {}
             elif not isinstance(parsed_metadata, dict):
-                LOG.debug(f"parsed metadata: {parsed_metadata}\n\ncontext: {context}")
+                _LOG.debug(f"parsed metadata: {parsed_metadata}\ncontext: {context}")
                 raise RuntimeError(f"Incorrect parsed_metadata initialization type: {parsed_metadata}")
 
             # In this case the name of the file should be taken into account in the context path
@@ -99,23 +111,23 @@ def _format_parser_id_rule(formatter: Formatter, interpreted_schema: SchemaEntry
         # Compute additional directives if given
         if "!parsing" in context:
             if "keys" in context["!parsing"]:
-                metadata = parser.filter_metadata(
-                    metadata, context["!parsing"]["keys"],
-                    **kwargs)
+                metadata = parser._filter_metadata(metadata, context["!parsing"]["keys"], **kwargs)
+
             # Unpacking should only be done for singular nested values i.e. only one key per nesting level
             if "unpack" in context["!parsing"]:
                 if isinstance(context["!parsing"]["unpack"], bool):
                     if not context["!parsing"]["unpack"]:
-                        # TODO: should we raise error instead?
-                        LOG.warning(f"Incorrect unpacking configuration in !parsing context: unpack={False}")
-                    else:
-                        metadata = _unpack_singular_nested_value(metadata)
+                        _LOG.debug(dumps(context["!parsing"], indent=4, default=vars))
+                        raise RuntimeError(f"Incorrect unpacking configuration in !parsing context: unpack={False}")
+
+                    metadata = _unpack_singular_nested_value(metadata)
+
                 elif isinstance(context["!parsing"]["unpack"], int):
                     if context["!parsing"]["unpack"] == 0:
-                        # TODO: should we raise error instead?
-                        LOG.warning(f"Incorrect unpacking configuration in !parsing context: unpack={0}")
-                    else:
-                        metadata = _unpack_singular_nested_value(metadata, context["!parsing"]["unpack"])
+                        _LOG.debug(dumps(context["!parsing"], indent=4, default=vars))
+                        raise RuntimeError(f"Incorrect unpacking configuration in !parsing context: unpack={0}")
+
+                    metadata = _unpack_singular_nested_value(metadata, context["!parsing"]["unpack"])
 
         # Update parsed metadata
         # When in a regex context then resulting parsed metadata is a dict
@@ -139,7 +151,7 @@ def _format_parser_id_rule(formatter: Formatter, interpreted_schema: SchemaEntry
 
     return tree
 
-def _format_calculate_rule(formatter: Formatter, interpreted_schema: SchemaEntry, branch: list, value: Any, **kwargs) -> Union[int, float]:
+def _format_calculate_rule(formatter: Formatter, interpreted_schema: _SchemaEntry, branch: list, value: dict, **kwargs) -> Union[int, float]:
     # Returns numerical value based on a mathematical equation using parsing results as variables.
     # For each variable a corresponding numerical value in parsing results must be found.
     # At this point variable, count and names have been verified by Interpreter.
@@ -156,7 +168,7 @@ def _format_calculate_rule(formatter: Formatter, interpreted_schema: SchemaEntry
     parsing_values = {}
     for variable in variables:
         entry = variables[variable]
-        if not isinstance(entry, SchemaEntry):
+        if not isinstance(entry, _SchemaEntry):
             raise TypeError(f"Incorrect variable type found while formatting calculation: {type(entry)}")
         if not len(entry.items()) == 1:
             raise ValueError(f"Incorrect variable entry found while formatting calculation: {entry}")

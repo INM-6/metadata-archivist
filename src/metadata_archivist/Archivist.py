@@ -5,6 +5,7 @@ Metadata archive integrating class.
 
 exports:
     Archivist class
+    DEFAULT_CONFIG dictionary
 
 Authors: Matthias K., Jose V.
 """
@@ -33,7 +34,7 @@ Default configuration parameters for the Archivist class:
 "add_type": control boolean to add schema type attributes to resulting metadata. Default False .
 "output_format": "string value of metadata file output format. Default "JSON" .
 """
-_DEFAULT_CONFIG = {
+DEFAULT_CONFIG = {
             "extraction_directory": ".",
             "output_directory": ".",
             "output_file": "metadata.json",
@@ -98,7 +99,7 @@ class Archivist:
         Keyword arguments: new values for _DEFAULT_CONFIG dict copy.
         """
 
-        self.config = deepcopy(_DEFAULT_CONFIG)
+        self.config = deepcopy(DEFAULT_CONFIG)
         key_list = list(self.config.keys())
 
         # Init logger object with verbose configuration

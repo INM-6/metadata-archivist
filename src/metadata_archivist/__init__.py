@@ -11,4 +11,4 @@ from .Formatter import Formatter
 from .Parser import AParser
 from .Explorer import Explorer
 from .Exporter import Exporter
-from .Archivist import Archivist
+from .Archivist import Archivist, DEFAULT_CONFIG

@@ -17,7 +17,7 @@ from .Parser import AParser
 from .Exporter import Exporter
 from .Explorer import Explorer
 from .Formatter import Formatter
-from .Logger import LOG, set_level, is_debug
+from .Logger import _LOG, _set_level, _is_debug
 
 
 """
@@ -103,7 +103,7 @@ class Archivist:
 
         # Init logger object with verbose configuration
         if "verbose" in kwargs:
-            if set_level(kwargs["verbose"]):
+            if _set_level(kwargs["verbose"]):
                 self.config["verbose"] = kwargs["verbose"]
             key_list.remove("verbose")
             kwargs.pop("verbose", None)
@@ -115,13 +115,13 @@ class Archivist:
                     self.config[key] = kwargs[key]
                     key_list.remove(key)
                 else:
-                    LOG.warning(f"Incorrect type for argument: {key}, ignoring value")
+                    _LOG.warning(f"Incorrect type for argument: {key}, ignoring value")
             else:
-                LOG.warning(f"Unused argument: {key}")
+                _LOG.warning(f"Unused argument: {key}")
 
-        if is_debug():
+        if _is_debug():
             for key in key_list:
-                LOG.debug(
+                _LOG.debug(
                     f"No argument found for: '{key}' initializing by default: '{self.config[key]}'"
                 )
 
@@ -131,13 +131,13 @@ class Archivist:
         Generates internal cache of returned objects.
         """
 
-        LOG.info("Unpacking archive ...")
-        LOG.debug(f"    using patterns: {self._formatter.input_file_patterns}")
+        _LOG.info("Unpacking archive ...")
+        _LOG.debug(f"    using patterns: {self._formatter.input_file_patterns}")
 
         decompress_path, decompressed_dirs, decompressed_files = self._explorer.explore(
             self._formatter.input_file_patterns)
 
-        LOG.info("Done!\nParsing files ...")
+        _LOG.info("Done!\nParsing files ...")
 
         meta_files = self._formatter.parse_files(decompress_path, decompressed_files)
 
@@ -147,7 +147,7 @@ class Archivist:
         self._cache["meta_files"] = meta_files
         self._cache["compile_metadata"] = True
 
-        LOG.info(f"Done!")
+        _LOG.info(f"Done!")
 
     def get_metadata(self) -> dict:
         """
@@ -159,10 +159,10 @@ class Archivist:
         """
 
         if self._cache["compile_metadata"]:
-            LOG.info("Compiling metadata ...")
+            _LOG.info("Compiling metadata ...")
             self._cache["compile_metadata"] = False
             self._cache["metadata"] = self._formatter.compile_metadata(**self.config)
-            LOG.info("Done!")
+            _LOG.info("Done!")
             self._clean_up()
 
         return self._cache["metadata"]
@@ -172,9 +172,9 @@ class Archivist:
         Exports generated metadata to file using internal Exporter.
         """
 
-        LOG.info("Exporting metadata ...")
+        _LOG.info("Exporting metadata ...")
         self._exporter.export(self.get_metadata())
-        LOG.info("Done!")
+        _LOG.info("Done!")
 
     def _clean_up(self) -> None:
         """
@@ -185,23 +185,23 @@ class Archivist:
         if self.config["auto_cleanup"]:
             if self._cache["decompression"]:
                 root_extraction_path = self._cache["decompress_path"]
-                LOG.info(f"Cleaning extraction directory: {str(root_extraction_path)}")
+                _LOG.info(f"Cleaning extraction directory: {str(root_extraction_path)}")
                 try:
                     rmtree(root_extraction_path)
                 except Exception as e:
-                        LOG.warning(
+                        _LOG.warning(
                             f"error cleaning {str(root_extraction_path)}: {e.message if hasattr(e, 'message') else str(e)}")
 
             # TODO: output meta files to specific directory such as to only invoke rmtree on it
             elif len(self._cache["meta_files"]) > 0:
                 for fp in self._cache["meta_files"]:
-                    LOG.info(f"Cleaning meta file: {str(fp)}")
+                    _LOG.info(f"Cleaning meta file: {str(fp)}")
                     try:
                         fp.unlink()
                     except Exception as e:
-                        LOG.warning(f"error cleaning {str(fp)}: {e.message if hasattr(e, 'message') else str(e)}")
+                        _LOG.warning(f"error cleaning {str(fp)}: {e.message if hasattr(e, 'message') else str(e)}")
             else:
-                LOG.info("Nothing to clean.")
+                _LOG.info("Nothing to clean.")
                 return
 
-            LOG.info("Done!")
+            _LOG.info("Done!")

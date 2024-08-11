@@ -14,7 +14,7 @@ from pathlib import Path
 from collections.abc import Iterable
 from typing import Optional, Union, Any
 
-from .Logger import LOG
+from .Logger import _LOG
 
 
 def _check_dir(dir_path: str, allow_existing: bool = False) -> Path:
@@ -64,7 +64,7 @@ def _update_dict_with_parts(target_dict: dict, value: Any, parts: list) -> None:
         if part not in relative_root:
             relative_root[part] = {}
         elif not isinstance(relative_root[part], dict):
-            LOG.debug(f"key: {part}\nrelative root:\n{dumps(relative_root, indent=4, default=vars)}")
+            _LOG.debug(f"key: {part}\nrelative root:\n{dumps(relative_root, indent=4, default=vars)}")
             raise RuntimeError("Duplicate key with incorrect found while updating tree with path hierarchy.")
         relative_root = relative_root[part]
     else:
@@ -183,25 +183,19 @@ def _pattern_parts_match(pattern_parts: list, actual_parts: list, context: Optio
     for i, part in enumerate(pattern_parts):
         # Match against varname
         if fullmatch(r'\{\w+\}', part) and context is not None:
-            # !varname should always be in context in this case
-            if "!varname" not in context:
-                # TODO: should we instead raise an error?
-                LOG.critical(f"Varname required to match with variables: {pattern_parts}")
-                break
-            
-            # correctly interpreted !varname should also come with a regexp in context
-            if "regexp" not in context:
-                LOG.debug(dumps(context, indent=4, default=vars))
-                raise RuntimeError("!varname in context but no regexp found")
+            # !varname and regexp should always be in context in this case
+            if "!varname" not in context or "regexp" not in context:
+                _LOG.debug(dumps(context, indent=4, default=vars))
+                raise RuntimeError("Badly structured context for pattern matching")
 
-            # Else match against same index element in file path
-            elif not fullmatch(part.format(**{context["!varname"]: context["regexp"]}), actual_parts[i]):
-                LOG.debug(f"{part} did not match against {actual_parts[i]}")
+            # Match against same index element in file path
+            if not fullmatch(part.format(**{context["!varname"]: context["regexp"]}), actual_parts[i]):
+                _LOG.debug(f"{part} did not match against {actual_parts[i]}")
                 break
 
         # Else literal matching
         elif not fullmatch(part, actual_parts[i]):
-            LOG.debug(f"{part} did not match against {actual_parts[i]}")
+            _LOG.debug(f"{part} did not match against {actual_parts[i]}")
             break
     
     # Everything matched in the for loop i.e. no breakpoint reached
@@ -227,7 +221,7 @@ def _unpack_singular_nested_value(iterable: Any, level: Optional[int] = None) ->
     if isinstance(iterable, (str, int, float, bool)):
         if level is not None and level > 0:
             # TODO: Should we raise error?
-            LOG.warning(f"Finished unpacking before 0 level reached.")
+            _LOG.warning(f"Finished unpacking before 0 level reached.")
         return iterable
     elif isinstance(iterable, Iterable):
         if len(iterable) > 1:

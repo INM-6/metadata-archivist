@@ -16,7 +16,7 @@ from collections.abc import Callable
 from typing import List, Tuple, Union
 from tarfile import is_tarfile, open as t_open
 
-from .Logger import LOG
+from .Logger import _LOG
 from .helper_functions import _pattern_parts_match, _check_dir
 
 
@@ -135,7 +135,7 @@ def _decompress_tar(output_file_patterns: List[str],
     if not isinstance(extraction_directory, Path):
         extraction_directory = _check_dir(extraction_directory)
 
-    LOG.info(f"Decompression of archive: {archive_path.name}")
+    _LOG.info(f"Decompression of archive: {archive_path.name}")
 
     archive_name = archive_path.stem.split(".")[0]
     directory_path = extraction_directory.joinpath(archive_name)
@@ -146,7 +146,7 @@ def _decompress_tar(output_file_patterns: List[str],
         item = t.next()
         while item is not None:
             if item.isfile():
-                LOG.info(f"    processing file: {item.name}")
+                _LOG.info(f"    processing file: {item.name}")
                 item_path = directory_path.joinpath(item.name)
                 if any(item.name.endswith(format)
                         for format in _ACCEPTED_FORMATS):
@@ -187,14 +187,14 @@ def _dir_explore(output_file_patterns: List[str],
             2. list of Path objects of explored files.
     """
 
-    LOG.info(f"Exploration of directory: {directory_path.name}")
+    _LOG.info(f"Exploration of directory: {directory_path.name}")
 
     explored_dirs = [directory_path]
     explored_files = []
 
     for item_path in directory_path.glob("*"):
         if item_path.is_file():
-            LOG.info(f"    processing file: {item_path.name}")
+            _LOG.info(f"    processing file: {item_path.name}")
             # TODO: think about precompiling patterns to optimize regex match time
             if any(_pattern_parts_match(list(reversed(pat.split("/"))),
                                         list(reversed(item_path.parts)))

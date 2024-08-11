@@ -3,6 +3,7 @@
 """
 
 Metadata to file exporter.
+Currently only available export format is JSON.
 
 exports:
     Exporter class
@@ -14,15 +15,13 @@ Authors: Jose V., Matthias K.
 from json import dump
 from pathlib import Path
 
-from .Logger import LOG
+from .Logger import _LOG
 from .helper_functions import _check_dir
 
 
 class Exporter:
     """
     Convenience class for handling different export formats.
-
-    WIP: Currently only available export format is JSON.
 
     Attributes:
         config: Dictionary containing configuration parameters.
@@ -60,7 +59,7 @@ class Exporter:
         if export_file.exists():
             if export_file.is_file():
                 if self.config["overwrite"]:
-                    LOG.warning(
+                    _LOG.warning(
                         f"Metadata output file exists: '{export_file}', overwriting."
                     )
                 else:
@@ -84,12 +83,12 @@ def _export_json(json_object: dict, outfile: Path) -> None:
         outfile: Path object to target file.
     """
 
-    LOG.info(f"Saving metadata to file: {outfile}")
+    _LOG.info(f"Saving metadata to file: {outfile}")
 
     with outfile.open("w") as f:
         dump(json_object, f, indent=4)
 
-    LOG.info("Saved metadata file.")
+    _LOG.info("Saved metadata file.")
 
 
 _KNOWN_FORMATS = {

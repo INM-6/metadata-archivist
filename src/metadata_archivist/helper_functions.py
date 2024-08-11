@@ -11,6 +11,7 @@ Authors: Jose V., Matthias K.
 from json import dumps
 from re import fullmatch
 from pathlib import Path
+from copy import deepcopy
 from collections.abc import Iterable
 from typing import Optional, Union, Any
 
@@ -121,6 +122,32 @@ def _merge_dicts(dict1: dict, dict2: dict) -> dict:
         merged_dict[key] = dict2[key]
 
     return merged_dict
+
+
+def _filter_dict(input_dict: dict, filter_keys: list, _level: int = 0) -> dict:
+    """
+    Recursively filters input dictionary by providing filtering keys.
+    Keys can be exact or defined as regular expression.
+
+    Arguments:
+        input_dict: input dictionary to filter
+        filter_keys: list of keys as strings to filter by
+        _level: recursion level tracking integer
+
+    Returns
+        filtered dictionary
+    """
+    new_dict = {}
+    if _level >= len(filter_keys):
+        new_dict = deepcopy(input_dict)
+    else:
+        for k in input_dict.keys():
+            if fullmatch(filter_keys[_level], k):
+                if isinstance(input_dict[k], dict):
+                    new_dict[k] = _filter_dict(input_dict[k], filter_keys, _level + 1)
+                else:
+                    new_dict[k] = deepcopy(input_dict[k])
+    return new_dict
 
 
 def _deep_get_from_schema(schema: dict, keys: list) -> Any:

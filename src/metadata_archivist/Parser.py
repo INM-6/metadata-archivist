@@ -5,60 +5,60 @@
 Parser abstract class to parse metadata from file.
 To be specialized by custom parser made by users.
 
+exports:
+    AParser
+
 Authors: Jose V., Matthias K.
 
 """
 
-from re import fullmatch
 from pathlib import Path
 from copy import deepcopy
-from typing import NoReturn
 from abc import ABC, abstractmethod # Abstract class base infrastructure
 
 from jsonschema import validate, ValidationError
 
-from .Logger import LOG
-from .helper_functions import _merge_dicts, _deep_get_from_schema, _pattern_parts_match
+from .Logger import _LOG
+from .helper_functions import _merge_dicts, _filter_dict, _deep_get_from_schema, _pattern_parts_match
 
 
 class AParser(ABC):
     """
     Base parser class.
-    There is a one to one mapping from Parsers
-    to extracted files.
-    Multiple Parsers can "look for" the same metadata
+    Multiple Parsers can "look for" the same metadata,
     but will differ on the file they process and how.
 
-    Parsers use schemas to validate and structure
-    the data they process. The parsing process and
-    returned structure defines the schema.
+    Parsers use schemas to validate the data they process.
+    The parsing process and returned structure defines the schema.
+
+    Attributes:
+        input_file_pattern: regex pattern of name of files to parse.
+        schema: Parser schema used to validate parsed metadata.
+        name: unique name string used for Formatter schema handling.
+        parsed_metadata: dictionary contained parsed metadata.
+
+    Methods:
+        parse: Abstract method for file parsing, user defined.
+        validate: validates self contained parsed metadata using jsonschema validate function.
     """
 
-    # Protected
-    _input_file_pattern: str
-    _schema: dict  # JSON schema as dict
-
-    # To be handled by Parser class
-    _parsers = []  # For two way relationship update handling
-
-    # Immutable
-    _name: str  # name of the parser
-
-    # Public
-    parsed_metadata: dict  # JSON object as dict to be used as cache
-
-    def __init__(self, name: str, input_file_pattern: str,
-                 schema: dict) -> None:
+    def __init__(self, name: str, input_file_pattern: str, schema: dict) -> None:
         """
-        Initialization for base AParser.
-        Necessary due to decorators used for encapsulation of attributes.
+        Constructor for base abstract AParser.
+
+        Arguments:
+            name: string name of parser. Should be unique across parsers used.
+            input_file_pattern: regexp string describing pattern of input file.
+            schema: dictionary describing parsed output.        
         """
+
         super().__init__()
         self._name = name
         self._input_file_pattern = input_file_pattern
         self._schema = schema
 
-        self.ref = f"#/$defs/{self.id}"
+        self._formatters = []  # For two way relationship (Formatter - Parser) update handling
+
         self.parsed_metadata = {}
 
     @property
@@ -73,14 +73,13 @@ class AParser(ABC):
         Triggers parsers update.
         """
         self._input_file_pattern = pattern
-        self._update_parsers()
+        self._update_formatters()
 
     @property
     def schema(self) -> dict:
         """Returns Parser schema (dict)."""
         return self._schema
 
-    # TODO: Now, schema should not be directly modified but completely replaced, is this correct?
     @schema.setter
     def schema(self, schema: dict) -> None:
         """
@@ -88,7 +87,7 @@ class AParser(ABC):
         Triggers formatter update.
         """
         self._schema = schema
-        self._update_parsers()
+        self._update_formatters()
 
     @property
     def name(self) -> str:
@@ -96,43 +95,49 @@ class AParser(ABC):
         return self._name
 
     @name.setter
-    def name(self, _) -> NoReturn:
+    def name(self, name: str) -> None:
         """
-        Forbidden setter for name attribute.
-        (pythonic indirection for protected attributes)
+        Sets Parser name (str).
+        Due to indexing mechanism of Formatter,
+        name change requires removing and re-adding.
         """
-        raise AttributeError(
-            "The name of a Parser is an immutable attribute")
+        self._remove_from_formatters()
+        self._name = name
+        self._add_to_formatters()
 
-    @property
-    def id(self) -> str:
+    def _get_reference(self) -> str:
         """
-        Returns unique identifier for Parser
+        Returns unique reference for Parser.
         """
-        return self._name  # str(self.__hash__()) for more complex cases
+        return f"#/$defs/{self._name}"  # str(self.__hash__()) for more complex cases
 
-    @id.setter
-    def id(self, _) -> NoReturn:
-        """
-        Forbidden setter for id attribute.
-        (pythonic indirection for protected attributes)
-        """
-        raise AttributeError(
-            "Cannot manually set the id.\nThe id of a Parser is a computed property based on the Parser attributes"
-        )
+    def _add_to_formatters(self) -> None:
+        """Reverse add of related parsers."""
+        for f in self._formatters:
+            f.add_parser(self)
 
-    def _update_parsers(self) -> None:
+    def _update_formatters(self) -> None:
         """Reverse update of related parsers."""
-        for p in self._parsers:
-            p.update_parser(self)
+        for f in self._formatters:
+            f.update_parser(self)
 
-    def parse_file(
-            self, file_path: Path) -> dict:  # JSON object as dict
+    def _remove_from_formatters(self) -> None:
+        """Reverse remove of related parsers."""
+        for f in self._formatters:
+            f.remove_parser(self)
+
+    def _parse_file(self, file_path: Path) -> dict:
         """
-        Wrapper for the user defined parsing method,
-        takes care of prior file checking and applies validate
-        on parsed metadata.
+        Internal wrapper for the user defined parsing method,
+        takes care of prior file checking and applies validate on parsed metadata.
+
+        Arguments:
+            file_path: Path object to file to be parsed.
+
+        Returns:
+            dictionary of parsed metadata.
         """
+
         if not file_path.is_file():
             raise RuntimeError(
                 f'The input file {file_path.name} is incorrect')
@@ -148,44 +153,59 @@ class AParser(ABC):
     @abstractmethod
     def parse(self, file_path: Path) -> dict:
         """
-        Main method of the Parser class
-        used to parse metadata from the files.
+        Main method of the Parser class used to parse metadata from the files.
         To be defined by custom user classes.
         Must return JSON objects to be able to validate.
-        Result is stored in _parsed_metadata  and returned as value.
+        Result is stored in parsed_metadata  and returned as value.
         """
 
     def validate(self) -> bool:
         """
         Method used to validate parsed metadata.
-        Returns false if validation was not possible or
-        metadata has not been parsed yet.
+        Returns false if validation was not possible or metadata has not been parsed yet.
 
         Returns:
-            - True if validation successful False otherwise
+            True if validation successful False otherwise.
         """
+
         try:
             validate(self.parsed_metadata, schema=self.schema)
             return True
         except ValidationError as e:
             # TODO: better exception mechanism
-            LOG.warning(e.message)
+            _LOG.warning(e.message)
 
         return False
 
-    # Considering the name of the Parser as an immutable and unique property then we should only use
+    # Considering the name of the Parser as unique then we can use
     # the name property for equality/hashing
-    # TODO: to verify for robustness and correctness
     def __eq__(self, other) -> bool:
-        return self.id == other.id if isinstance(other, type(self)) else False
+        """Class instance equality method, returns true if instance name is equal."""
+        return self._name == other._name if isinstance(other, type(self)) else False
 
     def __ne__(self, other) -> bool:
+        """Class instance inequality method, returns true if instance equality is false."""
         return not self.__eq__(other)
 
     def __hash__(self) -> int:
+        """Class instance hashing method, returns hash of instance name."""
         return hash(self._name)
 
-    def filter_metadata(self, metadata: dict, keys: list, **kwargs):
+    def _filter_metadata(self, metadata: dict, keys: list, **kwargs) -> dict:
+        """
+        WIP
+        Filters parsed metadata by providing keys corresponding to metadata attributes.
+        If metadata is a nested dictionary then keys can be shaped as UNIX paths,
+        where each path part corresponding to a nested attribute.
+
+        Arguments:
+            metadata: dictionary to filter.
+            keys: list of keys to filter with.
+
+        Returns:
+            filtered dictionary.
+        """
+
         if 'add_description' in kwargs.keys():
             add_description = kwargs['add_description']
         else:
@@ -200,49 +220,29 @@ class AParser(ABC):
         else:
             new_dict = {}
             for k in keys:
-                LOG.debug(f"filtering key: {k}")
+                _LOG.debug(f"filtering key: {k}")
                 new_dict = _merge_dicts(
-                    new_dict, self._filter_dict(metadata, k.split('/')))
+                    new_dict, _filter_dict(metadata, k.split('/')))
             if add_description or add_type:
                 self._add_info_from_schema(new_dict, add_description, add_type)
             return new_dict
-
-    def _filter_dict(self,
-                     metadata: dict,
-                     filter: list,
-                     level: int = 0) -> dict:
-        """filter a dict using a filter (ordered list of re's)
-
-        :param metadata: dict to filter
-        :param filter: a list of re's
-        :param level: index of re in filter to use
-        :returns: a filtered dict
-
-        """
-        new_dict = {}
-        if level >= len(filter):
-            new_dict = deepcopy(metadata)
-        else:
-            for k in metadata.keys():
-                if fullmatch(filter[level], k):
-                    if isinstance(metadata[k], dict):
-                        new_dict[k] = self._filter_dict(
-                            metadata[k], filter, level + 1)
-                    else:
-                        new_dict[k] = metadata[k]
-        return new_dict
 
     def _add_info_from_schema(self,
                               metadata,
                               add_description,
                               add_type,
                               key_list=[]):
-        """TODO: add a function that enriches the metadata with information from the schema
-        NOT WORKING YET
-
-        :returns: None
-
         """
+        WIP
+        Adds additional information from input schema to parsed metadata inplace.
+
+        Arguments:
+            metadata: dictionary to add information to.
+            add_description: control boolean to enable addition of description information.
+            add_type: control boolean to enable addition of type information.
+            key_list: recursion list containing visited dictionary keys.
+        """
+
         for kk in metadata.keys():
             if isinstance(metadata[kk], dict):
                 self._add_info_from_schema(metadata[kk], add_description,

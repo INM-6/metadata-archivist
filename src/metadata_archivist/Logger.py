@@ -41,10 +41,10 @@ def _set_level(level: str) -> bool:
     Function used to set LOG object logging level.
 
     Arguments:
-        level: logging level as string, available levels: warning, info, debug
+        level: logging level as string, available levels: warning, info, debug.
 
     Returns:
-        success boolean
+        success boolean.
     """
     if level == "warning":
         _LOG.setLevel(logging.WARNING)
@@ -60,5 +60,5 @@ def _set_level(level: str) -> bool:
 
 
 def _is_debug() -> bool:
-    """Status function which returns true if logging level is defined to DEBUG"""
+    """Status function which returns true if logging level is defined to DEBUG."""
     return _LOG.level == logging.DEBUG

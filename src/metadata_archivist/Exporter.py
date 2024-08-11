@@ -35,7 +35,7 @@ class Exporter:
         Constructor of Exporter class.
 
         Arguments:
-            config: dictionary containing configuration parameters
+            config: dictionary containing configuration parameters.
         """
 
         self.config = config

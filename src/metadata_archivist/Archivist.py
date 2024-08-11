@@ -52,12 +52,12 @@ class Archivist:
     Convenience class for orchestrating the Explorer, Exporter, and Formatter.
 
     Attributes:
-        config: Dictionary containing configuration parameters
+        config: Dictionary containing configuration parameters.
 
     Methods:
-        parse: procedure that orchestrates exploration and parsing
-        get_metadata: procedure that orchestrates structuring and metadata compiling
-        export: procedure that triggers export method
+        parse: procedure that orchestrates exploration and parsing.
+        get_metadata: procedure that orchestrates structuring and metadata compiling.
+        export: procedure that triggers export method.
     """
 
     def __init__(self, path: str, parsers: List[AParser], schema: Optional[Union[dict, str]] = None, **kwargs) -> None:

@@ -33,16 +33,15 @@ class Explorer:
     Class for exploring an archive or directory and filtering out files needed for parsing.
     Filtering is based on target file patterns provided by parser objects.
     If exploring an archive, targets are decompressed in a temporary director,
-    path to temp files are returned as exploration results and Archivist class automatically
-    cleans them up.
+    path to temp files are returned as exploration results and Archivist class automatically cleans them up.
 
     Attributes:
         path: string of path to exploration target.
         path_is_archive: True if exploration target is an archive type.
-        config: dictionary containing configuration parameters
+        config: dictionary containing configuration parameters.
 
     Methods:
-        explore: exploration procedure on either archive or directory
+        explore: exploration procedure on either archive or directory.
     """
 
     def __init__(self, path: str, config: dict) -> None:
@@ -51,7 +50,7 @@ class Explorer:
 
         Arguments:
             path: string of path to exploration target.
-            config: dictionary containing configuration parameters
+            config: dictionary containing configuration parameters.
         """
         
         self.path = path
@@ -173,7 +172,7 @@ def _decompress_tar(output_file_patterns: List[str],
 def _dir_explore(output_file_patterns: List[str],
                  directory_path: Path) -> Tuple[Path, List[Path], List[Path]]:
     """
-    Explores given directory while matching files and recursing over sub-directories
+    Explores given directory while matching files and recursing over sub-directories.
     Paths are assumed to be checked before call.
 
     Arguments:

@@ -130,12 +130,12 @@ def _filter_dict(input_dict: dict, filter_keys: list, _level: int = 0) -> dict:
     Keys can be exact or defined as regular expression.
 
     Arguments:
-        input_dict: input dictionary to filter
-        filter_keys: list of keys as strings to filter by
-        _level: recursion level tracking integer
+        input_dict: input dictionary to filter.
+        filter_keys: list of keys as strings to filter by.
+        _level: recursion level tracking integer.
 
     Returns
-        filtered dictionary
+        filtered dictionary.
     """
     new_dict = {}
     if _level >= len(filter_keys):
@@ -156,11 +156,11 @@ def _deep_get_from_schema(schema: dict, keys: list) -> Any:
     Uses a sequence of keys to navigate tree.
 
     Arguments:
-        schema: schema dictionary (possibly with nested Properties)
-        keys: list of keys to follow in schema. Last key is used to retrieve value directly
+        schema: schema dictionary (possibly with nested Properties).
+        keys: list of keys to follow in schema. Last key is used to retrieve value directly.
 
     Returns:
-        object found at last key position in schema
+        object found at last key position in schema.
     """
 
     k = keys.pop(0)
@@ -202,7 +202,7 @@ def _pattern_parts_match(pattern_parts: list, actual_parts: list, context: Optio
         context: Optional context dictionary.
 
     Returns:
-        True if all parts of the pattern matched False otherwise
+        True if all parts of the pattern matched False otherwise.
     """
 
     is_match = False
@@ -238,11 +238,11 @@ def _unpack_singular_nested_value(iterable: Any, level: Optional[int] = None) ->
     i.e. unpacking a nested container where each nesting level contains a single value until a primitive is found.
 
     Arguments:
-        iterable: iterable type of container to unpack
-        level: Optional recursion level to stop unpacking
+        iterable: iterable type of container to unpack.
+        level: Optional recursion level to stop unpacking.
 
     Returns:
-        primitive value found at last depth (or given level)
+        primitive value found at last depth (or given level).
     """
 
     if isinstance(iterable, (str, int, float, bool)):
@@ -285,12 +285,12 @@ def _math_check(expression: str):
         operand => par_count += 1
 
     Arguments:
-        expression: string expression to validate
+        expression: string expression to validate.
     
     Returns:
         tuple of:
-            valid state boolean (True if par_count is 0 and state is blank and no malformed traces exists and number of variables found is above 0.)
-            variables found in expression only if expression is correct otherwise None
+            valid state boolean (True if par_count is 0 and state is blank and no malformed traces exists and number of variables found is above 0.).
+            variables found in expression only if expression is correct otherwise None.
     """
 
     state = -1 # -1: start, 0: blank|stop, 1: read operand, 2: compiling variable, 3: compiling number

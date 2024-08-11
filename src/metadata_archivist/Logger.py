@@ -5,10 +5,7 @@ Log manager.
 Initializes logger from logging module
 and sets custom message formatter.
 
-exports:
-    LOG: logger object, default logging level: warning
-    set_level: function to change logging level of LOG object
-    is_debug: function to test DEBUG level of LOG object
+Only for internal use.
 
 Authors: Jose V., Matthias K.
 """
@@ -35,11 +32,11 @@ class _LogFormatter(logging.Formatter):
 _HANDLER = logging.StreamHandler()
 _HANDLER.setFormatter(_LogFormatter())
 logging.basicConfig(handlers=[_HANDLER], level=logging.INFO)
-LOG = logging.getLogger()
-LOG.addHandler(_HANDLER)
+_LOG = logging.getLogger()
+_LOG.addHandler(_HANDLER)
 
 
-def set_level(level: str) -> bool:
+def _set_level(level: str) -> bool:
     """
     Function used to set LOG object logging level.
 
@@ -50,18 +47,18 @@ def set_level(level: str) -> bool:
         success boolean
     """
     if level == "warning":
-        LOG.setLevel(logging.WARNING)
+        _LOG.setLevel(logging.WARNING)
     elif level == "info":
-        LOG.setLevel(logging.INFO)
+        _LOG.setLevel(logging.INFO)
     elif level == "debug":
-        LOG.setLevel(logging.DEBUG)
+        _LOG.setLevel(logging.DEBUG)
     else:
-        LOG.warning(f"Trying to set incorrect logging level: {level}, staying at current level.")
+        _LOG.warning(f"Trying to set incorrect logging level: {level}, staying at current level.")
         return False
     
     return True
 
 
-def is_debug() -> bool:
+def _is_debug() -> bool:
     """Status function which returns true if logging level is defined to DEBUG"""
-    return LOG.level == logging.DEBUG
+    return _LOG.level == logging.DEBUG

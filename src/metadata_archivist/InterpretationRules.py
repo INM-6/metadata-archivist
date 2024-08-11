@@ -81,11 +81,11 @@ def _interpret_reference_rule(interpreter: _SchemaInterpreter, prop_val: dict, p
 
 def __interpret_refs(definitions: dict, prop_val: str, entry: _SchemaEntry) -> _SchemaEntry:
     """
-    Auxiliary function to check reference to parser.
+    Auxiliary function to check reference to Parser.
 
     Arguments:
         definitions: schema definitions dictionary.
-        prop_val: string value of property where reference is invoked. Should correspond to parser name.
+        prop_val: string value of property where reference is invoked. Should correspond to Parser name.
         entry: schema entry where Parser was referenced.
 
     Returns:
@@ -157,7 +157,7 @@ def _interpret_calculate_directive_rule(interpreter: _SchemaInterpreter, prop_va
     if len(variable_names) != len(variables):
         raise RuntimeError(f"Variables count mismatch in !calculate directive: expression={expression}, variables={variables}, names={variable_names}")
     
-    # At this point we check if each variable entry corresponds to a reference to a parser
+    # At this point we check if each variable entry corresponds to a reference to a Parser
     variable_entries = {}
     for variable in variables:
         if not variable in variable_names:
@@ -168,7 +168,7 @@ def _interpret_calculate_directive_rule(interpreter: _SchemaInterpreter, prop_va
             raise TypeError(f"Incorrect variable type in !calculate directive: {variable}={value}")
         
         if not "$ref" in value:
-            raise RuntimeError(f"Variable does not reference a parser in !calculate directive: {variable}={value}")
+            raise RuntimeError(f"Variable does not reference a Parser in !calculate directive: {variable}={value}")
         
         # We create a SchemaEntry in the context to be specially handled by the Formatter
         new_entry = _SchemaEntry(key=prop_key, context=deepcopy(entry.context))

@@ -31,7 +31,7 @@ _ACCEPTED_FORMATS = [
 class Explorer:
     """
     Class for exploring an archive or directory and filtering out files needed for parsing.
-    Filtering is based on target file patterns provided by parser objects.
+    Filtering is based on target file patterns provided by Parser instances.
     If exploring an archive, targets are decompressed in a temporary director,
     path to temp files are returned as exploration results and Archivist class automatically cleans them up.
 

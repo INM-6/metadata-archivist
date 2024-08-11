@@ -47,7 +47,7 @@ class AParser(ABC):
         Constructor for base abstract AParser.
 
         Arguments:
-            name: string name of parser. Should be unique across parsers used.
+            name: string name of Parser. Should be unique across parsers used.
             input_file_pattern: regexp string describing pattern of input file.
             schema: dictionary describing parsed output.        
         """
@@ -91,7 +91,7 @@ class AParser(ABC):
 
     @property
     def name(self) -> str:
-        """Returns parser name (str)."""
+        """Returns Parser name (str)."""
         return self._name
 
     @name.setter

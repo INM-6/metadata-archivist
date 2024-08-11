@@ -6,6 +6,8 @@ Schema Interpretation class for creating the
 interpretable structure for the unified metadata file.
 See README.md/SchemaInterpreter section.
 
+Only for internal use.
+
 Authors: Jose V., Matthias K.
 
 """
@@ -150,8 +152,8 @@ class _SchemaInterpreter:
 
         Arguments:
             properties: dictionary of schema properties to interpret.
-            _parent_key: key of parent property where method was called.
-            _relative_root: relative SchemaEntry where method was called. Defaults to self contained structure.
+            _parent_key: key of parent property where method was called. Recursion variable.
+            _relative_root: relative SchemaEntry where method was called. Recursion variable. Defaults to self contained structure.
         """
 
         if _relative_root is None:

@@ -20,6 +20,8 @@ Keyword arguments:
 Returns:
     formatted item value according to rule.
 
+Only for internal use.
+
 Authors: Jose V., Matthias K.
 
 """

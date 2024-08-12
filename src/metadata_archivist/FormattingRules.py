@@ -2,6 +2,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+
 Formatting rules defined for the Formatter
 Rules can be customized or added through
 the FORMATTING_RULES dictionary.

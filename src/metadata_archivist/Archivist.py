@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+
 Metadata archive integrating class.
 
 exports:
@@ -8,6 +9,7 @@ exports:
     DEFAULT_CONFIG dictionary
 
 Authors: Matthias K., Jose V.
+
 """
 
 from shutil import rmtree

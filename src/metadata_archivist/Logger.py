@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+
 Log manager.
-Initializes logger from logging module
-and sets custom message formatter.
+Initializes logger from logging module.
+Sets custom message formatter.
 
 Only for internal use.
 
 Authors: Jose V., Matthias K.
+
 """
 
 import logging

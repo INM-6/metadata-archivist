@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+
 Explorer class for retrieving files from compressed archives or directories.
 
 exports:
     Explorer class
 
 Authors: Jose V., Matthias K.
+
 """
 
 from pathlib import Path

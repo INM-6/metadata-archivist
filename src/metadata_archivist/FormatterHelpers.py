@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 """
 
-Collection of helper classes for Formatter module.
+Collection of helper classes for Formatter class.
+
+Only for internal use.
 
 Authors: Jose V., Matthias K.
 
@@ -12,192 +14,59 @@ from pathlib import Path
 from json import load, dumps
 from typing import Optional, Any, Dict, Union
 
-#class Hierachy:
-#    """
-#    helperclass, representing the hierachy in the schema
-#    """
-#
-#    def __init__(self):
-#        self._hierachy = []
-#
-#    def add(self, entry, level):
-#        try:
-#            self._hierachy[level] = entry
-#            return level + 1
-#        except IndexError:
-#            if len(self._hierachy) == level:
-#                self._hierachy.append(entry)
-#                return level + 1
-#            else:
-#                raise RuntimeError(
-#                    f'''Hierachy list corrupted, cannot append {entry} at index: {level}
-#                Hierachy list:
-#                {self._hierachy}
-#                ''')
-#
-#    @property
-#    def extractor_name(self):
-#        if isinstance(self._hierachy[-1], ExtractorDirective):
-#            return self._hierachy[-1].name
-#        else:
-#            return None
-#
-#    @property
-#    def extractor_directive(self):
-#        if isinstance(self._hierachy[-1], ExtractorDirective):
-#            return self._hierachy[-1]
-#        else:
-#            return None
-#
-#    @property
-#    def regexps(self):
-#        return_list = []
-#        for y in self._hierachy[:-1]:
-#            if isinstance(y, DirectoryDirective):
-#                return_list.append(y.regexp)
-#        return return_list
-#
-#    def match_path(self, file_path: Path):
-#        '''
-#        check if given file_path matches the file path of the directive by:
-#        - matching directory by directory in reverse order
-#        - if the Directive has not path it always matches
-#        '''
-#        if isinstance(self._hierachy[-1], ExtractorDirective):
-#            directive = self._hierachy[-1]
-#            if not directive.path:
-#                return True
-#            else:
-#                directive_path_list = list(Path(directive.path).parts)
-#                directive_path_list.reverse()
-#                file_path_list = list(file_path.parts)
-#                file_path_list.reverse()
-#                for i, x in enumerate(directive_path_list):
-#                    if x == '*' and (i + 1) == len(directive_path_list):
-#                        return True
-#                    elif x == '*' and not match('.*', file_path_list[i]):
-#                        return False
-#                    # for the varname match
-#                    elif fullmatch('.*{[a-zA-Z0-9_]+}.*', x):
-#                        for j, y in enumerate(self._hierachy[:-1]):
-#                            if isinstance(y, DirectoryDirective) and x.find(
-#                                    '{' + f'{y.varname}' + '}') != -1:
-#                                # TODO: add multiple regexp for x
-#                                if not match(
-#                                        x.format(**{y.varname: y.regexp}),
-#                                        file_path_list[i]):
-#                                    return False
-#                                else:
-#                                    self._hierachy[j].name = file_path_list[i]
-#                    elif not match(x, file_path_list[i]):
-#                        return False
-#                return True
-#        else:
-#            raise NotImplementedError(
-#                'currently only metadata from extractors can be added to the schema'
-#            )
-#        
-#    def is_empty(self) -> bool:
-#        return len(self._hierachy) == 0
 
-
-#class HierachyEntry:
-#    """
-#    entry in the Hierachy
-#    """
-#
-#    def __init__(self, add_to_metadata: Optional[bool] = False, **kwargs):
-#        self._add_to_metadata = add_to_metadata
-#        if 'name' in kwargs.keys():
-#            self.name = kwargs['name']
-#        else:
-#            self.name = None
-#        if 'description' in kwargs.keys():
-#            self.description = kwargs['description']
-#        else:
-#            self.description = None
-#
-#    @property
-#    def add_to_metadata(self):
-#        if self.name is None:
-#            raise RuntimeError(
-#                f'add_to_metadata is set to True but name is None')
-#        else:
-#            return self.name
-#
-#
-#class DirectoryDirective(HierachyEntry):
-#
-#    def __init__(self,
-#                 varname,
-#                 regexp,
-#                 add_to_metadata: Optional[bool] = True,
-#                 **kwargs):
-#        super().__init__(add_to_metadata, **kwargs)
-#        self.varname = varname
-#        self.regexp = regexp
-#
-#
-#class ExtractorDirective(HierachyEntry):
-#    """
-#    helperclass to handle extractor directives in archivist schema
-#    """
-#
-#    def __init__(self,
-#                 name,
-#                 add_to_metadata: Optional[bool] = False,
-#                 **kwargs):
-#        super().__init__(add_to_metadata, **kwargs)
-#        self.name = name
-#        self.path = kwargs.pop('path', None)
-#        self.keys = kwargs.pop('keys', None)
-
-    # def parse_metadata(self, metadata):
-    #     if self.keys is None:
-    #         return metadata
-    #     else:
-    #         return_dict = {}
-    #         for kk in self.keys:
-    #             kk_list = kk.split('/')
-    #             dd = return_dict
-    #             if len(kk_list) > 1:
-    #                 for node in kk_list[:-1]:
-    #                     if node not in dd.keys():
-    #                         dd[node] = {}
-    #             dd[kk_list[-1]] = deep_get(metadata, *kk.split('/'))
-    #         return return_dict
-
-
-# TODO: Should all the ParserHelpers classes name start with "_" ?
-class Cache:
+class _FormatterCache:
     """
-    Convenience class for caching parsing results.
+    Convenience class for storing ParserCache objects.
     For each Parser a _ParserCache object is created which will store all parsing results.
-    To this end, Parsers have to be added through the corresponding internal method.
-    Then a _ParserCache is obtained through index access i.e. ```[key]``` and used to add _CacheEntry objects.
     Iteration is possible by using dictionary iterator on the actual cache storage.
-    """
 
-    _cache: dict
+    Attributes are only used internally.
+
+    Methods:
+        add: add new ParserCache using Parser name.
+        drop: drop ParserCache using Parser name.
+        is_empty: empty test for internal dictionary containing ParserCaches.
+    """
 
     def __init__(self):
+        """Constructor for FormatterCache."""
         self._cache = dict()
         self._iterator = None
 
-    def add(self, parser_id) -> None:
-        if parser_id not in self._cache:
-            self._cache[parser_id] = _ParserCache()
-        else:
-            raise KeyError(f"Parser {parser_id} already exists in cache")
-        
-    def drop(self, parser_id) -> None:
-        self._cache.pop(parser_id, None)
+    def add(self, parser_name: str) -> None:
+        """
+        Method to add new ParserCache to internal dictionary.
 
-    def __getitem__(self, parser_id):
-        return self._cache[parser_id]
+        Arguments:
+            parser_name: string name of Parser to create a ParserCache for.
+        """
+        if parser_name not in self._cache:
+            self._cache[parser_name] = _ParserCache()
+        else:
+            raise KeyError(f"Parser {parser_name} already exists in cache")
+        
+    def drop(self, parser_name: str) -> None:
+        """
+        Method to drop ParserCache from internal dictionary.
+
+        Arguments:
+            parser_name: string name of Parser to drop its ParserCache for.
+        """
+        self._cache.pop(parser_name, None)
+
+    def __getitem__(self, parser_name: str):
+        """
+        Get operator for internal dictionary using Parser names.
+
+        Arguments:
+            parser_name: string name of Parser to fetch from internal dictionary.
+        """
+        return self._cache[parser_name]
 
     def __iter__(self):
         """
+        Iteration operator.
         Iteration is done by iterating over the storage dictionary.
         """
         self._iterator = iter(self._cache)
@@ -205,6 +74,7 @@ class Cache:
 
     def __next__(self):
         """
+        Next operator.
         When iterating over a dictionary keys are returned,
         here we return the corresponding _ParserCache objects.
         """
@@ -213,33 +83,56 @@ class Cache:
         return self._cache[next(self._iterator)]
 
     def is_empty(self):
+        """Empty test method for internal ParserCache dictionary."""
         return len(self._cache) == 0
 
 
 class _ParserCache:
     """
-    Convenience class for caching parsing results.
-    For each Parser a _ParserCache object is created which will store all parsing results.
-    _ParserCache objects can contain any amount of _CacheEntry objects.
+    Convenience class for storing CacheEntry objects.
+    For each file parsed by the corresponding parser a CacheEntry object is created.
     Iteration is possible by using list iterator on the actual entry storage.
+
+    Attributes are only used internally.
+
+    Methods:
+        add: add new CacheEntry for parsed file.
+        is_empty: empty test for internal list containing CacheEntries.
     """
 
-    _entries: list
-
     def __init__(self):
+        """Constructor for ParserCache"""
         self._entries = list()
         self._iterator = None
 
     def add(self, *args):
+        """
+        Method to add CacheEntry to internal list.
+
+        Arguments are directly passed on to CacheEntry (cf constructor).
+
+        Returns:
+            new CacheEntry.
+        """
         entry = _CacheEntry(*args)
         self._entries.append(entry)
         return entry
 
     def __getitem__(self, index: int):
+        """
+        Get operator for internal list using index.
+
+        Arguments:
+            index integer where CacheEntry is located at.
+
+        Returns:
+            indexed CacheEntry.
+        """
         return self._entries[index]
 
     def __iter__(self):
         """
+        Iteration operator.
         Iteration is done by iterating over the storage dictionary.
         """
         self._iterator = iter(self._entries)
@@ -247,6 +140,7 @@ class _ParserCache:
 
     def __next__(self):
         """
+        Next operator.
         When iterating over a dictionary keys are returned,
         here we return the corresponding _ParserCache objects.
         """
@@ -255,31 +149,44 @@ class _ParserCache:
         return next(self._iterator)
 
     def is_empty(self):
+        """Empty test method for internal CacheEntry list."""
         return len(self._entries) == 0
 
 
 class _CacheEntry:
     """
-    Convenience class for caching parsing results.
-    For each Parser a _ParserCache object is created which will store all parsing results.
-    For each extracted file a _CacheEntry object is created, after parsing, the results can be
+    Convenience class for storing parsing results.
+    For each parsed file a _CacheEntry object is created, after parsing, the results can be
     lazily stored and a meta_path is generated or the metadata can be directly stored in the entry.
     If the results are lazily stored then calling load_metadata would load them to memory.
+
+    Attributes:
+        explored_path: Path object pointing to root exploration directory. Used to get relative file paths.
+        file_path: Path object pointing to parsed file.
+        rel_path: file Path relative to explored Path.
+        metadata: parsed metadata dictionary.
+
+    Methods:
+        load_metadata: returns CachedMetadata, if lazy loading is enabled then loads metadata from self contained meta file.
     """
 
-    decompress_path: Path
-    file_path: Path
-    metadata: dict
-    meta_path: Path
-
-
     def __init__(self,
-                 decompress_path: Path,
+                 explored_path: Path,
                  file_path: Path,
                  metadata: Optional[dict] = None):
-        self.decompress_path = decompress_path
+        """
+        Constructor of CacheEntry.
+
+        Arguments:
+            explored_path: Path object pointing to root exploration directory. Used to get relative file paths.
+            file_path: Path object pointing to parsed file.
+            rel_path: file Path relative to explored Path.
+            metadata: parsed metadata dictionary.
+        """
+
+        self.explored_path = explored_path
         self.file_path = file_path
-        self.rel_path = file_path.relative_to(decompress_path)
+        self.rel_path = file_path.relative_to(explored_path)
         self.metadata = metadata
         if metadata is None:
             self.meta_path = Path(str(file_path) + ".meta")
@@ -288,57 +195,67 @@ class _CacheEntry:
 
     def load_metadata(self) -> dict:
         """
-        If a cache entry does not contain metadata, attempts to load it from the meta_path.
+        Loads cached metadata.
+        If no cache exists this implies that lazy loading is enabled,
+        metadata is loaded then from the self generated meta path.
+
+        Returns:
+            self contained parsed metadata dictionary.
         """
         if self.metadata is None:
             if self.meta_path is None:
                 raise RuntimeError(
                     "Cache entry does not contain metadata and meta path not found."
                 )
+            
             with self.meta_path.open("r") as f:
                 self.metadata = load(f)
 
             if self.metadata is None:
                 raise RuntimeError(f"Failed to load metadata {dumps(self, indent=4, default=vars)}")
-            else:
-                self.meta_path = None
             
         return self.metadata
 
-    def add_metadata(self, metadata: dict):
-        """
-        TODO: should we deprecate it in favor of load_metadata?
-        """
-        if self.metadata is not None:
-            raise RuntimeError('metadata already exists')
-        self.metadata = metadata
 
+class _ParserIndexes:
+    """
+    Indexing class for storing different indexes for each Parser:
+        index in parsers list.
+        index in input file patterns list.
+        index in schema properties list.
 
-class Indexes:
+    Attributes:
+        prs_indexes: dictionary of Parser indexes in parsers list.
+        ifp_indexes: dictionary of Parser indexes in input file patterns list.
+        scp_indexes: dictionary of Parser indexes in schema properties list.
+
+    Methods:
+        set_index: stores the index of a Parser in a given list using Parser name.
+        get_index: fetches the index of a Parser in a given list using Parser name.
+        drop_index: drops the stored index of a Parser in a given list using Parser name.
     """
-    Class to be handled only by Formatter class.
-    Indexing class for storing indexes per Parser:
-        - Parsers list index
-        - input file patterns list index
-        - schema properties list index
-    """
-    prs_indexes: dict
-    ifp_indexes: dict
-    scp_indexes: dict
 
     def __init__(self) -> None:
-        self.prs_indexes = {}
-        self.ifp_indexes = {}
-        self.scp_indexes = {}
+        """Constructor of ParserIndexes class."""
+        self.prs_indexes = dict()
+        self.ifp_indexes = dict()
+        self.scp_indexes = dict()
 
     def _get_storage(self, storage: str) -> dict:
         """
-        Private method for getting specific storage based on storage name string:
+        Internal method for getting specific storage based on storage name string.
         To determine which storage should the index go to:
-            - 'prs' or 'parsers' for parser index list
-            - 'ifp' or 'input_file_patterns' for input file pattern index list
-            - 'scp' or 'schema_properties' for schema property list
+            'prs' or 'parsers' for parser index list.
+            'ifp' or 'input_file_patterns' for input file pattern index list.
+            'scp' or 'schema_properties' for schema property list.
+
+        Arguments:
+            storage: string name of storage to get.
+
+        Returns:
+            selected storage dictionary.
         """
+
         prs_patterns = ["prs", "parsers"]
         ifp_patterns = ["ifp", "input_file_patterns"]
         scp_patterns = ["scp", "schema_properties"]
@@ -352,33 +269,51 @@ class Indexes:
         raise ValueError(f"Incorrect value for storage name, got {storage}, accepted {prs_patterns + ifp_patterns + scp_patterns}")
         
     
-    def set_index(self, parser_id: Any, storage: str, index: int) -> None:
+    def set_index(self, parser_name: str, storage: str, index: int) -> None:
         """
-        Generic set index method for all storages.
-        """
-        self._get_storage(storage)[parser_id] = index
+        Set index method for selected storage.
 
-    def get_index(self, parser_id: Any, storage: Optional[str] = None) -> Union[int, Dict[str, int]]:
+        Arguments:
+            parser_name: name string of Parser to use as identifier.
+            storage: string name of storage to set into.
+            index: int index to store.
         """
-        Generic get index method for all storages.
+        self._get_storage(storage)[parser_name] = index
+
+    def get_index(self, parser_name: str, storage: Optional[str] = None) -> Union[int, Dict[str, int]]:
+        """
+        Get index method for all storages.
         If no storage specified, all stored indexes are returned as a dictionary.
+
+        Arguments:
+            parser_name: name string of Parser to use as identifier.
+            storage: Optional string name of storage to get an index from.
+
+        Returns:
+            if no storage provided then returns a dictionary of storage names and index pairs,
+            otherwise integer index corresponding to selected storage is returned.
         """
         if storage is None:
-            # TODO: Should we raise an error if the id is not in any/all dictionaries?
             return {
-                "ex": self.prs_indexes.get(parser_id, None),
-                "ifp": self.ifp_indexes.get(parser_id, None),
-                "sp": self.scp_indexes.get(parser_id, None),
+                "prs": self.prs_indexes.get(parser_name),
+                "ifp": self.ifp_indexes.get(parser_name),
+                "scp": self.scp_indexes.get(parser_name),
                 }
         else:
-            return self._get_storage(storage)[parser_id]
+            return self._get_storage(storage)[parser_name]
         
-    def drop_indexes(self, parser_id: Any) -> None:
+    def drop_indexes(self, parser_name: str) -> dict:
         """
         Remove method for a Parser in all index storages.
-        TODO: Should we return values?
-        TODO: Should we raise if id is not known?
+
+        Arguments:
+            parser_name: name string of Parser to use as identifier.
+
+        Returns:
+            dictionary of storage names and index pairs corresponding to Parser.
         """
-        self.prs_indexes.pop(parser_id, None)
-        self.ifp_indexes.pop(parser_id, None)
-        self.scp_indexes.pop(parser_id, None)
+        return {
+            "prs": self.prs_indexes.pop(parser_name),
+            "ifp": self.ifp_indexes.pop(parser_name),
+            "scp": self.scp_indexes.pop(parser_name),
+            }

@@ -16,7 +16,7 @@ from pathlib import Path
 from copy import deepcopy
 from abc import ABC, abstractmethod
 
-from .Logger import _LOG
+from .logger import _LOG
 from .helper_functions import _merge_dicts, _filter_dict, _deep_get_from_schema, _pattern_parts_match
 
 # Try to load jsonschema package components for validation

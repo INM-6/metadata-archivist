@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 
-Collection of helper classes for Formatter class.
+Collection of helper/convenience classes.
 
 Only for internal use.
 
@@ -12,7 +12,7 @@ Authors: Jose V., Matthias K.
 
 from pathlib import Path
 from json import load, dumps
-from typing import Optional, Any, Dict, Union
+from typing import Optional, Dict, Union, Any
 
 
 class _FormatterCache:
@@ -317,3 +317,55 @@ class _ParserIndexes:
             "ifp": self.ifp_indexes.pop(parser_name),
             "scp": self.scp_indexes.pop(parser_name),
             }
+
+
+class _SchemaEntry:
+    """
+    Convenience superset of dictionary class.
+    Used to recursively generate nested dictionary structure to serve as an intermediary between schema and metadata file.
+    Contains additional context dictionary for a given tree level and the name of the root node.
+    For initial root node, no name is defined, however for subsequent nodes there should always be a name.
+    Get, set, and iteration access is redirected to internal storage.
+
+    Attributes:
+        key: schema key used as entry name.
+        context: dictionary containing information of schema properties where entry is created.
+
+    Methods:
+        items: returns key value pair item view of entry content.
+        is_empty: returns True is entry content is empty.
+    """
+
+    def __init__(self, key: Optional[str] = None, context: Optional[dict] = None) -> None:
+        """
+        Constructor for schema entry.
+        
+        Arguments:
+            key: schema key used as entry name.
+            context: dictionary containing information of schema properties where entry is created.
+        """
+
+        self.key = key
+        self.context = context if context is not None else {}
+        self._content = {}
+        self._iterator = None
+
+    def __getitem__(self, key) -> Any:
+        """Value retrieval method for entry content using key."""
+        return self._content[key]
+    
+    def __setitem__(self, key, value) -> None:
+        """Value insertion method for entry content using key."""
+        self._content[key] = value
+
+    def __contains__(self, key) -> bool:
+        """Key presence test for entry content."""
+        return key in self._content
+    
+    def items(self):
+        """Entry content items get method."""
+        return self._content.items()
+    
+    def is_empty(self) -> bool:
+        """Entry empty content test."""
+        return len(self._content) == 0

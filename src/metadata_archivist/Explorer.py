@@ -3,6 +3,7 @@
 """
 
 Explorer class for retrieving files from compressed archives or directories.
+Filtering is done by comparing file names against input file patterns defined in Parsers.
 
 exports:
     Explorer class
@@ -18,7 +19,7 @@ from collections.abc import Callable
 from typing import List, Tuple, Union
 from tarfile import is_tarfile, open as t_open
 
-from .Logger import _LOG
+from .logger import _LOG
 from .helper_functions import _pattern_parts_match, _check_dir
 
 

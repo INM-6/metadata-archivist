@@ -35,6 +35,7 @@ from .Formatter import Formatter
 from .SchemaInterpreter import _SchemaEntry
 from .helper_functions import _pattern_parts_match, _update_dict_with_parts, _unpack_singular_nested_value
 
+
 def _format_parser_id_rule(formatter: Formatter, interpreted_schema: _SchemaEntry, branch: list, value: str, **kwargs) -> dict:
     # Formats metadata with parsing result.
     # As parsing results can be filtered by file name or file path,
@@ -154,6 +155,7 @@ def _format_parser_id_rule(formatter: Formatter, interpreted_schema: _SchemaEntr
 
     return tree
 
+
 def _format_calculate_rule(formatter: Formatter, interpreted_schema: _SchemaEntry, branch: list, value: dict, **kwargs) -> Union[int, float]:
     # Returns numerical value based on a mathematical equation using parsing results as variables.
     # For each variable a corresponding numerical value in parsing results must be found.
@@ -181,6 +183,7 @@ def _format_calculate_rule(formatter: Formatter, interpreted_schema: _SchemaEntr
     formatted_expression = expression.format(**parsing_values)
 
     return eval(formatted_expression)
+
 
 _FORMATTING_RULES = {
     "!parser_id": _format_parser_id_rule,

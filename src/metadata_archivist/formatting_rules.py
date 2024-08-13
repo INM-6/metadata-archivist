@@ -3,6 +3,8 @@
 # -*- coding: utf-8 -*-
 """
 
+Module containing collection of rules as functions to format according to interpreted schema.
+
 Formatting rules defined for the Formatter
 Rules can be customized or added through
 the FORMATTING_RULES dictionary.
@@ -30,9 +32,10 @@ Authors: Jose V., Matthias K.
 from json import dumps
 from typing import Union
 
-from .Logger import _LOG
 from .Formatter import Formatter
-from .SchemaInterpreter import _SchemaEntry
+
+from .logger import _LOG
+from .helper_classes import _SchemaEntry
 from .helper_functions import _pattern_parts_match, _update_dict_with_parts, _unpack_singular_nested_value
 
 

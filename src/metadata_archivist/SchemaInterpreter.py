@@ -14,62 +14,11 @@ Authors: Jose V., Matthias K.
 
 from json import dumps
 from copy import deepcopy
-from typing import Optional, Any
+from typing import Optional
 from collections.abc import Iterable
 
 from .Logger import _LOG, _is_debug
-
-
-class _SchemaEntry:
-    """
-    Convenience superset of dictionary class.
-    Used to recursively generate nested dictionary structure to serve as an intermediary between schema and metadata file.
-    Contains additional context dictionary for a given tree level and the name of the root node.
-    For initial root node, no name is defined, however for subsequent nodes there should always be a name.
-    Get, set, and iteration access is redirected to internal storage.
-
-    Attributes:
-        key: schema key used as entry name.
-        context: dictionary containing information of schema properties where entry is created.
-
-    Methods:
-        items: returns key value pair item view of entry content.
-        is_empty: returns True is entry content is empty.
-    """
-
-    def __init__(self, key: Optional[str] = None, context: Optional[dict] = None) -> None:
-        """
-        Constructor for schema entry.
-        
-        Arguments:
-            key: schema key used as entry name.
-            context: dictionary containing information of schema properties where entry is created.
-        """
-
-        self.key = key
-        self.context = context if context is not None else {}
-        self._content = {}
-        self._iterator = None
-
-    def __getitem__(self, key) -> Any:
-        """Value retrieval method for entry content using key."""
-        return self._content[key]
-    
-    def __setitem__(self, key, value) -> None:
-        """Value insertion method for entry content using key."""
-        self._content[key] = value
-
-    def __contains__(self, key) -> bool:
-        """Key presence test for entry content."""
-        return key in self._content
-    
-    def items(self):
-        """Entry content items get method."""
-        return self._content.items()
-    
-    def is_empty(self) -> bool:
-        """Entry empty content test."""
-        return len(self._content) == 0
+from .helper_classes import _SchemaEntry
 
 
 class _SchemaInterpreter:
@@ -116,7 +65,7 @@ class _SchemaInterpreter:
         self.structure = _SchemaEntry()
 
         # We load INTERPRETATION_RULES directly in instance to avoid circular importing issues
-        from .InterpretationRules import _INTERPRETATION_RULES
+        from .interpretation_rules import _INTERPRETATION_RULES
         self.rules = deepcopy(_INTERPRETATION_RULES)
 
     def _interpret_schema(self,

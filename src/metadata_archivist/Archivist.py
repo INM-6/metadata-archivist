@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 
-Metadata archive integrating class.
+Archivist class for orchestrating Explorer, Formatter, and Exporter classes.
 
 exports:
     Archivist class
@@ -20,7 +20,8 @@ from .Parser import AParser
 from .Exporter import Exporter
 from .Explorer import Explorer
 from .Formatter import Formatter
-from .Logger import _LOG, _set_level, _is_debug
+
+from .logger import _LOG, _set_level, _is_debug
 
 
 """

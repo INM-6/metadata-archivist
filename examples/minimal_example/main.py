@@ -10,7 +10,7 @@ Authors: Matthias K., Jose V.
 from json import load, dumps, dump
 from pathlib import Path
 
-from my_parser import my_parser
+from my_parsers import time_parser, yml_parser
 from metadata_archivist import Archivist
 
 
@@ -23,16 +23,16 @@ if __name__ == "__main__":
         config = load(f)
 
     arch = Archivist(path=Path('metadata_archive.tar'),
-                    formatter=my_parser,
+                    parsers=[time_parser(), yml_parser()],
                     **config)
 
     arch.parse()
     arch.export()
 
     print("\nResulting schema:")
-    print(dumps(my_parser.schema, indent=4))
+    print(dumps(arch._formatter.schema, indent=4))
     with Path("schema.json").open("w") as f:
-        dump(my_parser.schema, f, indent=4)
+        dump(arch._formatter.schema, f, indent=4)
 
     print("\nResulting metadata:")
     print(dumps(arch.get_metadata(), indent=4))

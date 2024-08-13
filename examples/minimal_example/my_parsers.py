@@ -41,6 +41,3 @@ class yml_parser(AParser):
         with file_path.open("r") as fp:
             out = yaml.safe_load(fp)
         return out
-
-
-my_parser = Formatter(parsers=[time_parser(), yml_parser()], lazy_load=True)

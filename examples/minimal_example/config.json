@@ -1,5 +1,6 @@
 {
     "extraction_directory": "tmp",
     "output_directory": "./",
-    "output_file": "metadata.json"
+    "output_file": "metadata.json",
+    "lazy_load": true
 }

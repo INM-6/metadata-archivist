@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 
-Metadata to file exporter.
+Exporter class to save formatted metadata to file.
 Currently only available export format is JSON.
 
 exports:
@@ -15,7 +15,7 @@ Authors: Jose V., Matthias K.
 from json import dump
 from pathlib import Path
 
-from .Logger import _LOG
+from .logger import _LOG
 from .helper_functions import _check_dir
 
 

@@ -32,16 +32,17 @@ from .Logger import _LOG
 from .helper_functions import _math_check
 from .SchemaInterpreter import _SchemaInterpreter, _SchemaEntry
 
-"""
-Constants for schema specific/special values to be considered when parsing.
-"""
+
+# Constants for schema specific/special values to be considered when parsing.
 _KNOWN_REFS = [
     "#/$defs/",
 ]
 
+
 def _interpret_simple_property_rule(interpreter: _SchemaInterpreter, prop_val: dict, prop_key: str, parent_key: str, entry: _SchemaEntry) -> _SchemaEntry:
     # Known simple properties return recursion results without branching
     return interpreter._interpret_schema(prop_val, parent_key, entry)
+
 
 def _interpret_pattern_property_rule(interpreter: _SchemaInterpreter, prop_val: dict, prop_key: str, parent_key: str, entry: _SchemaEntry) -> _SchemaEntry:
     # We create a regex context and recurse overfrom copy import deepcopy the contents of the property.
@@ -49,12 +50,14 @@ def _interpret_pattern_property_rule(interpreter: _SchemaInterpreter, prop_val: 
 
     return interpreter._interpret_schema(prop_val, parent_key, entry)
 
+
 def _interpret_parsing_directive_rule(interpreter: _SchemaInterpreter, prop_val: Union[str, dict], prop_key: str, parent_key: str, entry: _SchemaEntry) -> _SchemaEntry:
     # We create an !parsing context but keep on with current recursion level
     # Contents of this dictionary are not supposed to be handled by the interpreter.
     entry.context.update({prop_key: prop_val})
 
     return entry 
+
 
 def _interpret_varname_directive_rule(interpreter: _SchemaInterpreter, prop_val: dict, prop_key: str, parent_key: str, entry: _SchemaEntry) -> _SchemaEntry:
     # Check if regex context is present in current entry
@@ -65,7 +68,8 @@ def _interpret_varname_directive_rule(interpreter: _SchemaInterpreter, prop_val:
     entry.context.update({prop_key: prop_val, "regexp": parent_key})
     
     return entry
-    
+
+
 def _interpret_reference_rule(interpreter: _SchemaInterpreter, prop_val: dict, prop_key: str, parent_key: str, entry: _SchemaEntry) -> _SchemaEntry:
     # Check if reference is well formed against knowledge base
     if not any(prop_val.startswith(ss) for ss in _KNOWN_REFS):
@@ -78,6 +82,7 @@ def _interpret_reference_rule(interpreter: _SchemaInterpreter, prop_val: dict, p
     entry = __interpret_refs(defs, prop_val, entry)
 
     return entry
+
 
 def __interpret_refs(definitions: dict, prop_val: str, entry: _SchemaEntry) -> _SchemaEntry:
     """
@@ -112,6 +117,7 @@ def __interpret_refs(definitions: dict, prop_val: str, entry: _SchemaEntry) -> _
 
     return entry
 
+
 def __interpret_sub_schema(sub_schema: dict, entry: _SchemaEntry, filters: Optional[list] = None) -> list:
     """
     WIP
@@ -133,6 +139,7 @@ def __interpret_sub_schema(sub_schema: dict, entry: _SchemaEntry, filters: Optio
     # TODO
 
     return []
+
 
 def _interpret_calculate_directive_rule(interpreter: _SchemaInterpreter, prop_val: dict, prop_key: str, parent_key: str, entry: _SchemaEntry) -> _SchemaEntry:
     # Calculates simple math expressions using values from parsers.
@@ -186,6 +193,7 @@ def _interpret_calculate_directive_rule(interpreter: _SchemaInterpreter, prop_va
     }
 
     return entry
+
 
 _INTERPRETATION_RULES = {
     "properties": _interpret_simple_property_rule,

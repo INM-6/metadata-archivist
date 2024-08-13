@@ -56,8 +56,8 @@ class Explorer:
             config: dictionary containing configuration parameters.
         """
         
-        self.path = path
         self.config = config
+        self.path = path
 
     @property
     def path(self) -> Path:

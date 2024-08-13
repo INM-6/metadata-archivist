@@ -16,10 +16,20 @@ from pathlib import Path
 from copy import deepcopy
 from abc import ABC, abstractmethod
 
-from jsonschema import validate, ValidationError
-
 from .Logger import _LOG
 from .helper_functions import _merge_dicts, _filter_dict, _deep_get_from_schema, _pattern_parts_match
+
+# Try to load jsonschema package components for validation
+# In case of failure, validation is disabled
+try:
+    from jsonschema import validate, ValidationError
+    _DO_VALIDATE = True
+except:
+    _LOG.warning("JSONSchema package not found, disabling validation.")
+    def validate(instance: dict, schema: dict):
+        return True
+    ValidationError = Exception
+    _DO_VALIDATE = False
 
 
 class AParser(ABC):
@@ -36,26 +46,29 @@ class AParser(ABC):
         schema: Parser schema used to validate parsed metadata.
         name: unique name string used for Formatter schema handling.
         parsed_metadata: dictionary contained parsed metadata.
+        validate_output: control boolean to enable parsing output validation against self contained schema.
 
     Methods:
         parse: Abstract method for file parsing, user defined.
-        validate: validates self contained parsed metadata using jsonschema validate function.
+        run_validation: If jsonschema package is available, validates self contained parsed metadata against self contained schema.
     """
 
-    def __init__(self, name: str, input_file_pattern: str, schema: dict) -> None:
+    def __init__(self, name: str, input_file_pattern: str, schema: dict, validate_output: bool = True) -> None:
         """
         Constructor for base abstract AParser.
 
         Arguments:
             name: string name of Parser. Should be unique across parsers used.
             input_file_pattern: regexp string describing pattern of input file.
-            schema: dictionary describing parsed output.        
+            schema: dictionary describing parsed output.
+            validate_output: control boolean to enable parsing output validation against self contained schema.
         """
 
         super().__init__()
         self._name = name
         self._input_file_pattern = input_file_pattern
         self._schema = schema
+        self.validate_output = _DO_VALIDATE and validate_output
 
         self._formatters = []  # For two way relationship (Formatter - Parser) update handling
 
@@ -146,7 +159,7 @@ class AParser(ABC):
         pattern.reverse()
         if _pattern_parts_match(pattern, list(reversed(file_path.parts))):
             self.parsed_metadata = self.parse(file_path)
-        self.validate()
+        self.run_validation()
 
         return self.parsed_metadata
 
@@ -159,23 +172,18 @@ class AParser(ABC):
         Result is stored in parsed_metadata  and returned as value.
         """
 
-    def validate(self) -> bool:
+    def run_validation(self) -> None:
         """
         Method used to validate parsed metadata.
-        Returns false if validation was not possible or metadata has not been parsed yet.
-
-        Returns:
-            True if validation successful False otherwise.
+        Can only be run if jsonschema package is present in python environment.
         """
 
-        try:
-            validate(self.parsed_metadata, schema=self.schema)
-            return True
-        except ValidationError as e:
-            # TODO: better exception mechanism
-            _LOG.warning(e.message)
-
-        return False
+        if self.validate_output:
+            try:
+                validate(instance=self.parsed_metadata, schema=self.schema)
+            except ValidationError as e:
+                # TODO: better exception mechanism
+                _LOG.warning(e.message)
 
     # Considering the name of the Parser as unique then we can use
     # the name property for equality/hashing

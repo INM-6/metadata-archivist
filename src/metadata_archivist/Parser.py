@@ -14,7 +14,7 @@ Authors: Jose V., Matthias K.
 
 from pathlib import Path
 from copy import deepcopy
-from abc import ABC, abstractmethod # Abstract class base infrastructure
+from abc import ABC, abstractmethod
 
 from jsonschema import validate, ValidationError
 

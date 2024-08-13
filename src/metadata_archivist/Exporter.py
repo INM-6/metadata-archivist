@@ -30,7 +30,7 @@ class Exporter:
         export: exporting procedure corresponding to output format in configuration.
     """
 
-    def __init__(self, config) -> None:
+    def __init__(self, config: dict) -> None:
         """
         Constructor of Exporter class.
 

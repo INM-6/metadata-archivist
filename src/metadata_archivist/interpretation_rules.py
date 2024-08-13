@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 """
 
+Module containing collection of rules as functions to interpreter user defined schema.
+
 Interpretation rules defined for the SchemaInterpreter
 Rules can be customized or added through
 the INTERPRETATION_RULES dictionary.
@@ -28,9 +30,9 @@ from re import sub
 from copy import deepcopy
 from typing import Optional, Union
 
-from .Logger import _LOG
+from .logger import _LOG
+from .helper_classes import _SchemaInterpreter, _SchemaEntry
 from .helper_functions import _math_check
-from .SchemaInterpreter import _SchemaInterpreter, _SchemaEntry
 
 
 # Constants for schema specific/special values to be considered when parsing.

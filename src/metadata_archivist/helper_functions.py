@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 
-Additional helper functions for internal use.
+Module containing collection of convenience functions internally used.
 
 Authors: Jose V., Matthias K.
 
@@ -15,7 +15,7 @@ from copy import deepcopy
 from collections.abc import Iterable
 from typing import Optional, Union, Any
 
-from .Logger import _LOG
+from .logger import _LOG
 
 
 def _check_dir(dir_path: str, allow_existing: bool = False) -> Path:

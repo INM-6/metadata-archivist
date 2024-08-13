@@ -357,7 +357,7 @@ class Formatter:
                 # Get parser and parse metadata
                 pix = self._indexes.get_index(pid, "prs")
                 parser = self._parsers[pix]
-                metadata = parser.parse_file(file_path)
+                metadata = parser._parse_file(file_path)
 
                 if not self.config["lazy_load"]:
                     self._cache[pid].add(

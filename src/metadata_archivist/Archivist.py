@@ -165,7 +165,7 @@ class Archivist:
         if self._cache["compile_metadata"]:
             _LOG.info("Compiling metadata ...")
             self._cache["compile_metadata"] = False
-            self._cache["metadata"] = self._formatter.compile_metadata(**self.config)
+            self._cache["metadata"] = self._formatter.compile_metadata()
             _LOG.info("Done!")
             self._clean_up()
 

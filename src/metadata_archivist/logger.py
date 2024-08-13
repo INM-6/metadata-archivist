@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 """
 
-Log manager.
+Internally used logging class extension.
+
 Initializes logger from logging module.
 Sets custom message formatter.
 

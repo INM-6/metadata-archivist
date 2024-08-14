@@ -45,7 +45,7 @@ DEFAULT_CONFIG = {
             "overwrite": True,
             "auto_cleanup": True,
             "verbose": "info",
-            "add_description": True,
+            "add_description": False,
             "add_type": False,
             "output_format": "JSON"
 }

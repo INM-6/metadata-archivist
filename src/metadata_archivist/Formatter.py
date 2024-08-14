@@ -17,7 +17,7 @@ Authors: Jose V., Matthias K.
 from pathlib import Path
 from copy import deepcopy
 from json import dump, load
-from typing import Optional, List, NoReturn, Union
+from typing import Optional, List, Iterable, NoReturn, Union
 
 from .Parser import AParser
 
@@ -87,14 +87,14 @@ class Formatter:
     """
 
     def __init__(self,
-                 parsers: Optional[List[AParser]] = None,
+                 parsers: Optional[Union[AParser, Iterable[AParser]]] = None,
                  schema: Optional[Union[dict, str]] = None,
                  config: Optional[dict] = None) -> None:
         """
         Constructor of Formatter class.
 
         Arguments:
-            parsers: Optional, list of parsers added to Formatter by corresponding method or at construction time.
+            parsers: Optional, Parser or iterable sequence of parsers added to Formatter by corresponding method or at construction time.
             schema: Optional, dictionary containing structure template to format parsing results.
             config: Optional, dictionary containing formatter configuration.
         """
@@ -137,8 +137,11 @@ class Formatter:
             formatter1=self, formatter2=formatter2, schema=schema)
 
         if parsers is not None:
-            for e in parsers:
-                self.add_parser(e)
+            if isinstance(parsers, AParser):
+                self.add_parser(parsers)
+            else:
+                for e in parsers:
+                    self.add_parser(e)
 
     @property
     def parsers(self) -> List[AParser]:

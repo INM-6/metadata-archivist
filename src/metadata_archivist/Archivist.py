@@ -14,7 +14,7 @@ Authors: Matthias K., Jose V.
 
 from shutil import rmtree
 from copy import deepcopy
-from typing import Union, List, Optional
+from typing import Union, Iterable, Optional
 
 from .Parser import AParser
 from .Exporter import Exporter
@@ -64,13 +64,13 @@ class Archivist:
         export: procedure that triggers export method.
     """
 
-    def __init__(self, path: str, parsers: List[AParser], schema: Optional[Union[dict, str]] = None, **kwargs) -> None:
+    def __init__(self, path: str, parsers: Union[AParser, Iterable[AParser]], schema: Optional[Union[dict, str]] = None, **kwargs) -> None:
         """
         Constructor of Archivist class.
 
         Arguments:
             path: string of path pointing to exploration target.
-            parsers: list of parsers to be used.
+            parsers: Parser or iterable sequence of parsers to be used.
             schema: Optional. Dictionary containing structuring schema. If string is provided, assumes string path to file containing dictionary.
         
         Keyword arguments:

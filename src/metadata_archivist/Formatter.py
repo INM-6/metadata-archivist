@@ -475,7 +475,7 @@ class Formatter:
 
             # If entry corresponds to an parser reference
             elif key in self._rules:
-                tree = self._rules[key](self, interpreted_schema, branch, value, **self.config)
+                tree = self._rules[key](self, interpreted_schema, branch, value, **deepcopy(self.config))
             # Nodes should not be of a different type than SchemaEntry
             else:
                 raise RuntimeError(f"Unexpected value in interpreted schema: {key}: {type(value)}")

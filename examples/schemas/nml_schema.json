@@ -1,9 +1,0 @@
-{
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://example.com/product.schema.json",
-    "description": "A fortran namelist - empty schema will always validate true",
-    "type": "object",
-    "properties": { }
-}
-
-

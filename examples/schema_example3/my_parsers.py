@@ -1,4 +1,13 @@
-from metadata_archivist import AParser, Formatter
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+
+Parsers instances examples with schema.
+Authors: Matthias K., Jose V.
+
+"""
+
+from metadata_archivist import AParser
 import yaml
 
 
@@ -166,64 +175,3 @@ class station_character_parser(AParser):
                 return out
             except yaml.YAMLError as exc:
                 print(exc)
-
-
-my_schema = {
-    '$schema': 'https://abc',
-    '$id': 'https://abc.json',
-    'description': 'my example schema 3',
-    'type': 'object',
-    'properties': {
-        'metadata_archive': {
-            'type': 'object',
-            'patternProperties': {
-                "^basin_.*": {
-                    "type": "object",
-                    "properties": {
-                        "basin_characteristics": {
-                            "$ref": "#/$defs/basin_character_parser"
-                        },
-                        "simulation": {
-                            'type': 'object',
-                            'properties': {
-                                'time_info': {
-                                    '$ref': '#/$defs/time_parser'
-                                },
-                                'model_configuration': {
-                                    '$ref': '#/$defs/yml_parser'
-                                },
-                            }
-                        }
-                    }
-                },
-                "^station_.*": {
-                    "type": "object",
-                    "properties": {
-                        "basin_characteristics": {
-                            "$ref": "#/$defs/station_character_parser"
-                        },
-                        "simulation": {
-                            'type': 'object',
-                            'properties': {
-                                'time_info': {
-                                    '$ref': '#/$defs/time_parser'
-                                },
-                                'model_configuration': {
-                                    '$ref': '#/$defs/yml_parser'
-                                },
-                            }
-                        }
-                    }
-                }
-            }
-        },
-    }
-}
-
-my_parser = Formatter(parsers=[
-    time_parser(),
-    yml_parser(),
-    station_character_parser(),
-    basin_character_parser()
-],
-                   schema=my_schema)

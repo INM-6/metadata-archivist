@@ -3,6 +3,9 @@
 """
 
 Minimal orchestration of metadata parsing, formatting, and exporting example.
+
+Requires PyYAML.
+
 Authors: Matthias K., Jose V.
 
 """

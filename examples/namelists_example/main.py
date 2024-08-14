@@ -4,6 +4,9 @@
 
 Orchestration of metadata parsing, formatting, and exporting example,
 with more complex metadata.
+
+Requires f90nml.
+
 Authors: Matthias K., Jose V.
 
 """

@@ -167,6 +167,14 @@ def _format_calculate_rule(formatter: Formatter, interpreted_schema: _SchemaEntr
     if not isinstance(value, dict):
         raise TypeError(f"Incorrect value type found while formatting calculation: {type(value)}")
     
+    if "add_description" in kwargs and kwargs["add_description"]:
+        _LOG.warning("Add description enabled in calculate directive. Ignoring option.")
+        kwargs["add_description"] = False
+    
+    if "add_type" in kwargs and kwargs["add_type"]:
+        _LOG.warning("Add description enabled in calculate directive. Ignoring option.")
+        kwargs["add_type"] = False
+    
     if not all(key in value for key in ["expression", "variables"]):
         raise RuntimeError(f"Malformed !calculate entry found while formatting calculation: {value}")
     

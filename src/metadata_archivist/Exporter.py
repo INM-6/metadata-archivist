@@ -53,7 +53,7 @@ class Exporter:
         export_format = self.config["output_format"].upper()
         if export_format not in _KNOWN_FORMATS:
             raise RuntimeError(f"Unknown export format type: {export_format}")
-        export_directory = _check_dir(self.config["output_directory"], allow_existing=True)
+        export_directory = _check_dir(self.config["output_directory"], allow_existing=True)[0]
         export_file = export_directory / self.config["output_file"]
 
         if export_file.exists():

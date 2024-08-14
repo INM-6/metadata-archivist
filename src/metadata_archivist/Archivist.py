@@ -188,7 +188,7 @@ class Archivist:
 
         if self.config["auto_cleanup"]:
             if self._cache["extraction"]:
-                root_extraction_path = self._cache["explored_path"]
+                root_extraction_path = self._cache["explored_dirs"][0]
                 _LOG.info(f"Cleaning extraction directory: {str(root_extraction_path)}")
                 try:
                     rmtree(root_extraction_path)

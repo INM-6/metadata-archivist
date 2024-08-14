@@ -13,12 +13,12 @@ from re import fullmatch
 from pathlib import Path
 from copy import deepcopy
 from collections.abc import Iterable
-from typing import Optional, Union, Any
+from typing import Optional, Union, Any, Tuple
 
 from .logger import _LOG
 
 
-def _check_dir(dir_path: str, allow_existing: bool = False) -> Path:
+def _check_dir(dir_path: str, allow_existing: bool = False) -> Tuple[Path, bool]:
     """
     Checks directory path.
     If a directory with the same name already exists then continue.
@@ -30,7 +30,7 @@ def _check_dir(dir_path: str, allow_existing: bool = False) -> Path:
         allow_existing: Control boolean to allow the use of existing folders. Default: False.
 
     Returns:
-        Path object to output directory.
+        tuple of Path object to output directory and state boolean indicating directory creation.
     """
 
     path = Path(dir_path)
@@ -44,8 +44,9 @@ def _check_dir(dir_path: str, allow_existing: bool = False) -> Path:
                     f"Incorrect path to directory: {path}")
         else:
             path.mkdir(parents=True)
+            return path, True
 
-    return path
+    return path, False
 
 
 def _update_dict_with_parts(target_dict: dict, value: Any, parts: list) -> None:

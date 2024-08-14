@@ -134,14 +134,15 @@ def _decompress_tar(output_file_patterns: List[str],
             2. list of Path objects of decompressed files.
     """
 
+    created = False
     if not isinstance(extraction_directory, Path):
-        extraction_directory = _check_dir(extraction_directory)
+        extraction_directory, created = _check_dir(extraction_directory)
 
     _LOG.info(f"Decompression of archive: {archive_path.name}")
 
     archive_name = archive_path.stem.split(".")[0]
     directory_path = extraction_directory.joinpath(archive_name)
-    explored_dirs = [directory_path]
+    explored_dirs = [directory_path] if not created else [extraction_directory, directory_path]
     explored_files = []
 
     with t_open(archive_path) as t:

@@ -58,7 +58,7 @@ if __name__ == "__main__":
     arch.export()
 
     print("\nResulting schema:")
-    formatted_schema = arch.get_schema()
+    formatted_schema = arch.get_formatted_schema()
     print(dumps(formatted_schema, indent=4))
     with Path("schema.json").open("w") as f:
         dump(formatted_schema, f, indent=4)

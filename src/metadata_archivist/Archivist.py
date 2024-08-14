@@ -86,7 +86,7 @@ class Archivist:
 
         # Set explorer
         self._explorer = Explorer(path, self.config)
-        self._cache["decompression"] = self._explorer.path_is_archive
+        self._cache["extraction"] = self._explorer.path_is_archive
 
         # Set formatter
         self._formatter = Formatter(parsers, schema, self.config)
@@ -183,11 +183,11 @@ class Archivist:
     def _clean_up(self) -> None:
         """
         Cleanup method automatically called in get_metadata,
-        deletes extraction directory (if decompression) and meta files (if lazy loading).
+        deletes extraction directory (if extraction happened) and meta files (if lazy loading).
         """
 
         if self.config["auto_cleanup"]:
-            if self._cache["decompression"]:
+            if self._cache["extraction"]:
                 root_extraction_path = self._cache["explored_path"]
                 _LOG.info(f"Cleaning extraction directory: {str(root_extraction_path)}")
                 try:

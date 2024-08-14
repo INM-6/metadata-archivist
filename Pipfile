@@ -11,6 +11,8 @@ pyyaml = "*"
 f90nml = "*"
 jupyter = "*"
 black = {extras = ["jupyter"], version = "*"}
+pylint = "*"
+pre-commit = "*"
 
 [dev-packages]
 

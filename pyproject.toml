@@ -1,6 +1,7 @@
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
 [project]
 name = "metadata_archivist"
 version = "0.1"
@@ -10,10 +11,16 @@ authors = [
 ]
 description = "A tool collection for processing metadata in workflows"
 readme = "README.md"
-requires-python = ">=3.6"
+requires-python = ">=3.10.12"
 classifiers = [
     "Programming Language :: Python :: 3",
 ]
 
 [project.urls]
 "Homepage" = "https://codebase.helmholtz.cloud/metamosim/metadata_archivist.git"
+
+[tool.black]
+line-length = 88
+target-version = ['py310']
+include = '\.pyi?$'
+# 'extend-exclude' excludes files or directories in addition to the defaults

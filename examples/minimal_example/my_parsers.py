@@ -2,12 +2,12 @@
 # -*- coding: utf-8 -*-
 """
 
-Formatter and Parsers instances examples.
+Parsers instances examples.
 Authors: Matthias K., Jose V.
 
 """
 
-from metadata_archivist import AParser, Formatter
+from metadata_archivist import AParser
 import yaml
 
 

@@ -172,7 +172,7 @@ def _format_calculate_rule(formatter: Formatter, interpreted_schema: _SchemaEntr
         kwargs["add_description"] = False
     
     if "add_type" in kwargs and kwargs["add_type"]:
-        _LOG.warning("Add description enabled in calculate directive. Ignoring option.")
+        _LOG.warning("Add type enabled in calculate directive. Ignoring option.")
         kwargs["add_type"] = False
     
     if not all(key in value for key in ["expression", "variables"]):

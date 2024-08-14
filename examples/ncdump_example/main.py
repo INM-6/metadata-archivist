@@ -2,15 +2,16 @@
 # -*- coding: utf-8 -*-
 """
 
-Metadata parsing, collection and save pipeline example.
+Orchestration of metadata parsing, formatting, and exporting example,
+with more complex parsing procedure.
 Authors: Matthias K., Jose V.
 
 """
 
-from json import load, dumps, dump
+from json import load, dumps
 from pathlib import Path
 
-from my_parser import my_parser
+from my_parser import ncdump_hs_parser
 from metadata_archivist import Archivist
 
 
@@ -22,17 +23,12 @@ if __name__ == "__main__":
     with config_path.open("r") as f:
         config = load(f)
 
-    arch = Archivist(path=Path('metadata_archive.tar'),
-                    formatter=my_parser,
+    arch = Archivist(path='metadata_archive.tar',
+                    parsers=ncdump_hs_parser(),
                     **config)
 
     arch.parse()
     arch.export()
-
-    print("\nResulting schema:")
-    print(dumps(my_parser.schema, indent=4))
-    with Path("schema.json").open("w") as f:
-        dump(my_parser.schema, f, indent=4)
 
     print("\nResulting metadata:")
     print(dumps(arch.get_metadata(), indent=4))

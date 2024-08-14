@@ -2,12 +2,12 @@
 # -*- coding: utf-8 -*-
 """
 
-Formatter and Parsers instances examples.
+Parsers instances examples.
 Authors: Matthias K., Jose V.
 
 """
 
-from metadata_archivist import AParser, Formatter
+from metadata_archivist import AParser
 
 NCDUMP_HS_SCHEMA = {}
 
@@ -114,6 +114,3 @@ class ncdump_hs_parser(AParser):
                         key_val_split_rm_prefix(line[:-3], '=', 1))
 
         return out
-
-
-my_parser = Formatter(parsers=[ncdump_hs_parser()])

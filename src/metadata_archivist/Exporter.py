@@ -49,6 +49,7 @@ class Exporter:
             metadata: dictionary to export.
         """
 
+        _LOG.info("Exporting metadata ...")
 
         export_format = self.config["output_format"].upper()
         if export_format not in _KNOWN_FORMATS:
@@ -72,6 +73,8 @@ class Exporter:
                 )
             
         _KNOWN_FORMATS[export_format](metadata, export_file)
+        
+        _LOG.info("Done!")
 
 
 def _export_json(json_object: dict, outfile: Path) -> None:

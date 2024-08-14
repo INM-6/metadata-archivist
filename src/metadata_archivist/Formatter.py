@@ -351,13 +351,15 @@ class Formatter:
             list of lazy load cache file Paths (empty if lazy load disabled).
         """
 
+        _LOG.info("Parsing files ...")
+
         to_parse = {}
         meta_files = []
         # TODO: Think about parallelization scheme with ProcessPoolExecutor
         for parser in self._parsers:
             pid = parser.name
             to_parse[pid] = []
-            _LOG.debug(f'    preparing parser: {pid}')
+            _LOG.debug(f"    preparing parser: {pid}")
             for fp in file_paths:
                 pattern = parser.input_file_pattern.split("/")
                 pattern.reverse()
@@ -367,6 +369,7 @@ class Formatter:
         # TODO: Think about parallelization scheme with ProcessPoolExecutor
         for pid in to_parse:
             for file_path in to_parse[pid]:
+                _LOG.debug(f"    parsing file: {str(file_path)}")
                 # Get parser and parse metadata
                 pix = self._indexes.get_index(pid, "prs")
                 parser = self._parsers[pix]
@@ -392,6 +395,8 @@ class Formatter:
                     with entry.meta_path.open("w") as mp:
                         dump(metadata, mp, indent=4)
                     meta_files.append(entry.meta_path)
+
+        _LOG.info("Done!")
 
         return meta_files
 
@@ -490,22 +495,27 @@ class Formatter:
             unified metadata dictionary, with default structure or custom schema structure.
         """
 
+        _LOG.info("Compiling metadata ...")
+
         if self._cache.is_empty():
             raise RuntimeError(
                 "Metadata needs to be parsed before compiling."
                 )
         
         if self._use_schema:
+            _LOG.debug("    using schema structure ...")
             self._interpreter = helpers._SchemaInterpreter(self.schema)
             self.metadata = self._update_metadata_tree_with_schema(self._interpreter.generate())
 
         else:
+            _LOG.debug("    using file path structure ...")
             for parser_cache in self._cache:
                 for cache_entry in parser_cache:
                     _update_dict_with_parts(
                         self.metadata,
                         cache_entry.load_metadata(),
-                        list(cache_entry.rel_path.parts))
+                        list(cache_entry.rel_path.parts))   
+        _LOG.info("Done!")
 
         return self.metadata
 

@@ -135,13 +135,8 @@ class Archivist:
         Generates internal cache of returned objects.
         """
 
-        _LOG.info("Unpacking archive ...")
-        _LOG.debug(f"    using patterns: {self._formatter.input_file_patterns}")
-
         explored_path, explored_dirs, explored_files = self._explorer.explore(
             self._formatter.input_file_patterns)
-
-        _LOG.info("Done!\nParsing files ...")
 
         meta_files = self._formatter.parse_files(explored_path, explored_files)
 
@@ -150,8 +145,6 @@ class Archivist:
         self._cache["explored_dirs"] = explored_dirs
         self._cache["meta_files"] = meta_files
         self._cache["compile_metadata"] = True
-
-        _LOG.info(f"Done!")
 
     def get_metadata(self) -> dict:
         """
@@ -163,10 +156,8 @@ class Archivist:
         """
 
         if self._cache["compile_metadata"]:
-            _LOG.info("Compiling metadata ...")
             self._cache["compile_metadata"] = False
             self._cache["metadata"] = self._formatter.compile_metadata()
-            _LOG.info("Done!")
             self._clean_up()
 
         return self._cache["metadata"]
@@ -176,13 +167,8 @@ class Archivist:
         return self._formatter.export_schema()
 
     def export(self) -> None:
-        """
-        Exports generated metadata to file using internal Exporter.
-        """
-
-        _LOG.info("Exporting metadata ...")
+        """Exports generated metadata to file using internal Exporter."""
         self._exporter.export(self.get_metadata())
-        _LOG.info("Done!")
 
     def _clean_up(self) -> None:
         """

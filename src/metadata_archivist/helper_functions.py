@@ -253,6 +253,7 @@ def _unpack_singular_nested_value(iterable: Any, level: Optional[int] = None) ->
         return iterable
     elif isinstance(iterable, Iterable):
         if len(iterable) > 1:
+            _LOG.debug(dumps(iterable, indent=4, default=vars))
             raise IndexError(f"Multiple possible values found when unpacking singular nested value")
         if level is not None:
             if level > 0:

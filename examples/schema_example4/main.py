@@ -89,7 +89,7 @@ if __name__ == "__main__":
                      overwrite=True,
                      lazy_load=True,
                      auto_cleanup=True,
-                     verbose='debug',
+                     verbose='info',
                      add_description=False,
                      add_type=False)
 

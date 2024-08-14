@@ -38,16 +38,16 @@ Default configuration parameters for the Archivist class:
 "output_format": "string value of metadata file output format. Default "JSON" .
 """
 DEFAULT_CONFIG = {
-            "extraction_directory": ".",
-            "output_directory": ".",
-            "output_file": "metadata.json",
-            "lazy_load": False,
-            "overwrite": True,
-            "auto_cleanup": True,
-            "verbose": "info",
-            "add_description": False,
-            "add_type": False,
-            "output_format": "JSON"
+    "extraction_directory": ".",
+    "output_directory": ".",
+    "output_file": "metadata.json",
+    "lazy_load": False,
+    "overwrite": True,
+    "auto_cleanup": True,
+    "verbose": "info",
+    "add_description": False,
+    "add_type": False,
+    "output_format": "JSON",
 }
 
 
@@ -64,7 +64,13 @@ class Archivist:
         export: procedure that triggers export method.
     """
 
-    def __init__(self, path: str, parsers: Union[AParser, Iterable[AParser]], schema: Optional[Union[dict, str]] = None, **kwargs) -> None:
+    def __init__(
+        self,
+        path: str,
+        parsers: Union[AParser, Iterable[AParser]],
+        schema: Optional[Union[dict, str]] = None,
+        **kwargs,
+    ) -> None:
         """
         Constructor of Archivist class.
 
@@ -72,7 +78,7 @@ class Archivist:
             path: string of path pointing to exploration target.
             parsers: Parser or iterable sequence of parsers to be used.
             schema: Optional. Dictionary containing structuring schema. If string is provided, assumes string path to file containing dictionary.
-        
+
         Keyword arguments:
             key (as string), value pairs used for configuration, see _init_config method.
         """
@@ -136,7 +142,8 @@ class Archivist:
         """
 
         explored_path, explored_dirs, explored_files = self._explorer.explore(
-            self._formatter.input_file_patterns)
+            self._formatter.input_file_patterns
+        )
 
         meta_files = self._formatter.parse_files(explored_path, explored_files)
 
@@ -161,7 +168,7 @@ class Archivist:
             self._clean_up()
 
         return self._cache["metadata"]
-    
+
     def get_formatted_schema(self) -> dict:
         """Returns schema from Formatter."""
         return self._formatter.export_schema()
@@ -183,8 +190,9 @@ class Archivist:
                 try:
                     rmtree(root_extraction_path)
                 except Exception as e:
-                        _LOG.warning(
-                            f"error cleaning {str(root_extraction_path)}: {e.message if hasattr(e, 'message') else str(e)}")
+                    _LOG.warning(
+                        f"error cleaning {str(root_extraction_path)}: {e.message if hasattr(e, 'message') else str(e)}"
+                    )
 
             # TODO: output meta files to specific directory such as to only invoke rmtree on it
             elif len(self._cache["meta_files"]) > 0:
@@ -193,7 +201,9 @@ class Archivist:
                     try:
                         fp.unlink()
                     except Exception as e:
-                        _LOG.warning(f"error cleaning {str(fp)}: {e.message if hasattr(e, 'message') else str(e)}")
+                        _LOG.warning(
+                            f"error cleaning {str(fp)}: {e.message if hasattr(e, 'message') else str(e)}"
+                        )
             else:
                 _LOG.info("Nothing to clean.")
                 return

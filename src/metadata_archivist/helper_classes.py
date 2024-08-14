@@ -47,7 +47,7 @@ class _FormatterCache:
             self._cache[parser_name] = _ParserCache()
         else:
             raise KeyError(f"Parser {parser_name} already exists in cache")
-        
+
     def drop(self, parser_name: str) -> None:
         """
         Method to drop ParserCache from internal dictionary.
@@ -172,10 +172,9 @@ class _CacheEntry:
         load_metadata: returns CachedMetadata, if lazy loading is enabled then loads metadata from self contained meta file.
     """
 
-    def __init__(self,
-                 explored_path: Path,
-                 file_path: Path,
-                 metadata: Optional[dict] = None):
+    def __init__(
+        self, explored_path: Path, file_path: Path, metadata: Optional[dict] = None
+    ):
         """
         Constructor of CacheEntry.
 
@@ -209,13 +208,15 @@ class _CacheEntry:
                 raise RuntimeError(
                     "Cache entry does not contain metadata and meta path not found."
                 )
-            
+
             with self.meta_path.open("r") as f:
                 self.metadata = load(f)
 
             if self.metadata is None:
-                raise RuntimeError(f"Failed to load metadata {dumps(self, indent=4, default=vars)}")
-            
+                raise RuntimeError(
+                    f"Failed to load metadata {dumps(self, indent=4, default=vars)}"
+                )
+
         return self.metadata
 
 
@@ -268,9 +269,10 @@ class _ParserIndexes:
         elif storage in scp_patterns:
             return self.scp_indexes
 
-        raise ValueError(f"Incorrect value for storage name, got {storage}, accepted {prs_patterns + ifp_patterns + scp_patterns}")
-        
-    
+        raise ValueError(
+            f"Incorrect value for storage name, got {storage}, accepted {prs_patterns + ifp_patterns + scp_patterns}"
+        )
+
     def set_index(self, parser_name: str, storage: str, index: int) -> None:
         """
         Set index method for selected storage.
@@ -282,7 +284,9 @@ class _ParserIndexes:
         """
         self._get_storage(storage)[parser_name] = index
 
-    def get_index(self, parser_name: str, storage: Optional[str] = None) -> Union[int, Dict[str, int]]:
+    def get_index(
+        self, parser_name: str, storage: Optional[str] = None
+    ) -> Union[int, Dict[str, int]]:
         """
         Get index method for all storages.
         If no storage specified, all stored indexes are returned as a dictionary.
@@ -300,10 +304,10 @@ class _ParserIndexes:
                 "prs": self.prs_indexes.get(parser_name),
                 "ifp": self.ifp_indexes.get(parser_name),
                 "scp": self.scp_indexes.get(parser_name),
-                }
+            }
         else:
             return self._get_storage(storage)[parser_name]
-        
+
     def drop_indexes(self, parser_name: str) -> dict:
         """
         Remove method for a Parser in all index storages.
@@ -318,7 +322,7 @@ class _ParserIndexes:
             "prs": self.prs_indexes.pop(parser_name),
             "ifp": self.ifp_indexes.pop(parser_name),
             "scp": self.scp_indexes.pop(parser_name),
-            }
+        }
 
 
 class _SchemaEntry:
@@ -338,10 +342,12 @@ class _SchemaEntry:
         is_empty: returns True is entry content is empty.
     """
 
-    def __init__(self, key: Optional[str] = None, context: Optional[dict] = None) -> None:
+    def __init__(
+        self, key: Optional[str] = None, context: Optional[dict] = None
+    ) -> None:
         """
         Constructor for schema entry.
-        
+
         Arguments:
             key: schema key used as entry name.
             context: dictionary containing information of schema properties where entry is created.
@@ -355,7 +361,7 @@ class _SchemaEntry:
     def __getitem__(self, key) -> Any:
         """Value retrieval method for entry content using key."""
         return self._content[key]
-    
+
     def __setitem__(self, key, value) -> None:
         """Value insertion method for entry content using key."""
         self._content[key] = value
@@ -363,11 +369,11 @@ class _SchemaEntry:
     def __contains__(self, key) -> bool:
         """Key presence test for entry content."""
         return key in self._content
-    
+
     def items(self):
         """Entry content items get method."""
         return self._content.items()
-    
+
     def is_empty(self) -> bool:
         """Entry empty content test."""
         return len(self._content) == 0
@@ -399,18 +405,14 @@ class _SchemaInterpreter:
         """
 
         if not isinstance(schema, dict):
+            raise RuntimeError(f"Incorrect schema used for iterator {schema}")
+        if "properties" not in schema or not isinstance(schema["properties"], dict):
             raise RuntimeError(
-                f'Incorrect schema used for iterator {schema}'
+                f"Incorrect schema structure, root is expected to contain properties dictionary: {schema}"
             )
-        if 'properties' not in schema or not isinstance(
-                schema['properties'], dict):
+        if "$defs" not in schema or not isinstance(schema["$defs"], dict):
             raise RuntimeError(
-                f'Incorrect schema structure, root is expected to contain properties dictionary: {schema}'
-            )
-        if '$defs' not in schema or not isinstance(
-                schema['$defs'], dict):
-            raise RuntimeError(
-                f'Incorrect schema structure, root is expected to contain $defs dictionary: {schema}'
+                f"Incorrect schema structure, root is expected to contain $defs dictionary: {schema}"
             )
 
         self._schema = schema
@@ -418,12 +420,15 @@ class _SchemaInterpreter:
 
         # We load INTERPRETATION_RULES directly in instance to avoid circular importing issues
         from .interpretation_rules import _INTERPRETATION_RULES
+
         self.rules = deepcopy(_INTERPRETATION_RULES)
 
-    def _interpret_schema(self,
-                         properties: dict,
-                         _parent_key: Optional[str] = None,
-                         _relative_root: Optional[_SchemaEntry] = None):
+    def _interpret_schema(
+        self,
+        properties: dict,
+        _parent_key: Optional[str] = None,
+        _relative_root: Optional[_SchemaEntry] = None,
+    ):
         """
         Recursive method to explore JSON schema.
         Following the technical assumptions made (cf. README.md/SchemaInterpreter),
@@ -472,12 +477,18 @@ class _SchemaInterpreter:
                 if _parent_key is None:
                     _LOG.debug(dumps(_relative_root, indent=4, default=vars))
                     raise RuntimeError("Cannot interpret rule without parent key.")
-                _relative_root = self.rules[key](self, val, key, _parent_key, _relative_root)
+                _relative_root = self.rules[key](
+                    self, val, key, _parent_key, _relative_root
+                )
 
             else:
                 # Case dict i.e. branch
                 if isinstance(val, dict):
-                    _relative_root[key] = self._interpret_schema(val, key, _SchemaEntry(key=key, context=deepcopy(_relative_root.context)))
+                    _relative_root[key] = self._interpret_schema(
+                        val,
+                        key,
+                        _SchemaEntry(key=key, context=deepcopy(_relative_root.context)),
+                    )
 
                 # Case str i.e. leaf
                 elif isinstance(val, str):
@@ -486,12 +497,14 @@ class _SchemaInterpreter:
                 # Else not-implemented/ignored
                 else:
                     if isinstance(val, Iterable):
-                        raise NotImplementedError(f"Unknown iterable type: {key}: {type(val)}")
+                        raise NotImplementedError(
+                            f"Unknown iterable type: {key}: {type(val)}"
+                        )
                     else:
                         _LOG.debug(f"Ignoring key value pair: {key}: {val}")
 
         return _relative_root
-    
+
     def generate(self) -> _SchemaEntry:
         """
         Convenience function to launch interpretation recursion over the schema.
@@ -512,5 +525,5 @@ class _SchemaInterpreter:
             # Passing through dumps for pretty printing,
             # however can be costly, so checking if debug is enabled first
             _LOG.debug(dumps(self.structure, indent=4, default=vars))
-        
+
         return self.structure

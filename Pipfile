@@ -10,6 +10,7 @@ metadata-archivist = {file = ".", editable = true}
 pyyaml = "*"
 f90nml = "*"
 jupyter = "*"
+black = {extras = ["jupyter"], version = "*"}
 
 [dev-packages]
 

@@ -54,7 +54,9 @@ class Exporter:
         export_format = self.config["output_format"].upper()
         if export_format not in _KNOWN_FORMATS:
             raise RuntimeError(f"Unknown export format type: {export_format}")
-        export_directory = _check_dir(self.config["output_directory"], allow_existing=True)[0]
+        export_directory = _check_dir(
+            self.config["output_directory"], allow_existing=True
+        )[0]
         export_file = export_directory / self.config["output_file"]
 
         if export_file.exists():
@@ -71,16 +73,16 @@ class Exporter:
                 raise RuntimeError(
                     f"'{export_file}' exists and is not a file, cannot overwrite."
                 )
-            
+
         _KNOWN_FORMATS[export_format](metadata, export_file)
-        
+
         _LOG.info("Done!")
 
 
 def _export_json(json_object: dict, outfile: Path) -> None:
     """
     Exports JSON object to file.
-    
+
     Arguments:
         object: JSON object to export.
         outfile: Path object to target file.
@@ -92,6 +94,4 @@ def _export_json(json_object: dict, outfile: Path) -> None:
         dump(json_object, f, indent=4)
 
 
-_KNOWN_FORMATS = {
-    "JSON": _export_json
-}
+_KNOWN_FORMATS = {"JSON": _export_json}

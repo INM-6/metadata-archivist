@@ -56,9 +56,11 @@ def _set_level(level: str) -> bool:
     elif level == "debug":
         _LOG.setLevel(logging.DEBUG)
     else:
-        _LOG.warning(f"Trying to set incorrect logging level: {level}, staying at current level.")
+        _LOG.warning(
+            f"Trying to set incorrect logging level: {level}, staying at current level."
+        )
         return False
-    
+
     return True
 
 

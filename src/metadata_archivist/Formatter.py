@@ -23,7 +23,11 @@ from .Parser import AParser
 
 from .logger import _LOG
 from . import helper_classes as helpers
-from .helper_functions import _update_dict_with_parts, _merge_dicts, _pattern_parts_match
+from .helper_functions import (
+    _update_dict_with_parts,
+    _merge_dicts,
+    _pattern_parts_match,
+)
 
 
 _DEFAULT_FORMATTER_SCHEMA = {
@@ -32,29 +36,18 @@ _DEFAULT_FORMATTER_SCHEMA = {
     "description": "A plain schema for directory structures",
     "type": "object",
     "properties": {
-        "name": {
-            "type": "string"
-        },
-        "children": {
-            "type": "array",
-            "items": {
-                "$ref": "#"
-            }
-        },
-        "node": {
-            "$ref": "#/$defs/node"
-        }
+        "name": {"type": "string"},
+        "children": {"type": "array", "items": {"$ref": "#"}},
+        "node": {"$ref": "#/$defs/node"},
     },
     "$defs": {
         "node": {
             "$id": "/schemas/address",
             "$schema": "http://abc",
             "type": "object",
-            "properties": {
-                "anyOf": []
-            }
+            "properties": {"anyOf": []},
         }
-    }
+    },
 }
 
 
@@ -86,10 +79,12 @@ class Formatter:
         combine: method to merge Formatter instances by combining parsers list. WIP
     """
 
-    def __init__(self,
-                 parsers: Optional[Union[AParser, Iterable[AParser]]] = None,
-                 schema: Optional[Union[dict, str]] = None,
-                 config: Optional[dict] = None) -> None:
+    def __init__(
+        self,
+        parsers: Optional[Union[AParser, Iterable[AParser]]] = None,
+        schema: Optional[Union[dict, str]] = None,
+        config: Optional[dict] = None,
+    ) -> None:
         """
         Constructor of Formatter class.
 
@@ -112,7 +107,7 @@ class Formatter:
                 with schema_path.open() as f:
                     self._schema = load(f)
             else:
-                raise TypeError('schema must be dict or Path')
+                raise TypeError("schema must be dict or Path")
             self._use_schema = True
         else:
             self._use_schema = False
@@ -127,6 +122,7 @@ class Formatter:
 
         # Formatting rules
         from .formatting_rules import _FORMATTING_RULES
+
         self._rules = deepcopy(_FORMATTING_RULES)
 
         # Public
@@ -134,7 +130,8 @@ class Formatter:
         self.metadata = {}
 
         self.combine = lambda formatter2, schema=None: _combine(
-            formatter1=self, formatter2=formatter2, schema=schema)
+            formatter1=self, formatter2=formatter2, schema=schema
+        )
 
         if parsers is not None:
             if isinstance(parsers, AParser):
@@ -228,7 +225,7 @@ class Formatter:
             if len(self.metadata) > 0:
                 _LOG.warning(
                     "Compiling available metadata after disabling lazy loading."
-                    )
+                )
             self.compile_metadata()
         self.config["lazy_load"] = lazy_load
 
@@ -245,19 +242,20 @@ class Formatter:
             self._schema["$defs"] = {"node": {"properties": {"anyOf": []}}}
         elif not isinstance(self._schema["$defs"], dict):
             raise TypeError(
-                f"Incorrect schema format, $defs property should be a dictionary, got {type(self._schema['$defs'])}")
-        
+                f"Incorrect schema format, $defs property should be a dictionary, got {type(self._schema['$defs'])}"
+            )
+
         pid = parser.name
         p_ref = parser._get_reference()
         self._schema["$defs"][pid] = parser.schema
 
-        if 'node' not in self._schema["$defs"]:
+        if "node" not in self._schema["$defs"]:
             self._schema["$defs"].update({"node": {"properties": {"anyOf": []}}})
 
-        self._indexes.set_index(pid, "scp",
-                                len(self._schema["$defs"]["node"]["properties"]["anyOf"]))
-        self._schema["$defs"]["node"]["properties"]["anyOf"].append(
-            {"$ref": p_ref})
+        self._indexes.set_index(
+            pid, "scp", len(self._schema["$defs"]["node"]["properties"]["anyOf"])
+        )
+        self._schema["$defs"]["node"]["properties"]["anyOf"].append({"$ref": p_ref})
 
     def add_parser(self, parser: AParser) -> None:
         """
@@ -297,8 +295,9 @@ class Formatter:
         ifp_index = self._indexes.get_index(pid, "ifp")
         self._input_file_patterns[ifp_index] = parser.input_file_pattern
         scp_index = self._indexes.get_index(pid, "scp")
-        self._schema["$defs"]["node"]["properties"]["anyOf"][scp_index] = \
-            {"$ref": parser._get_reference()}
+        self._schema["$defs"]["node"]["properties"]["anyOf"][scp_index] = {
+            "$ref": parser._get_reference()
+        }
 
     def remove_parser(self, parser: AParser) -> None:
         """
@@ -333,10 +332,12 @@ class Formatter:
                 return ex
         _LOG.warning(f"No Parser with name: {parser_name} exist")
 
-    def parse_files(self,
-                    explored_path: Path,
-                    file_paths: List[Path],
-                    overwrite_meta_files: bool = True) -> List[Path]:
+    def parse_files(
+        self,
+        explored_path: Path,
+        file_paths: List[Path],
+        overwrite_meta_files: bool = True,
+    ) -> List[Path]:
         """
         Method to orchestrate parsing of list of given input files by self contained parsers.
         Input files are sorted by input file patterns.
@@ -376,22 +377,18 @@ class Formatter:
                 metadata = parser._parse_file(file_path)
 
                 if not self.config["lazy_load"]:
-                    self._cache[pid].add(
-                        explored_path,
-                        file_path,
-                        metadata
-                    )
+                    self._cache[pid].add(explored_path, file_path, metadata)
                 else:
-                    entry = self._cache[pid].add(
-                        explored_path,
-                        file_path
-                    )
+                    entry = self._cache[pid].add(explored_path, file_path)
                     if entry.meta_path.exists():
                         if overwrite_meta_files:
-                            _LOG.warning(f"Metadata file {entry.meta_path} exists, overriding.")
+                            _LOG.warning(
+                                f"Metadata file {entry.meta_path} exists, overriding."
+                            )
                         else:
                             raise FileExistsError(
-                                f"Unable to save parsed metadata: {entry.meta_path} exists")
+                                f"Unable to save parsed metadata: {entry.meta_path} exists"
+                            )
                     with entry.meta_path.open("w") as mp:
                         dump(metadata, mp, indent=4)
                     meta_files.append(entry.meta_path)
@@ -400,9 +397,9 @@ class Formatter:
 
         return meta_files
 
-    def _update_metadata_tree_with_schema(self,
-                                           interpreted_schema: helpers._SchemaEntry,
-                                           branch: Optional[list] = None) -> dict:
+    def _update_metadata_tree_with_schema(
+        self, interpreted_schema: helpers._SchemaEntry, branch: Optional[list] = None
+    ) -> dict:
         """
         Recursively generate metadata file using interpreted_schema obtained with SchemaInterpreter.
         Designed to mimic structure of interpreted_schema where each SchemaEntry is a branching node in the metadata
@@ -438,7 +435,9 @@ class Formatter:
                 # If current context contains regex information (children always inherit context)
                 # We merge all recursion results from children and return the resulting merge
                 if "useRegex" in context:
-                    tree = _merge_dicts(tree, self._update_metadata_tree_with_schema(value, branch))
+                    tree = _merge_dicts(
+                        tree, self._update_metadata_tree_with_schema(value, branch)
+                    )
 
                 # If current context does not contain regex information but child context does,
                 # we need to integrate the recursion result into the metadata tree.
@@ -447,15 +446,21 @@ class Formatter:
                 # a merging conflict. For this we loop over the tree nodes stored in the branch
                 # until we reach the current node and at that point we integrate into the tree.
                 elif "useRegex" in value.context:
-                    recursion_result = self._update_metadata_tree_with_schema(value, branch)
+                    recursion_result = self._update_metadata_tree_with_schema(
+                        value, branch
+                    )
                     # For each tree node in the current branch
                     for node in branch:
 
                         # Check the length of the recursion result and and existence of node
                         if len(recursion_result) > 1 or node not in recursion_result:
-                            _LOG.debug(f"current metadata tree: {tree}\nrecursion results: {recursion_result}")
-                            raise RuntimeError("Malformed recursion result when processing regex context")
-                        
+                            _LOG.debug(
+                                f"current metadata tree: {tree}\nrecursion results: {recursion_result}"
+                            )
+                            raise RuntimeError(
+                                "Malformed recursion result when processing regex context"
+                            )
+
                         # If the current node is equal to the key in the interpreted schema i.e. last iteration of loop
                         if key == node:
                             # Add recursion result to tree
@@ -466,11 +471,15 @@ class Formatter:
                         # Otherwise we move in depth with the next node of the recursion result
                         else:
                             recursion_result = recursion_result[node]
-                    
+
                     # If the break is never reached an error has ocurred
                     else:
-                        _LOG.debug(f"current metadata tree: {tree}\nrecursion results: {recursion_result}")
-                        raise RuntimeError("Malformed metadata tree when processing regex context")
+                        _LOG.debug(
+                            f"current metadata tree: {tree}\nrecursion results: {recursion_result}"
+                        )
+                        raise RuntimeError(
+                            "Malformed metadata tree when processing regex context"
+                        )
 
                 # Else we add a new entry to the tree using the recursion results
                 else:
@@ -480,10 +489,14 @@ class Formatter:
 
             # If entry corresponds to an parser reference
             elif key in self._rules:
-                tree = self._rules[key](self, interpreted_schema, branch, value, **deepcopy(self.config))
+                tree = self._rules[key](
+                    self, interpreted_schema, branch, value, **deepcopy(self.config)
+                )
             # Nodes should not be of a different type than SchemaEntry
             else:
-                raise RuntimeError(f"Unexpected value in interpreted schema: {key}: {type(value)}")
+                raise RuntimeError(
+                    f"Unexpected value in interpreted schema: {key}: {type(value)}"
+                )
 
         return tree
 
@@ -498,14 +511,14 @@ class Formatter:
         _LOG.info("Compiling metadata ...")
 
         if self._cache.is_empty():
-            raise RuntimeError(
-                "Metadata needs to be parsed before compiling."
-                )
-        
+            raise RuntimeError("Metadata needs to be parsed before compiling.")
+
         if self._use_schema:
             _LOG.debug("    using schema structure ...")
             self._interpreter = helpers._SchemaInterpreter(self.schema)
-            self.metadata = self._update_metadata_tree_with_schema(self._interpreter.generate())
+            self.metadata = self._update_metadata_tree_with_schema(
+                self._interpreter.generate()
+            )
 
         else:
             _LOG.debug("    using file path structure ...")
@@ -514,15 +527,16 @@ class Formatter:
                     _update_dict_with_parts(
                         self.metadata,
                         cache_entry.load_metadata(),
-                        list(cache_entry.rel_path.parts))   
+                        list(cache_entry.rel_path.parts),
+                    )
         _LOG.info("Done!")
 
         return self.metadata
 
 
-def _combine(formatter1: Formatter,
-             formatter2: Formatter,
-             schema: Optional[dict] = None) -> Formatter:
+def _combine(
+    formatter1: Formatter, formatter2: Formatter, schema: Optional[dict] = None
+) -> Formatter:
     """
     Function used to combine two different formatters.
     Combination is never done in-place.
@@ -539,19 +553,19 @@ def _combine(formatter1: Formatter,
 
     ll = False
     if formatter1.lazy_load != formatter2.lazy_load:
-        _LOG.warning(
-            f"Lazy load configuration mismatch. Setting to default: {ll}")
+        _LOG.warning(f"Lazy load configuration mismatch. Setting to default: {ll}")
     else:
         ll = formatter1.lazy_load
-        
-    combined_formatter = Formatter(schema=schema,
-                             parsers=formatter1.parsers +
-                             formatter2.parsers,
-                             lazy_load=ll)
+
+    combined_formatter = Formatter(
+        schema=schema, parsers=formatter1.parsers + formatter2.parsers, lazy_load=ll
+    )
 
     if len(formatter1.metadata) > 0 or len(formatter2.metadata) > 0:
-        #combined_parser.metadata = _merge_dicts(parser1.metadata, parser2.metadata)
-        raise NotImplementedError("Combining Parsers with existing metadata is not yet implemented.")
+        # combined_parser.metadata = _merge_dicts(parser1.metadata, parser2.metadata)
+        raise NotImplementedError(
+            "Combining Parsers with existing metadata is not yet implemented."
+        )
 
     return combined_formatter
 

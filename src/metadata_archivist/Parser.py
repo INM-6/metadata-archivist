@@ -17,17 +17,25 @@ from copy import deepcopy
 from abc import ABC, abstractmethod
 
 from .logger import _LOG
-from .helper_functions import _merge_dicts, _filter_dict, _deep_get_from_schema, _pattern_parts_match
+from .helper_functions import (
+    _merge_dicts,
+    _filter_dict,
+    _deep_get_from_schema,
+    _pattern_parts_match,
+)
 
 # Try to load jsonschema package components for validation
 # In case of failure, validation is disabled
 try:
     from jsonschema import validate, ValidationError
+
     _DO_VALIDATE = True
 except:
     _LOG.warning("JSONSchema package not found, disabling validation.")
+
     def validate(instance: dict, schema: dict):
         return True
+
     ValidationError = Exception
     _DO_VALIDATE = False
 
@@ -53,7 +61,13 @@ class AParser(ABC):
         run_validation: If jsonschema package is available, validates self contained parsed metadata against self contained schema.
     """
 
-    def __init__(self, name: str, input_file_pattern: str, schema: dict, validate_output: bool = True) -> None:
+    def __init__(
+        self,
+        name: str,
+        input_file_pattern: str,
+        schema: dict,
+        validate_output: bool = True,
+    ) -> None:
         """
         Constructor for base abstract AParser.
 
@@ -70,7 +84,9 @@ class AParser(ABC):
         self._schema = schema
         self.validate_output = _DO_VALIDATE and validate_output
 
-        self._formatters = []  # For two way relationship (Formatter - Parser) update handling
+        self._formatters = (
+            []
+        )  # For two way relationship (Formatter - Parser) update handling
 
         self.parsed_metadata = {}
 
@@ -152,9 +168,8 @@ class AParser(ABC):
         """
 
         if not file_path.is_file():
-            raise RuntimeError(
-                f'The input file {file_path.name} is incorrect')
- 
+            raise RuntimeError(f"The input file {file_path.name} is incorrect")
+
         pattern = self.input_file_pattern.split("/")
         pattern.reverse()
         if _pattern_parts_match(pattern, list(reversed(file_path.parts))):
@@ -214,12 +229,12 @@ class AParser(ABC):
             filtered dictionary.
         """
 
-        if 'add_description' in kwargs.keys():
-            add_description = kwargs['add_description']
+        if "add_description" in kwargs.keys():
+            add_description = kwargs["add_description"]
         else:
             add_description = False
-        if 'add_type' in kwargs.keys():
-            add_type = kwargs['add_type']
+        if "add_type" in kwargs.keys():
+            add_type = kwargs["add_type"]
         else:
             add_type = False
         metadata_copy = deepcopy(metadata)
@@ -229,17 +244,12 @@ class AParser(ABC):
             new_dict = {}
             for k in keys:
                 _LOG.debug(f"filtering key: {k}")
-                new_dict = _merge_dicts(
-                    new_dict, _filter_dict(metadata, k.split('/')))
+                new_dict = _merge_dicts(new_dict, _filter_dict(metadata, k.split("/")))
             if add_description or add_type:
                 self._add_info_from_schema(new_dict, add_description, add_type)
             return new_dict
 
-    def _add_info_from_schema(self,
-                              metadata,
-                              add_description,
-                              add_type,
-                              key_list=[]):
+    def _add_info_from_schema(self, metadata, add_description, add_type, key_list=[]):
         """
         WIP
         Adds additional information from input schema to parsed metadata inplace.
@@ -253,26 +263,30 @@ class AParser(ABC):
 
         for kk in metadata.keys():
             if isinstance(metadata[kk], dict):
-                self._add_info_from_schema(metadata[kk], add_description,
-                                           add_type, key_list + [kk])
+                self._add_info_from_schema(
+                    metadata[kk], add_description, add_type, key_list + [kk]
+                )
             else:
                 val = metadata[kk]
-                metadata[kk] = {'value': val}
+                metadata[kk] = {"value": val}
                 print(key_list + [kk])
                 schem_entry = _deep_get_from_schema(
-                    deepcopy(self._schema['properties']), key_list + [kk])
-                if schem_entry is None and 'additionalProperties' in self._schema.keys(
+                    deepcopy(self._schema["properties"]), key_list + [kk]
+                )
+                if (
+                    schem_entry is None
+                    and "additionalProperties" in self._schema.keys()
                 ):
                     schem_entry = _deep_get_from_schema(
-                        deepcopy(self._schema['additionalProperties']), *key_list)
-                if schem_entry is None and 'patternProperties' in self._schema.keys(
-                ):
+                        deepcopy(self._schema["additionalProperties"]), *key_list
+                    )
+                if schem_entry is None and "patternProperties" in self._schema.keys():
                     schem_entry = _deep_get_from_schema(
-                        deepcopy(self._schema['patternProperties']), *key_list)
+                        deepcopy(self._schema["patternProperties"]), *key_list
+                    )
                 print(schem_entry)
                 if schem_entry is not None:
-                    if add_description and 'description' in schem_entry.keys():
-                        metadata[kk].update(
-                            {'description': schem_entry['description']})
-                    if add_type and 'type' in schem_entry.keys():
-                        metadata[kk].update({'type': schem_entry['type']})
+                    if add_description and "description" in schem_entry.keys():
+                        metadata[kk].update({"description": schem_entry["description"]})
+                    if add_type and "type" in schem_entry.keys():
+                        metadata[kk].update({"type": schem_entry["type"]})

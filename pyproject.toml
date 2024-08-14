@@ -4,16 +4,19 @@ build-backend = "hatchling.build"
 
 [project]
 name = "metadata_archivist"
-version = "0.1"
+version = "0.7"
+requires-python = ">=3.10.12"
 authors = [
   { name="Jose Villamar", email="j.villamar@fz-juelich.de" },
   { name="Matthias Kelbling", email="matthias.kelbling@ufz.de" },
 ]
-description = "A tool collection for processing metadata in workflows"
+description = "A heterogeneous metadata file parsing and structuring framework"
 readme = "README.md"
-requires-python = ">=3.10.12"
+license = {file = "LICENSE"}
 classifiers = [
+    "Development Status :: 4 - Beta",
     "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
 ]
 
 [project.urls]

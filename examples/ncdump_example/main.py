@@ -23,9 +23,7 @@ if __name__ == "__main__":
     with config_path.open("r") as f:
         config = load(f)
 
-    arch = Archivist(path='metadata_archive.tar',
-                    parsers=ncdump_hs_parser(),
-                    **config)
+    arch = Archivist(path="metadata_archive.tar", parsers=ncdump_hs_parser(), **config)
 
     arch.parse()
     arch.export()

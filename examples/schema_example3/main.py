@@ -12,20 +12,25 @@ Authors: Matthias K., Jose V.
 """
 
 from metadata_archivist import Archivist
-from my_parsers import time_parser, yml_parser, station_character_parser, basin_character_parser
+from my_parsers import (
+    time_parser,
+    yml_parser,
+    station_character_parser,
+    basin_character_parser,
+)
 from pathlib import Path
 from json import dumps, dump
 
 
 my_schema = {
-    '$schema': 'https://abc',
-    '$id': 'https://abc.json',
-    'description': 'my example schema 3',
-    'type': 'object',
-    'properties': {
-        'metadata_archive': {
-            'type': 'object',
-            'patternProperties': {
+    "$schema": "https://abc",
+    "$id": "https://abc.json",
+    "description": "my example schema 3",
+    "type": "object",
+    "properties": {
+        "metadata_archive": {
+            "type": "object",
+            "patternProperties": {
                 "^basin_.*": {
                     "type": "object",
                     "properties": {
@@ -33,17 +38,13 @@ my_schema = {
                             "$ref": "#/$defs/basin_character_parser"
                         },
                         "simulation": {
-                            'type': 'object',
-                            'properties': {
-                                'time_info': {
-                                    '$ref': '#/$defs/time_parser'
-                                },
-                                'model_configuration': {
-                                    '$ref': '#/$defs/yml_parser'
-                                },
-                            }
-                        }
-                    }
+                            "type": "object",
+                            "properties": {
+                                "time_info": {"$ref": "#/$defs/time_parser"},
+                                "model_configuration": {"$ref": "#/$defs/yml_parser"},
+                            },
+                        },
+                    },
                 },
                 "^station_.*": {
                     "type": "object",
@@ -52,39 +53,37 @@ my_schema = {
                             "$ref": "#/$defs/station_character_parser"
                         },
                         "simulation": {
-                            'type': 'object',
-                            'properties': {
-                                'time_info': {
-                                    '$ref': '#/$defs/time_parser'
-                                },
-                                'model_configuration': {
-                                    '$ref': '#/$defs/yml_parser'
-                                },
-                            }
-                        }
-                    }
-                }
-            }
+                            "type": "object",
+                            "properties": {
+                                "time_info": {"$ref": "#/$defs/time_parser"},
+                                "model_configuration": {"$ref": "#/$defs/yml_parser"},
+                            },
+                        },
+                    },
+                },
+            },
         },
-    }
+    },
 }
 
 
 if __name__ == "__main__":
-    arch = Archivist(path='metadata_archive.tar',
-                    parsers=[
-                        time_parser(),
-                        yml_parser(),
-                        station_character_parser(),
-                        basin_character_parser()
-                        ],
-                    schema=my_schema,
-                    extraction_directory='tmp',
-                    output_directory="./",
-                    output_file="metadata.json",
-                    overwrite=True,
-                    auto_cleanup=True,
-                    verbose='info')
+    arch = Archivist(
+        path="metadata_archive.tar",
+        parsers=[
+            time_parser(),
+            yml_parser(),
+            station_character_parser(),
+            basin_character_parser(),
+        ],
+        schema=my_schema,
+        extraction_directory="tmp",
+        output_directory="./",
+        output_file="metadata.json",
+        overwrite=True,
+        auto_cleanup=True,
+        verbose="info",
+    )
 
     arch.parse()
     arch.export()

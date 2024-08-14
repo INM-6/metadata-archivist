@@ -18,80 +18,70 @@ from json import dumps, dump
 
 
 my_schema = {
-    '$schema': 'https://abc',
-    '$id': 'https://abc.json',
-    'description': 'my example schema',
-    'type': 'object',
-    'properties': {
-        'real_time_factor': {
-            'type': 'number',
-            'description': 'ratio of wall clock time to simulation time',
-            '!calculate': {
-                'expression': '{val1} / {val2}',
-                'variables': {
-                    'val1': {
-                        '!parsing': {
-                            'keys': ['real'],
-                            'unpack': 1
-                        },
-                        '$ref': '#/$defs/time_parser'
+    "$schema": "https://abc",
+    "$id": "https://abc.json",
+    "description": "my example schema",
+    "type": "object",
+    "properties": {
+        "real_time_factor": {
+            "type": "number",
+            "description": "ratio of wall clock time to simulation time",
+            "!calculate": {
+                "expression": "{val1} / {val2}",
+                "variables": {
+                    "val1": {
+                        "!parsing": {"keys": ["real"], "unpack": 1},
+                        "$ref": "#/$defs/time_parser",
                     },
-                    'val2': {
-                        '!parsing': {
-                            'keys': ['parameters/sim_time'],
-                            'unpack': 2
-                        },
-                        '$ref': '#/$defs/yml_parser'
-                    }
-                }
-            }
-        },
-        'model': {
-            '!parsing': {
-                'keys': ['parameters/scale'],
-                'unpack': 1
+                    "val2": {
+                        "!parsing": {"keys": ["parameters/sim_time"], "unpack": 2},
+                        "$ref": "#/$defs/yml_parser",
+                    },
+                },
             },
-            '$ref': '#/$defs/yml_parser'
         },
-        'virtual_processes': {
-            'type': 'number',
-            'description': 'total number of digital processing units i.e. #MPI * #threads',
-            '!calculate': {
-                'expression': '{val1} * {val2}',
-                'variables': {
-                    'val1': {
-                        '!parsing': {
-                            'keys': ['parameters/num_procs'],
-                            'unpack': True
-                        },
-                        '$ref': '#/$defs/yml_parser'
+        "model": {
+            "!parsing": {"keys": ["parameters/scale"], "unpack": 1},
+            "$ref": "#/$defs/yml_parser",
+        },
+        "virtual_processes": {
+            "type": "number",
+            "description": "total number of digital processing units i.e. #MPI * #threads",
+            "!calculate": {
+                "expression": "{val1} * {val2}",
+                "variables": {
+                    "val1": {
+                        "!parsing": {"keys": ["parameters/num_procs"], "unpack": True},
+                        "$ref": "#/$defs/yml_parser",
                     },
-                    'val2': {
-                        '!parsing': {
-                            'keys': ['parameters/threads_per_proc'],
-                            'unpack': True
+                    "val2": {
+                        "!parsing": {
+                            "keys": ["parameters/threads_per_proc"],
+                            "unpack": True,
                         },
-                        '$ref': '#/$defs/yml_parser'
-                    }
-                }
-            }
-        }
-    }
+                        "$ref": "#/$defs/yml_parser",
+                    },
+                },
+            },
+        },
+    },
 }
 
 
 if __name__ == "__main__":
-    arch = Archivist(path='raw_metadata',
-                     parsers=[time_parser(), yml_parser()],
-                     schema=my_schema,
-                     output_directory="./",
-                     output_file="metadata.json",
-                     overwrite=True,
-                     lazy_load=True,
-                     auto_cleanup=True,
-                     verbose='info',
-                     add_description=False,
-                     add_type=False)
+    arch = Archivist(
+        path="raw_metadata",
+        parsers=[time_parser(), yml_parser()],
+        schema=my_schema,
+        output_directory="./",
+        output_file="metadata.json",
+        overwrite=True,
+        lazy_load=True,
+        auto_cleanup=True,
+        verbose="info",
+        add_description=False,
+        add_type=False,
+    )
 
     arch.parse()
     arch.export()

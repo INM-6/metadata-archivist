@@ -11,11 +11,9 @@ from pathlib import Path
 from functools import partial
 
 
-def head_rest_double_split_line(line: str,
-                                first_split: str,
-                                second_split: str,
-                                head_index: int = 0,
-                                clean=None) -> dict:
+def head_rest_double_split_line(
+    line: str, first_split: str, second_split: str, head_index: int = 0, clean=None
+) -> dict:
     """
     Head rest split method for lines:
     A first split is used to determine head of line and then the rest of the
@@ -41,18 +39,16 @@ def head_rest_double_split_line(line: str,
     last_index = len(rest) - 1
 
     return {
-        line_split[head_index].strip():
-        str().join([
-            i.strip() + (" " if c < last_index else "")
-            for c, i in enumerate(rest)
-        ]).split(second_split)
+        line_split[head_index]
+        .strip(): str()
+        .join([i.strip() + (" " if c < last_index else "") for c, i in enumerate(rest)])
+        .split(second_split)
     }
 
 
-def head_rest_double_split_parser(fp: Path,
-                                  first_split: str,
-                                  second_split: str,
-                                  clean=None) -> dict:
+def head_rest_double_split_parser(
+    fp: Path, first_split: str, second_split: str, clean=None
+) -> dict:
     """
     Parses file information splitting line by value and using
     the head rest double split method.
@@ -73,15 +69,16 @@ def head_rest_double_split_parser(fp: Path,
         for line in f:
             if line != "\n":
                 data.update(
-                    head_rest_double_split_line(line,
-                                                first_split,
-                                                second_split,
-                                                clean=clean))
+                    head_rest_double_split_line(
+                        line, first_split, second_split, clean=clean
+                    )
+                )
 
     return data
 
 
 RULES = {
-    'env-vars.out':
-    partial(head_rest_double_split_parser, first_split="=", second_split=":"),
+    "env-vars.out": partial(
+        head_rest_double_split_parser, first_split="=", second_split=":"
+    ),
 }

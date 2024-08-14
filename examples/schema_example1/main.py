@@ -18,41 +18,39 @@ from json import dumps, dump
 
 
 my_schema = {
-    '$schema': 'https://abc',
-    '$id': 'https://abc.json',
-    'description': 'my example schema',
-    'type': 'object',
-    'properties': {
-        'metadata_archive': {
-            'type': 'object',
-            'properties': {
-                'program_execution': {
-                    'type': 'object',
-                    'properties': {
-                        'time_info': {
-                            '$ref': '#/$defs/time_parser'
-                        },
-                        'model_configuration': {
-                            '$ref': '#/$defs/yml_parser'
-                        },
-                    }
+    "$schema": "https://abc",
+    "$id": "https://abc.json",
+    "description": "my example schema",
+    "type": "object",
+    "properties": {
+        "metadata_archive": {
+            "type": "object",
+            "properties": {
+                "program_execution": {
+                    "type": "object",
+                    "properties": {
+                        "time_info": {"$ref": "#/$defs/time_parser"},
+                        "model_configuration": {"$ref": "#/$defs/yml_parser"},
+                    },
                 },
             },
         },
-    }
+    },
 }
 
 
 if __name__ == "__main__":
-    arch = Archivist(path='metadata_archive.tar',
-                    parsers=[time_parser(), yml_parser()],
-                    schema=my_schema,
-                    extraction_directory='tmp',
-                    output_directory="./",
-                    output_file="metadata.json",
-                    overwrite=True,
-                    auto_cleanup=True,
-                    verbose='info')
+    arch = Archivist(
+        path="metadata_archive.tar",
+        parsers=[time_parser(), yml_parser()],
+        schema=my_schema,
+        extraction_directory="tmp",
+        output_directory="./",
+        output_file="metadata.json",
+        overwrite=True,
+        auto_cleanup=True,
+        verbose="info",
+    )
 
     arch.parse()
     arch.export()

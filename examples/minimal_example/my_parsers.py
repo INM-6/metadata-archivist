@@ -20,21 +20,21 @@ def key_val_split(string, split_char):
 class time_parser(AParser):
 
     def __init__(self) -> None:
-        super().__init__(name='time_parser', input_file_pattern='time\.txt', schema={})
+        super().__init__(name="time_parser", input_file_pattern="time\.txt", schema={})
 
     def parse(self, file_path) -> dict:
         out = {}
         with file_path.open("r") as fp:
             for line in fp:
-                if line != '\n':
-                    out.update(key_val_split(line, '\t'))
+                if line != "\n":
+                    out.update(key_val_split(line, "\t"))
         return out
 
 
 class yml_parser(AParser):
 
     def __init__(self) -> None:
-        super().__init__(name='yml_parser', input_file_pattern='.*\.yml', schema={})
+        super().__init__(name="yml_parser", input_file_pattern=".*\.yml", schema={})
 
     def parse(self, file_path) -> dict:
         out = {}

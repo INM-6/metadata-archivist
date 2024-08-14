@@ -86,12 +86,10 @@ def _export_json(json_object: dict, outfile: Path) -> None:
         outfile: Path object to target file.
     """
 
-    _LOG.info(f"Saving metadata to file: {outfile}")
+    _LOG.debug(f"   exporting to file: {outfile}")
 
     with outfile.open("w") as f:
         dump(json_object, f, indent=4)
-
-    _LOG.info("Saved metadata file.")
 
 
 _KNOWN_FORMATS = {

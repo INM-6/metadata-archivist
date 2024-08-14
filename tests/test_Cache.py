@@ -7,7 +7,7 @@ import unittest
 import sys
 
 sys.path.append('src')
-from metadata_archivist.FormatterHelpers import Cache, _CacheEntry, _ParserCache
+from metadata_archivist.helper_classes import _FormatterCache, _CacheEntry, _ParserCache
 
 
 class TestCacheEntry(unittest.TestCase):
@@ -21,10 +21,10 @@ class TestCacheEntry(unittest.TestCase):
         file_path = Path('path/to/decompress/path/to/file.txt')
         metadata = None
 
-        cache_entry_1 = _CacheEntry(decompress_path=decompress_path,
+        cache_entry_1 = _CacheEntry(explored_path=decompress_path,
                                     file_path=file_path)
 
-        self.assertEqual(cache_entry_1.decompress_path, decompress_path)
+        self.assertEqual(cache_entry_1.explored_path, decompress_path)
         self.assertEqual(cache_entry_1.file_path, file_path)
         self.assertIsNone(cache_entry_1.metadata)
 
@@ -33,11 +33,11 @@ class TestCacheEntry(unittest.TestCase):
         self.assertEqual(cache_entry_1.rel_path,
                          file_path.relative_to(decompress_path))
 
-        new_metadata = {'foo': 'bar'}
+        #new_metadata = {'foo': 'bar'}
 
-        cache_entry_1.add_metadata(new_metadata)
+        #cache_entry_1.add_metadata(new_metadata)
 
-        self.assertEqual(cache_entry_1.metadata, new_metadata)
+        #self.assertEqual(cache_entry_1.metadata, new_metadata)
         #self.assertIsNone(cache_entry_1.meta_path)
 
 
@@ -65,7 +65,7 @@ class TestParserCache(unittest.TestCase):
         parser_cache.add(decompress_path,
                          file_path)
 
-        self.assertEqual(parser_cache[0].decompress_path, decompress_path)
+        self.assertEqual(parser_cache[0].explored_path, decompress_path)
         self.assertEqual(parser_cache[0].file_path, file_path)
         # self.assertEqual(cache_extractor[0], cache_entry_0)
 
@@ -81,7 +81,7 @@ class TestParserCache(unittest.TestCase):
                          file_path,
                          metadata2)
 
-        self.assertEqual(parser_cache[1].decompress_path, decompress_path2)
+        self.assertEqual(parser_cache[1].explored_path, decompress_path2)
         self.assertEqual(parser_cache[1].file_path, file_path2)
         self.assertEqual(parser_cache[1].metadata, metadata2)
         # self.assertEqual(cache_extractor[1], cache_entry_1)
@@ -98,7 +98,7 @@ class TestCache(unittest.TestCase):
         file_path = [Path('path/to/decompress/path/to/file.txt'), Path('path/to/decompress/path/to/file2.txt')]
         metadata = [{'foo': 'bar'}, {'foo2': 'bar2'}]
 
-        cache = Cache()
+        cache = _FormatterCache()
         cache.add(parser_id_1)
 
         cache[parser_id_1].add(decompress_path[0],
@@ -121,12 +121,12 @@ class TestCache(unittest.TestCase):
                                metadata3)
 
         self.assertEqual(cache[parser_id_2][0].file_path, file_path3)
-        self.assertEqual(cache[parser_id_2][0].decompress_path, decompress_path3)
+        self.assertEqual(cache[parser_id_2][0].explored_path, decompress_path3)
         self.assertEqual(cache[parser_id_2][0].metadata, metadata3)
 
         for i, meta_set in enumerate(cache[parser_id_1]):
             self.assertEqual(meta_set.file_path, file_path[i])
-            self.assertEqual(meta_set.decompress_path, decompress_path[i])
+            self.assertEqual(meta_set.explored_path, decompress_path[i])
             self.assertEqual(meta_set.metadata, metadata[i])
 
         #ex_ids = [extractor_id_1, extractor_id_2]

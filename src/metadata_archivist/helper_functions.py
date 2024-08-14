@@ -153,6 +153,7 @@ def _filter_dict(input_dict: dict, filter_keys: list, _level: int = 0) -> dict:
 
 def _deep_get_from_schema(schema: dict, keys: list) -> Any:
     """
+    WIP
     Fetches value located in depth of the schema.
     Uses a sequence of keys to navigate tree.
 
@@ -186,7 +187,7 @@ def _deep_get_from_schema(schema: dict, keys: list) -> Any:
                     _deep_get_from_schema(schema['patternProperties'][kk], keys)
                     break
     else:
-        print(schema[k])
+        _LOG.debug(schema[k])
         return schema[k]
 
 

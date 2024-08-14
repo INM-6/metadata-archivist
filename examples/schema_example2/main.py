@@ -74,7 +74,7 @@ if __name__ == "__main__":
                     output_file="metadata.json",
                     overwrite=True,
                     auto_cleanup=True,
-                    verbose='debug',
+                    verbose='info',
                     add_description=True,
                     add_type=True)
 

@@ -1,4 +1,13 @@
-from metadata_archivist import AParser, Formatter
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+
+Parsers instances examples with schema.
+Authors: Matthias K., Jose V.
+
+"""
+
+from metadata_archivist import AParser
 import yaml
 
 
@@ -165,54 +174,3 @@ class station_character_parser(AParser):
                 return out
             except yaml.YAMLError as exc:
                 print(exc)
-
-
-my_schema = {
-    '$schema': 'https://abc',
-    '$id': 'https://abc.json',
-    'description': 'my example schema 2',
-    'type': 'object',
-    'properties': {
-        'metadata_archive': {
-            'type': 'object',
-            'patternProperties': {
-                "^basin_.*": {
-                    "!varname": 'basin',
-                    "type": "object",
-                    'description': 'some description',
-                    "properties": {
-                        "basin_information": {
-                            "!parsing": {
-                                'path': '.*/{basin}/basin.yml',
-                                'keys': ['river', 'size']
-                            },
-                            '$ref': '#/$defs/basin_character_parser',
-                        },
-                    }
-                },
-                "^station_.*": {
-                    "!varname": 'station',
-                    "type": "object",
-                    "properties": {
-                        "station_information": {
-                            "!parsing": {
-                                'path': '.*/{station}/station.yml',
-                                'keys': ['river', 'mean_disch']
-                            },
-                            '$ref': '#/$defs/station_character_parser',
-                        },
-
-                    },
-                }
-            },
-        }
-    }
-}
-
-my_parser = Formatter(parsers=[
-    time_parser(),
-    yml_parser(),
-    station_character_parser(),
-    basin_character_parser()
-],
-                   schema=my_schema)

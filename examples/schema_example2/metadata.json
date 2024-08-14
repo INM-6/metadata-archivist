@@ -2,20 +2,44 @@
     "metadata_archive": {
         "basin_danube": {
             "basin_information": {
-                "river": "danube",
-                "size": 801463
+                "river": {
+                    "value": "danube",
+                    "description": "name of the river",
+                    "type": "string"
+                },
+                "size": {
+                    "value": 801463,
+                    "description": "flow accumulation in km^2",
+                    "type": "integer"
+                }
             }
         },
         "basin_rhine": {
             "basin_information": {
-                "river": "rhein",
-                "size": 185300
+                "river": {
+                    "value": "rhein",
+                    "description": "name of the river",
+                    "type": "string"
+                },
+                "size": {
+                    "value": 185300,
+                    "description": "flow accumulation in km^2",
+                    "type": "integer"
+                }
             }
         },
         "station_123456": {
             "station_information": {
-                "river": "rhine",
-                "mean_disch": 201
+                "river": {
+                    "value": "rhine",
+                    "description": "name of the river",
+                    "type": "string"
+                },
+                "mean_disch": {
+                    "value": 201,
+                    "description": "mean annual discharge in m^3s^-1",
+                    "type": "number"
+                }
             }
         }
     }

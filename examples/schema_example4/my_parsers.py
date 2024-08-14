@@ -1,4 +1,13 @@
-from metadata_archivist import AParser, Formatter
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+
+Parsers instances examples with schema.
+Authors: Matthias K., Jose V.
+
+"""
+
+from metadata_archivist import AParser
 import yaml
 
 def time_parser_sec(string):
@@ -97,71 +106,3 @@ class yml_parser(AParser):
                 return out
             except yaml.YAMLError as exc:
                 print(exc)
-
-
-my_schema = {
-    '$schema': 'https://abc',
-    '$id': 'https://abc.json',
-    'description': 'my example schema',
-    'type': 'object',
-    'properties': {
-        'real_time_factor': {
-            'type': 'number',
-            'description': 'ratio of wall clock time to simulation time',
-            '!calculate': {
-                'expression': '{val1} / {val2}',
-                'variables': {
-                    'val1': {
-                        '!parsing': {
-                            'keys': ['real'],
-                            'unpack': 1
-                        },
-                        '$ref': '#/$defs/time_parser'
-                    },
-                    'val2': {
-                        '!parsing': {
-                            'keys': ['parameters/sim_time'],
-                            'unpack': 2
-                        },
-                        '$ref': '#/$defs/yml_parser'
-                    }
-                }
-            }
-        },
-        'model': {
-            '!parsing': {
-                'keys': ['parameters/scale'],
-                'unpack': 1
-            },
-            '$ref': '#/$defs/yml_parser'
-        },
-        'virtual_processes': {
-            'type': 'number',
-            'description': 'total number of digital processing units i.e. #MPI * #threads',
-            '!calculate': {
-                'expression': '{val1} * {val2}',
-                'variables': {
-                    'val1': {
-                        '!parsing': {
-                            'keys': ['parameters/num_procs'],
-                            'unpack': True
-                        },
-                        '$ref': '#/$defs/yml_parser'
-                    },
-                    'val2': {
-                        '!parsing': {
-                            'keys': ['parameters/threads_per_proc'],
-                            'unpack': True
-                        },
-                        '$ref': '#/$defs/yml_parser'
-                    }
-                }
-            }
-        }
-    }
-}
-
-my_parser = Formatter(parsers=[time_parser(),
-                               yml_parser()],
-                   schema=my_schema,
-                   lazy_load=True)

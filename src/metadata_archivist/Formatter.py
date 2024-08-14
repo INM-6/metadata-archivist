@@ -199,6 +199,16 @@ class Formatter:
                 # TODO: Needs consistency checks
                 self._extend_json_schema(ex)
 
+    def export_schema(self) -> dict:
+        """
+        TODO
+        Removes interpretation directives from schema, such that result respects JSONSchema standard.
+
+        Returns:
+            cleaned schema dictionary.
+        """
+        return deepcopy(self._schema)
+
     def set_lazy_load(self, lazy_load: bool) -> None:
         """
         Sets lazy load of parsing results.
@@ -487,7 +497,7 @@ class Formatter:
         
         if self._use_schema:
             self._interpreter = helpers._SchemaInterpreter(self.schema)
-            self.metadata = self._update_metadata_tree_with_schema(self._interpreter.generate(), **self.config)
+            self.metadata = self._update_metadata_tree_with_schema(self._interpreter.generate())
 
         else:
             for parser_cache in self._cache:

@@ -170,6 +170,10 @@ class Archivist:
             self._clean_up()
 
         return self._cache["metadata"]
+    
+    def get_schema(self) -> dict:
+        """Returns schema from Formatter."""
+        return self._formatter.export_schema()
 
     def export(self) -> None:
         """

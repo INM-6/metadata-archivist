@@ -2,12 +2,12 @@
 # -*- coding: utf-8 -*-
 """
 
-Formatter and Parsers instances examples.
+Parsers instances examples.
 Authors: Matthias K., Jose V.
 
 """
 
-from metadata_archivist import AParser, Formatter
+from metadata_archivist import AParser
 import f90nml
 
 NML_SCHEMA = {}
@@ -21,12 +21,3 @@ class nml_parser(AParser):
     def parse(self, f):
         nml = f90nml.read(f)
         return nml.todict()
-
-
-my_parser = Formatter(parsers=[nml_parser()])
-
-# xx = nml_parser()
-
-# with open('metadata_archive/mhm.nml') as ff:
-#     yy = xx.parser(ff)
-# print(yy)

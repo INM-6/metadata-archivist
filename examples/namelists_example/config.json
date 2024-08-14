@@ -1,5 +1,5 @@
 {
     "extraction_directory": "tmp",
     "output_directory": "./",
-    "output_format": "metadata.json"
+    "output_format": "json"
 }

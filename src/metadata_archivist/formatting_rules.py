@@ -33,12 +33,13 @@ from typing import Union
 
 from .Formatter import Formatter
 
-from .logger import _LOG
+from .logger import _LOG, _is_debug
 from .helper_classes import _SchemaEntry
 from .helper_functions import (
     _pattern_parts_match,
     _update_dict_with_parts,
     _unpack_nested_value,
+    _filter_metadata,
 )
 
 
@@ -60,7 +61,8 @@ def _format_parser_id_rule(
     # Currently only one parser reference per entry is allowed
     # and if a reference exists it must be the only content in the entry
     if len(interpreted_schema.items()) > 1:
-        _LOG.debug(dumps(interpreted_schema._content, indent=4, default=vars))
+        if _is_debug():
+            _LOG.debug(dumps(interpreted_schema._content, indent=4, default=vars))
         raise RuntimeError(
             f"Invalid entry content {interpreted_schema.key}: {interpreted_schema._content}"
         )
@@ -86,7 +88,8 @@ def _format_parser_id_rule(
             if parsed_metadata is None:
                 parsed_metadata = {}
             elif not isinstance(parsed_metadata, dict):
-                _LOG.debug(f"parsed metadata: {parsed_metadata}\ncontext: {context}")
+                if _is_debug():
+                    _LOG.debug(f"parsed metadata: {parsed_metadata}\ncontext: {context}")
                 raise RuntimeError(
                     f"Incorrect parsed_metadata initialization type: {parsed_metadata}"
                 )
@@ -108,7 +111,8 @@ def _format_parser_id_rule(
             if parsed_metadata is None:
                 parsed_metadata = {}
             elif not isinstance(parsed_metadata, dict):
-                _LOG.debug(f"parsed metadata: {parsed_metadata}\ncontext: {context}")
+                if _is_debug():
+                    _LOG.debug(f"parsed metadata: {parsed_metadata}\ncontext: {context}")
                 raise RuntimeError(
                     f"Incorrect parsed_metadata initialization type: {parsed_metadata}"
                 )
@@ -133,15 +137,16 @@ def _format_parser_id_rule(
         # Compute additional directives if given
         if "!parsing" in context:
             if "keys" in context["!parsing"]:
-                metadata = parser._filter_metadata(
-                    metadata, context["!parsing"]["keys"], **kwargs
+                metadata = _filter_metadata(
+                    metadata, context["!parsing"]["keys"], schema=parser.schema, **kwargs
                 )
 
             # Unpacking should only be done for singular nested values i.e. only one key per nesting level
             if "unpack" in context["!parsing"]:
                 if isinstance(context["!parsing"]["unpack"], bool):
                     if not context["!parsing"]["unpack"]:
-                        _LOG.debug(dumps(context["!parsing"], indent=4, default=vars))
+                        if _is_debug():
+                            _LOG.debug(dumps(context["!parsing"], indent=4, default=vars))
                         raise RuntimeError(
                             f"Incorrect unpacking configuration in !parsing context: unpack={False}"
                         )
@@ -150,7 +155,8 @@ def _format_parser_id_rule(
 
                 elif isinstance(context["!parsing"]["unpack"], int):
                     if context["!parsing"]["unpack"] == 0:
-                        _LOG.debug(dumps(context["!parsing"], indent=4, default=vars))
+                        if _is_debug():
+                            _LOG.debug(dumps(context["!parsing"], indent=4, default=vars))
                         raise RuntimeError(
                             f"Incorrect unpacking configuration in !parsing context: unpack={0}"
                         )

@@ -475,7 +475,8 @@ class _SchemaInterpreter:
                 # rules must be defined in individual items of the properties, hence a parent key should
                 # always be present.
                 if _parent_key is None:
-                    _LOG.debug(dumps(_relative_root, indent=4, default=vars))
+                    if _is_debug():
+                        _LOG.debug(dumps(_relative_root, indent=4, default=vars))
                     raise RuntimeError("Cannot interpret rule without parent key.")
                 _relative_root = self.rules[key](
                     self, val, key, _parent_key, _relative_root

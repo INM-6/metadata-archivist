@@ -15,7 +15,7 @@ from copy import deepcopy
 from collections.abc import Iterable
 from typing import Optional, Any, Tuple
 
-from .logger import _LOG
+from .logger import _LOG, _is_debug
 
 
 # List of known property names in schema
@@ -74,9 +74,10 @@ def _update_dict_with_parts(target_dict: dict, value: Any, parts: list) -> None:
         if part not in relative_root:
             relative_root[part] = {}
         elif not isinstance(relative_root[part], dict):
-            _LOG.debug(
-                f"key: {part}\nrelative root:\n{dumps(relative_root, indent=4, default=vars)}"
-            )
+            if _is_debug():
+                _LOG.debug(
+                    f"key: {part}\nrelative root:\n{dumps(relative_root, indent=4, default=vars)}"
+                )
             raise RuntimeError(
                 "Duplicate key with incorrect found while updating tree with path hierarchy."
             )
@@ -139,6 +140,7 @@ def _filter_dict(input_dict: dict, filter_keys: list, _level: int = 0) -> dict:
     """
     Recursively filters input dictionary by providing filtering keys.
     Keys can be exact or defined as regular expression.
+    Filtering operation is done by copy of input.
 
     Arguments:
         input_dict: input dictionary to filter.
@@ -146,13 +148,13 @@ def _filter_dict(input_dict: dict, filter_keys: list, _level: int = 0) -> dict:
         _level: recursion level tracking integer.
 
     Returns
-        filtered dictionary.
+        filtered dictionary (copy).
     """
     new_dict = {}
     if _level >= len(filter_keys):
         new_dict = deepcopy(input_dict)
     else:
-        for k in input_dict.keys():
+        for k in input_dict:
             if fullmatch(filter_keys[_level], k):
                 if isinstance(input_dict[k], dict):
                     new_dict[k] = _filter_dict(input_dict[k], filter_keys, _level + 1)
@@ -191,15 +193,17 @@ def _deep_get_from_schema(schema: dict, keys: list) -> Any:
                 except StopIteration:
                     pass
 
-        _LOG.debug(f"schema: {dumps(schema, indent=4, default=vars)}")
-        _LOG.debug(f"keys: {dumps(keys, indent=4, default=vars)}")
+        if _is_debug():
+            _LOG.debug(f"schema: {dumps(schema, indent=4, default=vars)}")
+            _LOG.debug(f"keys: {dumps(keys, indent=4, default=vars)}")
         raise StopIteration(
             "Iterated through schema without finding corresponding keys"
         )
 
     else:
-        _LOG.debug(f"schema: {dumps(schema, indent=4, default=vars)}")
-        _LOG.debug(f"keys: {dumps(keys, indent=4, default=vars)}")
+        if _is_debug:
+            _LOG.debug(f"schema: {dumps(schema, indent=4, default=vars)}")
+            _LOG.debug(f"keys: {dumps(keys, indent=4, default=vars)}")
         raise StopIteration("No key found for corresponding schema")
 
 
@@ -228,7 +232,8 @@ def _pattern_parts_match(
         if fullmatch(r"\{\w+\}", part) and context is not None:
             # !varname and regexp should always be in context in this case
             if "!varname" not in context or "regexp" not in context:
-                _LOG.debug(dumps(context, indent=4, default=vars))
+                if _is_debug():
+                    _LOG.debug(dumps(context, indent=4, default=vars))
                 raise RuntimeError("Badly structured context for pattern matching")
 
             # Match against same index element in file path
@@ -266,16 +271,18 @@ def _unpack_nested_value(iterable: Any, level: Optional[int] = None) -> Any:
 
     if not isinstance(iterable, Iterable):
         if level is not None and level > 0:
-            _LOG.debug(
-                f"iterable: {dumps(iterable, indent=4, default=vars)}\nlevel: {level}"
-            )
+            if _is_debug():
+                _LOG.debug(
+                    f"iterable: {dumps(iterable, indent=4, default=vars)}\nlevel: {level}"
+                )
             raise RuntimeError("Cannot further unpack iterable")
         return iterable
 
     if len(iterable) > 1 and (level is None or level > 0):
-        _LOG.debug(
-            f"iterable: {dumps(iterable, indent=4, default=vars)}\nlevel: {level}"
-        )
+        if _is_debug():
+            _LOG.debug(
+                f"iterable: {dumps(iterable, indent=4, default=vars)}\nlevel: {level}"
+            )
         raise IndexError("Multiple branching possible when unpacking nested value")
 
     if level is not None:
@@ -416,3 +423,83 @@ def _math_check(expression: str):
         return False, None
     else:
         return True, variables
+
+
+def _filter_metadata(metadata: dict, keys: list, **kwargs) -> dict:
+    """
+    Filters parsed metadata by providing keys corresponding to metadata attributes.
+    If metadata is a nested dictionary then keys can be shaped as UNIX paths,
+    where each path part corresponding to a nested attribute.
+
+    Arguments:
+        metadata: dictionary to filter.
+        keys: list of keys to filter with.
+
+    Returns:
+        filtered dictionary.
+    """
+
+    add_description = False
+    if "add_description" in kwargs:
+        add_description = kwargs["add_description"]
+
+    add_type = False
+    if "add_type" in kwargs:
+        add_type = kwargs["add_type"]
+    
+    new_dict = {}
+    for k in keys:
+        _LOG.debug(f"filtering key: {k}")
+        new_dict = _merge_dicts(new_dict, _filter_dict(metadata, k.split("/")))
+    if add_description or add_type:
+        if _is_debug():
+            _LOG.debug("adding information from schema %s", dumps(kwargs["schema"], indent=4, default=vars))
+        if "schema" not in kwargs:
+            raise RuntimeError("Attempting to add description or type without input schema.")
+        _add_info_from_schema(new_dict, kwargs["schema"], add_description, add_type)
+    return new_dict
+
+
+def _add_info_from_schema(metadata: dict, schema: dict, add_description: bool, add_type: bool, key_list: list = None) -> list:
+    """
+    WIP
+    Adds additional information from input schema to parsed metadata inplace.
+
+    Arguments:
+        metadata: dictionary to add information to.
+        add_description: control boolean to enable addition of description information.
+        add_type: control boolean to enable addition of type information.
+        key_list: recursion list containing visited dictionary keys.
+    """
+
+    if key_list is None:
+        key_list = []
+    for kk in metadata.keys():
+        if isinstance(metadata[kk], dict):
+            _add_info_from_schema(
+                metadata[kk], schema, add_description, add_type, key_list + [kk]
+            )
+        else:
+            val = metadata[kk]
+            metadata[kk] = {"value": val}
+            print(key_list + [kk])
+            schem_entry = _deep_get_from_schema(
+                deepcopy(schema["properties"]), key_list + [kk]
+            )
+            if (
+                schem_entry is None
+                and "additionalProperties" in schema.keys()
+            ):
+                schem_entry = _deep_get_from_schema(
+                    deepcopy(schema["additionalProperties"]), *key_list
+                )
+            if schem_entry is None and "patternProperties" in schema.keys():
+                schem_entry = _deep_get_from_schema(
+                    deepcopy(schema["patternProperties"]), *key_list
+                )
+            print(schem_entry)
+            if schem_entry is not None:
+                if add_description and "description" in schem_entry.keys():
+                    metadata[kk].update({"description": schem_entry["description"]})
+                if add_type and "type" in schem_entry.keys():
+                    metadata[kk].update({"type": schem_entry["type"]})

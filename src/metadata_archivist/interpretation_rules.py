@@ -59,7 +59,7 @@ def _interpret_pattern_property_rule(
     parent_key: str,
     entry: _SchemaEntry,
 ) -> _SchemaEntry:
-    # We create a regex context and recurse overfrom copy import deepcopy the contents of the property.
+    # We create a regex context and recurse over from copy import deepcopy the contents of the property.
     entry.context.update({"useRegex": True})
 
     return interpreter._interpret_schema(prop_val, parent_key, entry)

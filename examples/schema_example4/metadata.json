@@ -1,7 +1,11 @@
 {
     "real_time_factor": 0.02596,
     "model": {
-        "scale": 10
+        "scale": {
+            "value": 10,
+            "description": "model scale",
+            "type": "number"
+        }
     },
     "virtual_processes": 16
 }

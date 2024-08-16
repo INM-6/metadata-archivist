@@ -79,8 +79,8 @@ if __name__ == "__main__":
         lazy_load=True,
         auto_cleanup=True,
         verbose="info",
-        add_description=False,
-        add_type=False,
+        add_description=True,
+        add_type=True,
     )
 
     arch.parse()

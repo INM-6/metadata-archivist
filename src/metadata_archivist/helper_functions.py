@@ -13,7 +13,7 @@ from re import fullmatch
 from pathlib import Path
 from copy import deepcopy
 from collections.abc import Iterable
-from typing import Optional, Union, Any, Tuple
+from typing import Optional, Any, Tuple
 
 from .logger import _LOG
 

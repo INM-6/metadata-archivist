@@ -38,15 +38,15 @@ class time_parser(AParser):
                 "type": "object",
                 "properties": {
                     "real": {
-                        "type": "string",
+                        "type": "number",
                         "description": "the time from start to finish of the call",
                     },
                     "user": {
-                        "type": "string",
+                        "type": "number",
                         "description": "amount of CPU time spent in user mode",
                     },
                     "sys": {
-                        "type": "string",
+                        "type": "number",
                         "description": "amount of CPU time spent in kernel mode",
                     },
                     "system": {"$ref": "#/properties/sys"},

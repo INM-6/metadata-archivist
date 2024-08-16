@@ -186,7 +186,10 @@ def _deep_get_from_schema(schema: dict, keys: list) -> Any:
 
         for k in schema:
             if k in _KNOWN_PROPERTIES:
-                return _deep_get_from_schema(schema[k], keys)
+                try:
+                    return _deep_get_from_schema(schema[k], keys)
+                except StopIteration:
+                    pass
 
         _LOG.debug(f"schema: {dumps(schema, indent=4, default=vars)}")
         _LOG.debug(f"keys: {dumps(keys, indent=4, default=vars)}")
@@ -197,7 +200,7 @@ def _deep_get_from_schema(schema: dict, keys: list) -> Any:
     else:
         _LOG.debug(f"schema: {dumps(schema, indent=4, default=vars)}")
         _LOG.debug(f"keys: {dumps(keys, indent=4, default=vars)}")
-        raise KeyError("No key found for corresponding schema")
+        raise StopIteration("No key found for corresponding schema")
 
 
 def _pattern_parts_match(
@@ -273,9 +276,7 @@ def _unpack_nested_value(iterable: Any, level: Optional[int] = None) -> Any:
         _LOG.debug(
             f"iterable: {dumps(iterable, indent=4, default=vars)}\nlevel: {level}"
         )
-        raise IndexError(
-            "Multiple branching possible when unpacking nested value"
-        )
+        raise IndexError("Multiple branching possible when unpacking nested value")
 
     if level is not None:
         if level > 0:

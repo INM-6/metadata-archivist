@@ -176,7 +176,7 @@ def _deep_get_from_schema(schema: dict, keys: list) -> Any:
 
     key_count = len(keys)
     if key_count > 0:
-        
+
         key = keys[0]
         if key in schema:
             if key_count - 1 > 0:
@@ -190,7 +190,9 @@ def _deep_get_from_schema(schema: dict, keys: list) -> Any:
 
         _LOG.debug(f"schema: {dumps(schema, indent=4, default=vars)}")
         _LOG.debug(f"keys: {dumps(keys, indent=4, default=vars)}")
-        raise StopIteration("Iterated through schema without finding corresponding keys")
+        raise StopIteration(
+            "Iterated through schema without finding corresponding keys"
+        )
 
     else:
         _LOG.debug(f"schema: {dumps(schema, indent=4, default=vars)}")
@@ -245,9 +247,7 @@ def _pattern_parts_match(
     return is_match
 
 
-def _unpack_nested_value(
-    iterable: Any, level: Optional[int] = None
-) -> Any:
+def _unpack_nested_value(iterable: Any, level: Optional[int] = None) -> Any:
     """
     Helper function to unpack any type of nested value
     i.e. unpacking a nested container where each nesting level contains a single value,
@@ -263,12 +263,16 @@ def _unpack_nested_value(
 
     if not isinstance(iterable, Iterable):
         if level is not None and level > 0:
-            _LOG.debug(f"iterable: {dumps(iterable, indent=4, default=vars)}\nlevel: {level}")
+            _LOG.debug(
+                f"iterable: {dumps(iterable, indent=4, default=vars)}\nlevel: {level}"
+            )
             raise RuntimeError("Cannot further unpack iterable")
         return iterable
 
     if len(iterable) > 1 and (level is None or level > 0):
-        _LOG.debug(f"iterable: {dumps(iterable, indent=4, default=vars)}\nlevel: {level}")
+        _LOG.debug(
+            f"iterable: {dumps(iterable, indent=4, default=vars)}\nlevel: {level}"
+        )
         raise IndexError(
             "Multiple possible branching possible when unpacking nested value"
         )

@@ -38,7 +38,7 @@ from .helper_classes import _SchemaEntry
 from .helper_functions import (
     _pattern_parts_match,
     _update_dict_with_parts,
-    _unpack_singular_nested_value,
+    _unpack_nested_value,
 )
 
 
@@ -146,7 +146,7 @@ def _format_parser_id_rule(
                             f"Incorrect unpacking configuration in !parsing context: unpack={False}"
                         )
 
-                    metadata = _unpack_singular_nested_value(metadata)
+                    metadata = _unpack_nested_value(metadata)
 
                 elif isinstance(context["!parsing"]["unpack"], int):
                     if context["!parsing"]["unpack"] == 0:
@@ -155,7 +155,7 @@ def _format_parser_id_rule(
                             f"Incorrect unpacking configuration in !parsing context: unpack={0}"
                         )
 
-                    metadata = _unpack_singular_nested_value(
+                    metadata = _unpack_nested_value(
                         metadata, context["!parsing"]["unpack"]
                     )
 

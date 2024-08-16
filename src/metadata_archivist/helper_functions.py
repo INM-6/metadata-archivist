@@ -18,6 +18,15 @@ from typing import Optional, Union, Any, Tuple
 from .logger import _LOG
 
 
+# List of known property names in schema
+_KNOWN_PROPERTIES = [
+    "properties",
+    "unevaluatedProperties",
+    "additionalProperties",
+    "patternProperties",
+]
+
+
 def _check_dir(dir_path: str, allow_existing: bool = False) -> Tuple[Path, bool]:
     """
     Checks directory path.
@@ -154,7 +163,6 @@ def _filter_dict(input_dict: dict, filter_keys: list, _level: int = 0) -> dict:
 
 def _deep_get_from_schema(schema: dict, keys: list) -> Any:
     """
-    WIP
     Fetches value located in depth of the schema.
     Uses a sequence of keys to navigate tree.
 
@@ -166,33 +174,28 @@ def _deep_get_from_schema(schema: dict, keys: list) -> Any:
         object found at last key position in schema.
     """
 
-    k = keys.pop(0)
-    if len(keys) > 0:
-        if k in schema.keys():
-            _deep_get_from_schema(schema[k], keys)
-        elif "properties" in schema.keys() and keys[0] in schema["properties"]:
-            _deep_get_from_schema(schema["properties"][k], keys)
-        elif (
-            "additionalProperties" in schema.keys()
-            and keys[0] in schema["additionalProperties"]
-        ):
-            _deep_get_from_schema(schema["additionalProperties"], keys)
-        elif (
-            "additionalProperties" in schema.keys()
-            and "properties" in schema["additionalProperties"]
-            and keys[0] in schema["additionalProperties"]["properties"]
-        ):
-            _deep_get_from_schema(schema["additionalProperties"]["properties"], keys)
-        elif "patternProperties" in schema.keys() and any(
-            fullmatch(x, k) for x in schema["patternProperties"].keys()
-        ):
-            for kk in schema["patternProperties"].keys():
-                if fullmatch(kk, k):
-                    _deep_get_from_schema(schema["patternProperties"][kk], keys)
-                    break
+    key_count = len(keys)
+    if key_count > 0:
+        
+        key = keys[0]
+        if key in schema:
+            if key_count - 1 > 0:
+                keys.pop(0)
+                return _deep_get_from_schema(schema[key], keys)
+            return schema[key]
+
+        for k in schema:
+            if k in _KNOWN_PROPERTIES:
+                return _deep_get_from_schema(schema[k], keys)
+
+        _LOG.debug(f"schema: {dumps(schema, indent=4, default=vars)}")
+        _LOG.debug(f"keys: {dumps(keys, indent=4, default=vars)}")
+        raise StopIteration("Iterated through schema without finding corresponding keys")
+
     else:
-        _LOG.debug(schema[k])
-        return schema[k]
+        _LOG.debug(f"schema: {dumps(schema, indent=4, default=vars)}")
+        _LOG.debug(f"keys: {dumps(keys, indent=4, default=vars)}")
+        raise KeyError("No key found for corresponding schema")
 
 
 def _pattern_parts_match(
@@ -242,12 +245,13 @@ def _pattern_parts_match(
     return is_match
 
 
-def _unpack_singular_nested_value(
+def _unpack_nested_value(
     iterable: Any, level: Optional[int] = None
-) -> Union[str, int, float, bool]:
+) -> Any:
     """
-    Helper function to unpack any type of singular nested value
-    i.e. unpacking a nested container where each nesting level contains a single value until a primitive is found.
+    Helper function to unpack any type of nested value
+    i.e. unpacking a nested container where each nesting level contains a single value,
+    until a primitive is found or desired level reached.
 
     Arguments:
         iterable: iterable type of container to unpack.
@@ -257,26 +261,28 @@ def _unpack_singular_nested_value(
         primitive value found at last depth (or given level).
     """
 
-    if isinstance(iterable, (str, int, float, bool)):
+    if not isinstance(iterable, Iterable):
         if level is not None and level > 0:
-            # TODO: Should we raise error?
-            _LOG.warning(f"Finished unpacking before 0 level reached.")
+            _LOG.debug(f"iterable: {dumps(iterable, indent=4, default=vars)}\nlevel: {level}")
+            raise RuntimeError("Cannot further unpack iterable")
         return iterable
-    elif isinstance(iterable, Iterable):
-        if len(iterable) > 1:
-            _LOG.debug(dumps(iterable, indent=4, default=vars))
-            raise IndexError(
-                f"Multiple possible values found when unpacking singular nested value"
-            )
-        if level is not None:
-            if level > 0:
-                level -= 1
-            else:
-                return iterable
-        if isinstance(iterable, dict):
-            return _unpack_singular_nested_value(next(iter(iterable.values())), level)
+
+    if len(iterable) > 1 and (level is None or level > 0):
+        _LOG.debug(f"iterable: {dumps(iterable, indent=4, default=vars)}\nlevel: {level}")
+        raise IndexError(
+            "Multiple possible branching possible when unpacking nested value"
+        )
+
+    if level is not None:
+        if level > 0:
+            level -= 1
         else:
-            return _unpack_singular_nested_value(next(iter(iterable)), level)
+            return iterable
+
+    if isinstance(iterable, dict):
+        return _unpack_nested_value(next(iter(iterable.values())), level)
+    else:
+        return _unpack_nested_value(next(iter(iterable)), level)
 
 
 def _math_check(expression: str):

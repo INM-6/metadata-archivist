@@ -274,7 +274,7 @@ def _unpack_nested_value(iterable: Any, level: Optional[int] = None) -> Any:
             f"iterable: {dumps(iterable, indent=4, default=vars)}\nlevel: {level}"
         )
         raise IndexError(
-            "Multiple possible branching possible when unpacking nested value"
+            "Multiple branching possible when unpacking nested value"
         )
 
     if level is not None:

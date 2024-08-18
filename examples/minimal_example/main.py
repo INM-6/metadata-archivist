@@ -10,11 +10,17 @@ Authors: Matthias K., Jose V.
 
 """
 
-from json import load, dumps
 from pathlib import Path
+from json import load, dumps
+from argparse import ArgumentParser
 
-from my_parsers import time_parser, yml_parser
 from metadata_archivist import Archivist
+from my_parsers import time_parser, yml_parser
+
+
+arg_parser = ArgumentParser()
+arg_parser.add_argument("--verbosity", type=str, default="info")
+args = arg_parser.parse_args()
 
 
 if __name__ == "__main__":
@@ -24,6 +30,7 @@ if __name__ == "__main__":
 
     with config_path.open("r") as f:
         config = load(f)
+    config["verbose"] = args.verbosity
 
     arch = Archivist(
         path="metadata_archive.tar", parsers=[time_parser(), yml_parser()], **config

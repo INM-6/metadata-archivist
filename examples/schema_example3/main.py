@@ -11,6 +11,10 @@ Authors: Matthias K., Jose V.
 
 """
 
+from pathlib import Path
+from json import dumps, dump
+from argparse import ArgumentParser
+
 from metadata_archivist import Archivist
 from my_parsers import (
     time_parser,
@@ -18,8 +22,11 @@ from my_parsers import (
     station_character_parser,
     basin_character_parser,
 )
-from pathlib import Path
-from json import dumps, dump
+
+
+arg_parser = ArgumentParser()
+arg_parser.add_argument("--verbosity", type=str, default="info")
+args = arg_parser.parse_args()
 
 
 my_schema = {
@@ -82,7 +89,7 @@ if __name__ == "__main__":
         output_file="metadata.json",
         overwrite=True,
         auto_cleanup=True,
-        verbose="info",
+        verbose=args.verbosity,
     )
 
     arch.parse()

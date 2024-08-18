@@ -452,10 +452,10 @@ def _filter_metadata(metadata: dict, keys: list, **kwargs) -> dict:
         _LOG.debug(f"filtering key: {k}")
         new_dict = _merge_dicts(new_dict, _filter_dict(metadata, k.split("/")))
     if add_description or add_type:
-        if _is_debug():
-            _LOG.debug("adding information from schema %s", dumps(kwargs["schema"], indent=4, default=vars))
         if "schema" not in kwargs:
             raise RuntimeError("Attempting to add description or type without input schema.")
+        if _is_debug():
+            _LOG.debug("adding information from schema %s", dumps(kwargs["schema"], indent=4, default=vars))
         _add_info_from_schema(new_dict, kwargs["schema"], add_description, add_type)
     return new_dict
 
@@ -474,32 +474,22 @@ def _add_info_from_schema(metadata: dict, schema: dict, add_description: bool, a
 
     if key_list is None:
         key_list = []
-    for kk in metadata.keys():
-        if isinstance(metadata[kk], dict):
-            _add_info_from_schema(
-                metadata[kk], schema, add_description, add_type, key_list + [kk]
-            )
+    keys = list(metadata.keys())
+    for key in keys:
+        value = metadata[key]
+        if isinstance(value, dict):
+            _add_info_from_schema(value, schema, add_description, add_type, key_list + [key])
         else:
-            val = metadata[kk]
-            metadata[kk] = {"value": val}
-            print(key_list + [kk])
-            schem_entry = _deep_get_from_schema(
-                deepcopy(schema["properties"]), key_list + [kk]
-            )
-            if (
-                schem_entry is None
-                and "additionalProperties" in schema.keys()
-            ):
-                schem_entry = _deep_get_from_schema(
-                    deepcopy(schema["additionalProperties"]), *key_list
-                )
-            if schem_entry is None and "patternProperties" in schema.keys():
-                schem_entry = _deep_get_from_schema(
-                    deepcopy(schema["patternProperties"]), *key_list
-                )
-            print(schem_entry)
-            if schem_entry is not None:
-                if add_description and "description" in schem_entry.keys():
-                    metadata[kk].update({"description": schem_entry["description"]})
-                if add_type and "type" in schem_entry.keys():
-                    metadata[kk].update({"type": schem_entry["type"]})
+            new_value = {"value": value}
+            schema_entry = None
+            try:
+                schema_entry = _deep_get_from_schema(schema, key_list + [key])
+            except StopIteration:
+                _LOG.warning(f"No schema entry found for metadata value: {key}")
+                if _is_debug():
+                    _LOG.debug("key: %s\nvalue: %s\nmetadata: %s\nschema: %s",
+                               str(key), str(value), dumps(metadata, indent=4, default=vars), dumps(schema, indent=4, default=vars))
+            if schema_entry is not None:
+                new_value["description"] = schema_entry["description"]
+                new_value["type"] = schema_entry["type"]
+                metadata[key] = new_value

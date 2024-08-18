@@ -238,14 +238,6 @@ def _format_calculate_rule(
         _LOG.debug("value type: %s\nexpected type: %s", str(type(value)), str(dict))
         raise TypeError("Incorrect value type found while formatting calculation")
 
-    if "add_description" in kwargs and kwargs["add_description"]:
-        _LOG.warning("Add description enabled in calculate directive. Ignoring option.")
-        kwargs["add_description"] = False
-
-    if "add_type" in kwargs and kwargs["add_type"]:
-        _LOG.warning("Add type enabled in calculate directive. Ignoring option.")
-        kwargs["add_type"] = False
-
     if not all(key in value for key in ["expression", "variables"]):
         if _is_debug():
             _LOG.debug(
@@ -254,6 +246,9 @@ def _format_calculate_rule(
         raise RuntimeError(
             "Malformed !calculate entry found while formatting calculation."
         )
+
+    add_description = kwargs.pop("add_description", False)
+    add_type = kwargs.pop("add_type", False)
 
     expression = value["expression"]
     variables = value["variables"]
@@ -282,8 +277,18 @@ def _format_calculate_rule(
         )
 
     formatted_expression = expression.format(**parsing_values)
+    result = eval(formatted_expression)
 
-    return eval(formatted_expression)
+    if add_description or add_type:
+        # In calculate directive description or type are retrieved from formatting schema
+        # It is necessary to generate a mock dictionary tree following formatting schema to be able to use _add_info_from_schema function
+        # After retrieving info from schema then unpacking is used to remove mock tree and getting the annotated result.
+        mock_tree = {}
+        _update_dict_with_parts(mock_tree, result, interpreted_schema.key_path)
+        _add_info_from_schema(mock_tree, formatter.schema, add_description, add_type)
+        result = _unpack_nested_value(mock_tree, level=len(interpreted_schema.key_path))
+
+    return result
 
 
 _FORMATTING_RULES = {

@@ -263,7 +263,11 @@ def _interpret_calculate_directive_rule(
             )
 
         # We create a SchemaEntry in the context to be specially handled by the Formatter
-        new_entry = _SchemaEntry(key=prop_key, key_path=deepcopy(entry.key_path), context=deepcopy(entry.context))
+        new_entry = _SchemaEntry(
+            key=prop_key,
+            key_path=deepcopy(entry.key_path),
+            context=deepcopy(entry.context),
+        )
 
         if "!parsing" in value:
             _interpret_parsing_directive_rule(

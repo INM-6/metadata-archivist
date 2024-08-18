@@ -188,15 +188,17 @@ def _format_parser_id_rule(
                         "Incorrect unpacking configuration in !parsing context: unpack=0."
                     )
 
-                metadata = _unpack_nested_value(
-                    metadata, unpack
-                )
+                metadata = _unpack_nested_value(metadata, unpack)
             else:
-                _LOG.debug("Unpack type: %s, expected types: %s or %s", str(type(unpack)), str(bool), str(int))
+                _LOG.debug(
+                    "Unpack type: %s, expected types: %s or %s",
+                    str(type(unpack)),
+                    str(bool),
+                    str(int),
+                )
                 raise TypeError(
                     "Incorrect unpacking configuration in !parsing context."
                 )
-
 
         # Update parsed metadata
         # When in a regex context then resulting parsed metadata is a dict

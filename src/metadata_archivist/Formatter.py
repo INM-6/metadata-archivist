@@ -594,12 +594,12 @@ def _combine(
                             dumps(formatter2.config, indent=4, default=vars),
                         )
                     raise ValueError("Value mismatch in Formatter.combine.")
-            
+
             # If different reference but same content then copy content to new config
             config = deepcopy(formatter1.config)
-            
+
         else:
-            # If same reference then keep reference    
+            # If same reference then keep reference
             config = formatter1.config
 
     combined_formatter = Formatter(

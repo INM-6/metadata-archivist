@@ -575,25 +575,32 @@ def _combine(
     """
 
     if config is None:
-        for key, value in formatter1.config:
-            if key not in formatter2.config:
-                if _is_debug():
-                    _LOG.debug(
-                        "formatter1.config: %s\nformatter2.config: %s",
-                        dumps(formatter1.config, indent=4, default=vars),
-                        dumps(formatter2.config, indent=4, default=vars),
-                    )
-                raise KeyError("key mismatch in Formatter.combine.")
-            if value != formatter2.config[key]:
-                if _is_debug():
-                    _LOG.debug(
-                        "formatter1.config: %s\nformatter2.config: %s",
-                        dumps(formatter1.config, indent=4, default=vars),
-                        dumps(formatter2.config, indent=4, default=vars),
-                    )
-                raise ValueError("Value mismatch in Formatter.combine.")
-
-        config = deepcopy(formatter1.config)
+        # Test reference
+        if config != config:
+            for key, value in formatter1.config:
+                if key not in formatter2.config:
+                    if _is_debug():
+                        _LOG.debug(
+                            "formatter1.config: %s\nformatter2.config: %s",
+                            dumps(formatter1.config, indent=4, default=vars),
+                            dumps(formatter2.config, indent=4, default=vars),
+                        )
+                    raise KeyError("key mismatch in Formatter.combine.")
+                if value != formatter2.config[key]:
+                    if _is_debug():
+                        _LOG.debug(
+                            "formatter1.config: %s\nformatter2.config: %s",
+                            dumps(formatter1.config, indent=4, default=vars),
+                            dumps(formatter2.config, indent=4, default=vars),
+                        )
+                    raise ValueError("Value mismatch in Formatter.combine.")
+            
+            # If different reference but same content then copy content to new config
+            config = deepcopy(formatter1.config)
+            
+        else:
+            # If same reference then keep reference    
+            config = formatter1.config
 
     combined_formatter = Formatter(
         schema=schema, parsers=formatter1.parsers + formatter2.parsers, config=config

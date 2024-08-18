@@ -347,7 +347,7 @@ class _SchemaEntry:
     """
 
     def __init__(
-        self, key: Optional[str] = None, context: Optional[dict] = None
+        self, key: Optional[str] = None, key_path: Optional[list] = None, context: Optional[dict] = None
     ) -> None:
         """
         Constructor for schema entry.
@@ -358,6 +358,7 @@ class _SchemaEntry:
         """
 
         self.key = key
+        self.key_path = key_path if key_path is not None else []
         self.context = context if context is not None else {}
         self._content = {}
         self._iterator = None
@@ -502,7 +503,7 @@ class _SchemaInterpreter:
                     _relative_root[key] = self._interpret_schema(
                         val,
                         key,
-                        _SchemaEntry(key=key, context=deepcopy(_relative_root.context)),
+                        _SchemaEntry(key=key, key_path=_relative_root.key_path + [key], context=deepcopy(_relative_root.context)),
                     )
 
                 # Case str i.e. leaf

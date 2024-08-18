@@ -60,7 +60,7 @@ def _interpret_pattern_property_rule(
     parent_key: str,
     entry: _SchemaEntry,
 ) -> _SchemaEntry:
-    # We create a regex context and recurse over from copy import deepcopy the contents of the property.
+    # We create a regex context and recurse over the contents of the property.
     entry.context.update({"useRegex": True})
 
     return interpreter._interpret_schema(prop_val, parent_key, entry)
@@ -263,7 +263,7 @@ def _interpret_calculate_directive_rule(
             )
 
         # We create a SchemaEntry in the context to be specially handled by the Formatter
-        new_entry = _SchemaEntry(key=prop_key, context=deepcopy(entry.context))
+        new_entry = _SchemaEntry(key=prop_key, key_path=deepcopy(entry.key_path), context=deepcopy(entry.context))
 
         if "!parsing" in value:
             _interpret_parsing_directive_rule(

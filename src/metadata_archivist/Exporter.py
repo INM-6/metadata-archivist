@@ -63,7 +63,7 @@ class Exporter:
             if export_file.is_file():
                 if self.config["overwrite"]:
                     _LOG.warning(
-                        f"Metadata output file exists: '{export_file}', overwriting."
+                        "Metadata output file exists: '%s', overwriting.", str(export_file)
                     )
                 else:
                     raise RuntimeError(
@@ -88,7 +88,7 @@ def _export_json(json_object: dict, outfile: Path) -> None:
         outfile: Path object to target file.
     """
 
-    _LOG.debug(f"   exporting to file: {outfile}")
+    _LOG.debug("   exporting JSON to file: %s", str(outfile))
 
     with outfile.open("w") as f:
         dump(json_object, f, indent=4)

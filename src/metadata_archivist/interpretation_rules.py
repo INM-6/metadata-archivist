@@ -141,7 +141,7 @@ def __interpret_refs(
         raise KeyError(f"Parser not found: {pid}")
 
     # Add identified Parser to context
-    _LOG.debug(f"processing reference to: {pid}")
+    _LOG.debug("Processing reference to: %s", pid)
     entry["!parser_id"] = pid
 
     # Further process reference e.g. filters, internal property references -> links

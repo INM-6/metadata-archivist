@@ -476,7 +476,7 @@ class _SchemaInterpreter:
                 # always be present.
                 if _parent_key is None:
                     if _is_debug():
-                        _LOG.debug(dumps(_relative_root, indent=4, default=vars))
+                        _LOG.debug("current structure: %s", dumps(_relative_root, indent=4, default=vars))
                     raise RuntimeError("Cannot interpret rule without parent key.")
                 _relative_root = self.rules[key](
                     self, val, key, _parent_key, _relative_root
@@ -493,16 +493,17 @@ class _SchemaInterpreter:
 
                 # Case str i.e. leaf
                 elif isinstance(val, str):
-                    _LOG.debug(f"Ignoring key value pair: {key}: {val}")
+                    _LOG.debug("Ignoring key value pair: (%s: %s)", key, val)
 
                 # Else not-implemented/ignored
                 else:
                     if isinstance(val, Iterable):
+                        _LOG.debug("Unknown iterable type: %s", str(type(val)))
                         raise NotImplementedError(
-                            f"Unknown iterable type: {key}: {type(val)}"
+                            "Unknown iterable type."
                         )
                     else:
-                        _LOG.debug(f"Ignoring key value pair: {key}: {val}")
+                        _LOG.debug("Ignoring key value pair: (%s: %s)", key, str(val))
 
         return _relative_root
 
@@ -517,7 +518,7 @@ class _SchemaInterpreter:
         if _is_debug():
             # Passing through dumps for pretty printing,
             # however can be costly, so checking if debug is enabled first
-            _LOG.debug(dumps(self._schema, indent=4, default=vars))
+            _LOG.debug("Initial structure: %s", dumps(self._schema, indent=4, default=vars))
 
         if self.structure.is_empty():
             self.structure = self._interpret_schema(self._schema["properties"])
@@ -525,6 +526,6 @@ class _SchemaInterpreter:
         if _is_debug():
             # Passing through dumps for pretty printing,
             # however can be costly, so checking if debug is enabled first
-            _LOG.debug(dumps(self.structure, indent=4, default=vars))
+            _LOG.debug("Interpreted structure: %s", dumps(self.structure, indent=4, default=vars))
 
         return self.structure

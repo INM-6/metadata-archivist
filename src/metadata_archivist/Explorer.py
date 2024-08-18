@@ -138,8 +138,8 @@ def _decompress_tar(
             2. list of Path objects of decompressed files.
     """
 
-    _LOG.info(f"Extracting archive: {archive_path.name} ...")
-    _LOG.debug(f"   exploring using patterns: {input_file_patterns}")
+    _LOG.info("Extracting archive: %s ...", archive_path.name)
+    _LOG.debug("   exploring using patterns: %s", str(input_file_patterns))
 
     created = False
     if not isinstance(extraction_directory, Path):
@@ -156,7 +156,7 @@ def _decompress_tar(
         item = t.next()
         while item is not None:
             if item.isfile():
-                _LOG.debug(f"   processing file: {item.name}")
+                _LOG.debug("   processing file: %s", item.name)
                 item_path = directory_path.joinpath(item.name)
                 if any(item.name.endswith(format) for format in _ACCEPTED_FORMATS):
                     t.extract(item, path=directory_path)
@@ -205,15 +205,15 @@ def _dir_explore(
             2. list of Path objects of explored files.
     """
 
-    _LOG.info(f"Exploring directory: {directory_path.name} ...")
-    _LOG.debug(f"   exploring using patterns: {input_file_patterns}")
+    _LOG.info("Exploring directory: %s ...", directory_path.name)
+    _LOG.debug("   exploring using patterns: %s", str(input_file_patterns))
 
     explored_dirs = [directory_path]
     explored_files = []
 
     for item_path in directory_path.glob("*"):
         if item_path.is_file():
-            _LOG.debug(f"   processing file: {item_path.name}")
+            _LOG.debug("   processing file: %s", item_path.name)
             # TODO: think about precompiling patterns to optimize regex match time
             if any(
                 _pattern_parts_match(

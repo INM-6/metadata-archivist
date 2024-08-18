@@ -76,7 +76,7 @@ def _update_dict_with_parts(target_dict: dict, value: Any, parts: list) -> None:
         elif not isinstance(relative_root[part], dict):
             if _is_debug():
                 _LOG.debug(
-                    f"key: {part}\nrelative root:\n{dumps(relative_root, indent=4, default=vars)}"
+                    "key: %s\nrelative root: %s", part, dumps(relative_root, indent=4, default=vars)
                 )
             raise RuntimeError(
                 "Duplicate key with incorrect found while updating tree with path hierarchy."
@@ -194,16 +194,16 @@ def _deep_get_from_schema(schema: dict, keys: list) -> Any:
                     pass
 
         if _is_debug():
-            _LOG.debug(f"schema: {dumps(schema, indent=4, default=vars)}")
-            _LOG.debug(f"keys: {dumps(keys, indent=4, default=vars)}")
+            _LOG.debug("schema: %s", dumps(schema, indent=4, default=vars))
+            _LOG.debug("keys: %s", dumps(keys, indent=4, default=vars))
         raise StopIteration(
             "Iterated through schema without finding corresponding keys"
         )
 
     else:
         if _is_debug:
-            _LOG.debug(f"schema: {dumps(schema, indent=4, default=vars)}")
-            _LOG.debug(f"keys: {dumps(keys, indent=4, default=vars)}")
+            _LOG.debug("schema: %s", dumps(schema, indent=4, default=vars))
+            _LOG.debug("keys: %s", dumps(keys, indent=4, default=vars))
         raise StopIteration("No key found for corresponding schema")
 
 
@@ -233,19 +233,19 @@ def _pattern_parts_match(
             # !varname and regexp should always be in context in this case
             if "!varname" not in context or "regexp" not in context:
                 if _is_debug():
-                    _LOG.debug(dumps(context, indent=4, default=vars))
-                raise RuntimeError("Badly structured context for pattern matching")
+                    _LOG.debug("context: %s", dumps(context, indent=4, default=vars))
+                raise RuntimeError("Badly structured context for pattern matching.")
 
             # Match against same index element in file path
             if not fullmatch(
                 part.format(**{context["!varname"]: context["regexp"]}), actual_parts[i]
             ):
-                _LOG.debug(f"{part} did not match against {actual_parts[i]}")
+                _LOG.debug("pattern: '%s' did not match against '%s'", part, actual_parts[i])
                 break
 
         # Else literal matching
         elif not fullmatch(part, actual_parts[i]):
-            _LOG.debug(f"{part} did not match against {actual_parts[i]}")
+            _LOG.debug("pattern: '%s' did not match against '%s'", part, actual_parts[i])
             break
 
     # Everything matched in the for loop i.e. no breakpoint reached
@@ -273,17 +273,21 @@ def _unpack_nested_value(iterable: Any, level: Optional[int] = None) -> Any:
         if level is not None and level > 0:
             if _is_debug():
                 _LOG.debug(
-                    f"iterable: {dumps(iterable, indent=4, default=vars)}\nlevel: {level}"
+                    "iterable: %s\nlevel: %i",
+                    dumps(iterable, indent=4, default=vars),
+                    level
                 )
-            raise RuntimeError("Cannot further unpack iterable")
+            raise RuntimeError("Cannot further unpack iterable.")
         return iterable
 
     if len(iterable) > 1 and (level is None or level > 0):
         if _is_debug():
             _LOG.debug(
-                f"iterable: {dumps(iterable, indent=4, default=vars)}\nlevel: {level}"
+                "iterable: %s\nlevel: %i",
+                dumps(iterable, indent=4, default=vars),
+                level
             )
-        raise IndexError("Multiple branching possible when unpacking nested value")
+        raise IndexError("Multiple branching possible when unpacking nested value.")
 
     if level is not None:
         if level > 0:
@@ -449,7 +453,7 @@ def _filter_metadata(metadata: dict, keys: list, **kwargs) -> dict:
     
     new_dict = {}
     for k in keys:
-        _LOG.debug(f"filtering key: {k}")
+        _LOG.debug("Filtering key: %s", k)
         new_dict = _merge_dicts(new_dict, _filter_dict(metadata, k.split("/")))
     if add_description or add_type:
         if "schema" not in kwargs:
@@ -485,7 +489,7 @@ def _add_info_from_schema(metadata: dict, schema: dict, add_description: bool, a
             try:
                 schema_entry = _deep_get_from_schema(schema, key_list + [key])
             except StopIteration:
-                _LOG.warning(f"No schema entry found for metadata value: {key}")
+                _LOG.warning("No schema entry found for metadata value: %s", key)
                 if _is_debug():
                     _LOG.debug("key: %s\nvalue: %s\nmetadata: %s\nschema: %s",
                                str(key), str(value), dumps(metadata, indent=4, default=vars), dumps(schema, indent=4, default=vars))

@@ -46,7 +46,8 @@ class _FormatterCache:
         if parser_name not in self._cache:
             self._cache[parser_name] = _ParserCache()
         else:
-            raise KeyError(f"Parser {parser_name} already exists in cache")
+            _LOG.debug("Parser name: %s", parser_name)
+            raise KeyError("Parser already exists in cache.")
 
     def drop(self, parser_name: str) -> None:
         """
@@ -213,8 +214,10 @@ class _CacheEntry:
                 self.metadata = load(f)
 
             if self.metadata is None:
+                if _is_debug():
+                    _LOG.debug("CacheEntry: %s", dumps(self, indent=4, default=vars))
                 raise RuntimeError(
-                    f"Failed to load metadata {dumps(self, indent=4, default=vars)}"
+                    "Failed to load metadata from CacheEntry."
                 )
 
         return self.metadata
@@ -268,9 +271,10 @@ class _ParserIndexes:
             return self.ifp_indexes
         elif storage in scp_patterns:
             return self.scp_indexes
-
+        
+        _LOG.debug("storage value: %s\naccepted values: %s", storage, str(prs_patterns + ifp_patterns + scp_patterns))
         raise ValueError(
-            f"Incorrect value for storage name, got {storage}, accepted {prs_patterns + ifp_patterns + scp_patterns}"
+            "Incorrect value for storage name."
         )
 
     def set_index(self, parser_name: str, storage: str, index: int) -> None:
@@ -405,14 +409,19 @@ class _SchemaInterpreter:
         """
 
         if not isinstance(schema, dict):
-            raise RuntimeError(f"Incorrect schema used for iterator {schema}")
+            _LOG.debug("schema type: %s, expected type: %s", str(type(schema)), str(dict))
+            raise RuntimeError("Incorrect schema used for iterator.")
         if "properties" not in schema or not isinstance(schema["properties"], dict):
+            if _is_debug():
+                _LOG.debug("schema: %s", dumps(schema, indent=4, default=vars))
             raise RuntimeError(
-                f"Incorrect schema structure, root is expected to contain properties dictionary: {schema}"
+                "Incorrect schema structure, root is expected to contain properties dictionary."
             )
         if "$defs" not in schema or not isinstance(schema["$defs"], dict):
+            if _is_debug():
+                _LOG.debug("schema: %s", dumps(schema, indent=4, default=vars))
             raise RuntimeError(
-                f"Incorrect schema structure, root is expected to contain $defs dictionary: {schema}"
+                "Incorrect schema structure, root is expected to contain $defs dictionary."
             )
 
         self._schema = schema

@@ -47,9 +47,11 @@ def _check_dir(dir_path: str, allow_existing: bool = False) -> Tuple[Path, bool]
     if str(path) != ".":
         if path.exists():
             if not allow_existing:
-                raise RuntimeError(f"Directory already exists: {path}")
+                _LOG.debug("directory path: %s", str(path))
+                raise RuntimeError("Directory already exists.")
             if not path.is_dir():
-                raise NotADirectoryError(f"Incorrect path to directory: {path}")
+                _LOG.debug("found path: %s", str(path))
+                raise NotADirectoryError("Incorrect path to directory.")
         else:
             path.mkdir(parents=True)
             return path, True
@@ -120,14 +122,16 @@ def _merge_dicts(dict1: dict, dict2: dict) -> dict:
                     elif isinstance(val1, frozenset):
                         merged_dict[key] = frozenset(list(val1) + list(val2))
                     else:
-                        raise RuntimeError(f"Unknown Iterable type: {type(val1)}")
+                        _LOG.debug("Unknown iterable type: %s", str(type(val1)))
+                        raise RuntimeError("Unknown Iterable type.")
                 else:
                     if val1 == val2:
                         merged_dict[key] = val1
                     else:
                         merged_dict[key] = [val1, val2]
             else:
-                raise TypeError
+                _LOG.debug("val1 type: %s, val2 type: %s", str(type(val1)), str(type(val2)))
+                raise TypeError("Type mismatch while merge dictionaries.")
         else:
             merged_dict[key] = dict1[key]
     for key in keys2:
@@ -197,14 +201,14 @@ def _deep_get_from_schema(schema: dict, keys: list) -> Any:
             _LOG.debug("schema: %s", dumps(schema, indent=4, default=vars))
             _LOG.debug("keys: %s", dumps(keys, indent=4, default=vars))
         raise StopIteration(
-            "Iterated through schema without finding corresponding keys"
+            "Iterated through schema without finding corresponding keys."
         )
 
     else:
         if _is_debug:
             _LOG.debug("schema: %s", dumps(schema, indent=4, default=vars))
             _LOG.debug("keys: %s", dumps(keys, indent=4, default=vars))
-        raise StopIteration("No key found for corresponding schema")
+        raise StopIteration("No key found for corresponding schema.")
 
 
 def _pattern_parts_match(

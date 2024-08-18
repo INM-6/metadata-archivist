@@ -57,7 +57,7 @@ def _format_parser_id_rule(
 
     if not isinstance(value, str):
         _LOG.debug("value type: %s\nexpected type: %s", str(type(value)), str(str))
-        raise TypeError("Incorrect value type for formatting parser id")
+        raise TypeError("Incorrect value type for formatting parser id.")
 
     # Currently only one parser reference per entry is allowed
     # and if a reference exists it must be the only content in the entry
@@ -229,8 +229,10 @@ def _format_calculate_rule(
         kwargs["add_type"] = False
 
     if not all(key in value for key in ["expression", "variables"]):
+        if _is_debug():
+            _LOG.debug("!calculate directive value: %s", dumps(value, indent=4, default=vars))
         raise RuntimeError(
-            f"Malformed !calculate entry found while formatting calculation: {value}"
+            "Malformed !calculate entry found while formatting calculation."
         )
 
     expression = value["expression"]

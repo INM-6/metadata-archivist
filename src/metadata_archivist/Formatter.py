@@ -107,7 +107,7 @@ class Formatter:
                 with schema_path.open() as f:
                     self._schema = load(f)
             else:
-                raise TypeError("schema must be dict or Path")
+                raise TypeError("Schema must be dict or Path.")
             self._use_schema = True
         else:
             self._use_schema = False
@@ -241,8 +241,9 @@ class Formatter:
         if "$defs" not in self._schema:
             self._schema["$defs"] = {"node": {"properties": {"anyOf": []}}}
         elif not isinstance(self._schema["$defs"], dict):
+            _LOG.debug("$def property type: %s\nexpected type: %s", str(type(self._schema['$defs'])), str(dict))
             raise TypeError(
-                f"Incorrect schema format, $defs property should be a dictionary, got {type(self._schema['$defs'])}"
+                "Incorrect schema format, $defs property should be a dictionary."
             )
 
         pid = parser.name
@@ -268,7 +269,7 @@ class Formatter:
         """
 
         if parser in self.parsers:
-            raise RuntimeError("Parser is already in Formatter")
+            raise RuntimeError("Parser is already in Formatter.")
         pid = parser.name
         self._cache.add(pid)
         self._indexes.set_index(pid, "prs", len(self._parsers))
@@ -289,7 +290,7 @@ class Formatter:
         """
 
         if parser not in self._parsers:
-            raise RuntimeError("Unknown Parser")
+            raise RuntimeError("Unknown Parser.")
         pid = parser.name
         self._schema["$defs"][pid] = parser.schema
         ifp_index = self._indexes.get_index(pid, "ifp")
@@ -309,7 +310,7 @@ class Formatter:
             parser: AParser instance.
         """
         if parser not in self._parsers:
-            raise RuntimeError("Unknown Parser")
+            raise RuntimeError("Unknown Parser.")
         pid = parser.name
         indexes = self._indexes.drop_indexes(pid)
         self._parsers.pop(indexes["prs"], None)
@@ -383,12 +384,13 @@ class Formatter:
                     if entry.meta_path.exists():
                         if overwrite_meta_files:
                             _LOG.warning(
-                                "Metadata file %s exists, overriding.",
+                                "Meta file %s exists, overwriting.",
                                 str(entry.meta_path)
                             )
                         else:
+                            _LOG.debug("Meta file path: %s", str(entry.meta_path))
                             raise FileExistsError(
-                                f"Unable to save parsed metadata: {entry.meta_path} exists"
+                                "Unable to save parsed metadata; overwriting not allowed."
                             )
                     with entry.meta_path.open("w") as mp:
                         dump(metadata, mp, indent=4)
@@ -501,8 +503,13 @@ class Formatter:
                 )
             # Nodes should not be of a different type than SchemaEntry
             else:
-                raise RuntimeError(
-                    f"Unexpected value in interpreted schema: {key}: {type(value)}"
+                _LOG.debug(
+                    "entry key: %s\nvalue type: %s\nexpected type: %s",
+                    key,
+                    str(type(value)),
+                    str(helpers._SchemaEntry))
+                raise TypeError(
+                    "Unexpected value in interpreted schema."
                 )
 
         return tree
@@ -570,7 +577,7 @@ def _combine(
                         dumps(formatter1.config, indent=4, default=vars),
                         dumps(formatter2.config, indent=4, default=vars)
                         )
-                raise KeyError("key mismatch in Formatter.combine")
+                raise KeyError("key mismatch in Formatter.combine.")
             if value != formatter2.config[key]:
                 if _is_debug():
                     _LOG.debug(
@@ -578,7 +585,7 @@ def _combine(
                         dumps(formatter1.config, indent=4, default=vars),
                         dumps(formatter2.config, indent=4, default=vars)
                         )
-                raise ValueError("Value mismatch in Formatter.combine")
+                raise ValueError("Value mismatch in Formatter.combine.")
             
         config = deepcopy(formatter1.config)
 

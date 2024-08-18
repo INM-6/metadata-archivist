@@ -53,7 +53,8 @@ class Exporter:
 
         export_format = self.config["output_format"].upper()
         if export_format not in _KNOWN_FORMATS:
-            raise RuntimeError(f"Unknown export format type: {export_format}")
+            _LOG.debug("Export format type: %s", export_format)
+            raise RuntimeError("Unknown export format type.")
         export_directory = _check_dir(
             self.config["output_directory"], allow_existing=True
         )[0]
@@ -66,12 +67,14 @@ class Exporter:
                         "Metadata output file exists: '%s', overwriting.", str(export_file)
                     )
                 else:
+                    _LOG.debug("Metadata export file path: %s", str(export_file))
                     raise RuntimeError(
-                        f"Metadata output file exists: '{export_file}', overwriting not allowed."
+                        "Metadata output file exists; overwriting not allowed."
                     )
             else:
+                _LOG.debug("Metadata export file path: %s not a file", str(export_file))
                 raise RuntimeError(
-                    f"'{export_file}' exists and is not a file, cannot overwrite."
+                    "Conflicting path to metadata output file; cannot overwrite."
                 )
 
         _KNOWN_FORMATS[export_format](metadata, export_file)

@@ -160,7 +160,8 @@ class AParser(ABC):
         """
 
         if not file_path.is_file():
-            raise RuntimeError(f"The input file {file_path.name} is incorrect")
+            _LOG.debug("Path: %s", str(file_path))
+            raise RuntimeError("Given path does not point to file.")
 
         pattern = self.input_file_pattern.split("/")
         pattern.reverse()

@@ -27,10 +27,11 @@ Authors: Jose V., Matthias K.
 """
 
 from re import sub
+from json import dumps
 from copy import deepcopy
 from typing import Optional, Union
 
-from .logger import _LOG
+from .logger import _LOG, _is_debug
 from .helper_classes import _SchemaInterpreter, _SchemaEntry
 from .helper_functions import _math_check
 
@@ -88,7 +89,9 @@ def _interpret_varname_directive_rule(
 ) -> _SchemaEntry:
     # Check if regex context is present in current entry
     if "useRegex" not in entry.context:
-        raise RuntimeError("Contextless !varname found")
+        if _is_debug():
+            _LOG.debug("SchemaEntry context: %s", dumps(entry.context, indent=4, default=vars))
+        raise RuntimeError("Contextless !varname found.")
     # Add a !varname context which contains the name to use
     # and to which expression it corresponds to.
     entry.context.update({prop_key: prop_val, "regexp": parent_key})
@@ -105,7 +108,9 @@ def _interpret_reference_rule(
 ) -> _SchemaEntry:
     # Check if reference is well formed against knowledge base
     if not any(prop_val.startswith(ss) for ss in _KNOWN_REFS):
-        raise RuntimeError(f"Malformed reference prop_value: {prop_key}: {prop_val}")
+        if _is_debug():
+            _LOG.debug("Reference item: (%s, %s)", prop_key, dumps(prop_val, indent=4, default=vars))
+        raise ValueError("Malformed reference prop_value.")
 
     # Get schema definitions
     defs = interpreter._schema["$defs"]
@@ -133,12 +138,14 @@ def __interpret_refs(
     # Test correctness of reference
     val_split = prop_val.split("/")
     if len(val_split) < 3:
-        raise ValueError(f"Malformed reference: {prop_val}")
+        _LOG.debug("Reference value: %s", prop_val)
+        raise ValueError("Malformed reference.")
 
     # Test for existence of Parser id
     pid = val_split[2]
     if pid not in definitions:
-        raise KeyError(f"Parser not found: {pid}")
+        _LOG.debug("Given parser name: %s", pid)
+        raise KeyError("Parser not found.")
 
     # Add identified Parser to context
     _LOG.debug("Processing reference to: %s", pid)
@@ -190,49 +197,65 @@ def _interpret_calculate_directive_rule(
     # Requires referenced parsers to return numerical values.
     # references can be supplemented with !parsing directives to properly select value.
     if not all(key in prop_val for key in ["expression", "variables"]):
-        raise RuntimeError(f"Malformed !calculate directive: {prop_key}: {prop_val}")
+        if _is_debug():
+            _LOG.debug("Directive item: (%s, %s)", prop_key, dumps(prop_val, indent=4, default=vars))
+        raise ValueError("Malformed !calculate directive.")
 
     expression = prop_val["expression"]
-    if not isinstance(prop_val["expression"], str):
+    if not isinstance(expression, str):
+        _LOG.debug("Expression type: %s, expected type: %s", str(type(expression)), str(str))
         raise TypeError(
-            f"Incorrect expression type in !calculate directive: expression={expression}"
+            "Incorrect expression type in !calculate directive."
         )
 
     cleaned_expr = sub(r"\s", "", expression)
     correct, variable_names = _math_check(cleaned_expr)
     if not correct:
+        _LOG.debug("Expression: %s", cleaned_expr)
         raise ValueError(
-            f"Incorrect expression in !calculate directive: expression={cleaned_expr}"
+            "Incorrect expression value in !calculate directive."
         )
 
     variables = prop_val["variables"]
     if not isinstance(variables, dict):
+        _LOG.debug("Variables type: %s, expected type: %s", str(type(variables)), str(str))
         raise TypeError(
-            f"Incorrect variables type in !calculate directive: variables={variables}"
+            "Incorrect variables type in !calculate directive."
         )
 
     if len(variable_names) != len(variables):
+        if _is_debug():
+            _LOG.debug(
+                "Expression: %s\nexpression variables: %s\ndefined variables: %s",
+                expression,
+                str(variable_names),
+                dumps(variables, indent=4, default=vars)
+                )
         raise RuntimeError(
-            f"Variables count mismatch in !calculate directive: expression={expression}, variables={variables}, names={variable_names}"
+            "Variables count mismatch in !calculate directive."
         )
 
     # At this point we check if each variable entry corresponds to a reference to a Parser
     variable_entries = {}
     for variable in variables:
         if not variable in variable_names:
+            _LOG.debug("Variable name: %s", variable)
             raise RuntimeError(
-                f"Variable name mismatch in !calculate directive: variable={variable}"
+                "Variable name mismatch in !calculate directive."
             )
 
         value = variables[variable]
         if not isinstance(value, dict):
+            _LOG.debug("Variables type: %s, expected type: %s", str(type(variable)), str(dict))
             raise TypeError(
-                f"Incorrect variable type in !calculate directive: {variable}={value}"
+                "Incorrect variable type in !calculate directive."
             )
 
         if not "$ref" in value:
+            if _is_debug():
+                _LOG.debug("Variable content: %s", dumps(value, indent=4, default=vars))
             raise RuntimeError(
-                f"Variable does not reference a Parser in !calculate directive: {variable}={value}"
+                "Variable does not reference a Parser in !calculate directive."
             )
 
         # We create a SchemaEntry in the context to be specially handled by the Formatter

@@ -72,8 +72,9 @@ class Explorer:
 
         n_path = Path(explore_path)
         if not n_path.exists():
+            _LOG.debug("Target path: %s", explore_path)
             raise RuntimeError(
-                f"Nothing found in exploration target path: {explore_path}"
+                "Nothing found in exploration target path."
             )
 
         if n_path.is_dir():
@@ -100,10 +101,11 @@ def _check_archive(file_path: Path, extraction_directory: str) -> Tuple[Path, Ca
     """
 
     if not file_path.is_file():
-        raise FileNotFoundError(f"Incorrect path to file: {file_path}")
+        _LOG.debug("Path to file: %s", str(file_path))
+        raise FileNotFoundError("Incorrect path to file.")
 
     if is_zipfile(file_path):
-        raise NotImplementedError("ZIP extractor not yet implemented")
+        raise NotImplementedError("ZIP extractor not yet implemented.")
     elif is_tarfile(file_path):
         decompress_method = partial(
             _decompress_tar,
@@ -111,7 +113,8 @@ def _check_archive(file_path: Path, extraction_directory: str) -> Tuple[Path, Ca
             extraction_directory=extraction_directory,
         )
     else:
-        raise RuntimeError(f"Unknown archive format: {file_path.name}")
+        _LOG.debug("Archive suffix: %s", file_path.suffix)
+        raise RuntimeError("Unknown archive format.")
 
     # Returning file path is used for protected set method of internal _archive_path attribute.
     return decompress_method

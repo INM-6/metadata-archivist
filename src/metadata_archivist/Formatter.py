@@ -16,12 +16,12 @@ Authors: Jose V., Matthias K.
 
 from pathlib import Path
 from copy import deepcopy
-from json import dump, load
+from json import load, dump, dumps 
 from typing import Optional, List, Iterable, NoReturn, Union
 
 from .Parser import AParser
 
-from .logger import _LOG
+from .logger import _LOG, _is_debug
 from . import helper_classes as helpers
 from .helper_functions import (
     _update_dict_with_parts,
@@ -330,7 +330,7 @@ class Formatter:
         for ex in self.parsers:
             if ex.name == parser_name:
                 return ex
-        _LOG.warning(f"No Parser with name: {parser_name} exist")
+        _LOG.warning("No Parser with name: %s exist", parser_name)
 
     def parse_files(
         self,
@@ -360,7 +360,7 @@ class Formatter:
         for parser in self._parsers:
             pid = parser.name
             to_parse[pid] = []
-            _LOG.debug(f"    preparing parser: {pid}")
+            _LOG.debug("    preparing parser: %s", pid)
             for fp in file_paths:
                 pattern = parser.input_file_pattern.split("/")
                 pattern.reverse()
@@ -370,7 +370,7 @@ class Formatter:
         # TODO: Think about parallelization scheme with ProcessPoolExecutor
         for pid in to_parse:
             for file_path in to_parse[pid]:
-                _LOG.debug(f"    parsing file: {str(file_path)}")
+                _LOG.debug("    parsing file: %s", str(file_path))
                 # Get parser and parse metadata
                 pix = self._indexes.get_index(pid, "prs")
                 parser = self._parsers[pix]
@@ -383,7 +383,8 @@ class Formatter:
                     if entry.meta_path.exists():
                         if overwrite_meta_files:
                             _LOG.warning(
-                                f"Metadata file {entry.meta_path} exists, overriding."
+                                "Metadata file %s exists, overriding.",
+                                str(entry.meta_path)
                             )
                         else:
                             raise FileExistsError(
@@ -454,9 +455,12 @@ class Formatter:
 
                         # Check the length of the recursion result and and existence of node
                         if len(recursion_result) > 1 or node not in recursion_result:
-                            _LOG.debug(
-                                f"current metadata tree: {tree}\nrecursion results: {recursion_result}"
-                            )
+                            if _is_debug():
+                                _LOG.debug(
+                                    "current metadata tree: %s\nrecursion results: %s",
+                                    dumps(tree, indent=4, default=vars),
+                                    dumps(recursion_result, indent=4, default=vars)
+                                )
                             raise RuntimeError(
                                 "Malformed recursion result when processing regex context"
                             )
@@ -474,9 +478,12 @@ class Formatter:
 
                     # If the break is never reached an error has ocurred
                     else:
-                        _LOG.debug(
-                            f"current metadata tree: {tree}\nrecursion results: {recursion_result}"
-                        )
+                        if _is_debug():
+                            _LOG.debug(
+                                "current metadata tree: %s\nrecursion results: %s",
+                                dumps(tree, indent=4, default=vars),
+                                dumps(recursion_result, indent=4, default=vars)
+                            )
                         raise RuntimeError(
                             "Malformed metadata tree when processing regex context"
                         )
@@ -535,30 +542,48 @@ class Formatter:
 
 
 def _combine(
-    formatter1: Formatter, formatter2: Formatter, schema: Optional[dict] = None
+    formatter1: Formatter, formatter2: Formatter, schema: Optional[dict] = None, config: Optional[dict] = None
 ) -> Formatter:
     """
     Function used to combine two different formatters.
     Combination is never done in-place.
     Needs an englobing schema that will take into account the combination of formatters.
+    New configuration dictionary can be provided to overwrite existing configurations.
+    If no configuration is provided then both Formatter's configuration must be equal.
 
     Arguments:
         formatter1: instance of Formatter.
         formatter2: instance of Formatter.
         schema: Optional, dictionary schema containing structure used for combined formatter.
+        config: Optional, dictionary containing formatter configuration.
 
     Returns:
         combined Formatter instance.
     """
 
-    ll = False
-    if formatter1.lazy_load != formatter2.lazy_load:
-        _LOG.warning(f"Lazy load configuration mismatch. Setting to default: {ll}")
-    else:
-        ll = formatter1.lazy_load
+    if config is None:
+        for key, value in formatter1.config:
+            if key not in formatter2.config:
+                if _is_debug():
+                    _LOG.debug(
+                        "formatter1.config: %s\nformatter2.config: %s",
+                        dumps(formatter1.config, indent=4, default=vars),
+                        dumps(formatter2.config, indent=4, default=vars)
+                        )
+                raise KeyError("key mismatch in Formatter.combine")
+            if value != formatter2.config[key]:
+                if _is_debug():
+                    _LOG.debug(
+                        "formatter1.config: %s\nformatter2.config: %s",
+                        dumps(formatter1.config, indent=4, default=vars),
+                        dumps(formatter2.config, indent=4, default=vars)
+                        )
+                raise ValueError("Value mismatch in Formatter.combine")
+            
+        config = deepcopy(formatter1.config)
 
     combined_formatter = Formatter(
-        schema=schema, parsers=formatter1.parsers + formatter2.parsers, lazy_load=ll
+        schema=schema, parsers=formatter1.parsers + formatter2.parsers, config=config
     )
 
     if len(formatter1.metadata) > 0 or len(formatter2.metadata) > 0:

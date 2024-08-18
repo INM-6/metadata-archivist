@@ -1,5 +1,9 @@
 {
-    "real_time_factor": 0.02596,
+    "real_time_factor": {
+        "value": 0.02596,
+        "description": "ratio of wall clock time to simulation time",
+        "type": "number"
+    },
     "model": {
         "scale": {
             "value": 10,
@@ -7,5 +11,9 @@
             "type": "number"
         }
     },
-    "virtual_processes": 16
+    "virtual_processes": {
+        "value": 16,
+        "description": "total number of digital processing units i.e. #MPI * #threads",
+        "type": "number"
+    }
 }

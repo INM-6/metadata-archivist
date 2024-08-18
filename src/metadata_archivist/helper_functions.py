@@ -441,7 +441,7 @@ def _math_check(expression: str):
         return True, variables
 
 
-def _filter_metadata(metadata: dict, keys: list, **kwargs) -> dict:
+def _filter_metadata(metadata: dict, keys: list) -> dict:
     """
     Filters parsed metadata by providing keys corresponding to metadata attributes.
     If metadata is a nested dictionary then keys can be shaped as UNIX paths,
@@ -455,29 +455,10 @@ def _filter_metadata(metadata: dict, keys: list, **kwargs) -> dict:
         filtered dictionary.
     """
 
-    add_description = False
-    if "add_description" in kwargs:
-        add_description = kwargs["add_description"]
-
-    add_type = False
-    if "add_type" in kwargs:
-        add_type = kwargs["add_type"]
-
     new_dict = {}
     for k in keys:
         _LOG.debug("Filtering key: %s", k)
         new_dict = _merge_dicts(new_dict, _filter_dict(metadata, k.split("/")))
-    if add_description or add_type:
-        if "schema" not in kwargs:
-            raise RuntimeError(
-                "Attempting to add description or type without input schema."
-            )
-        if _is_debug():
-            _LOG.debug(
-                "adding information from schema %s",
-                dumps(kwargs["schema"], indent=4, default=vars),
-            )
-        _add_info_from_schema(new_dict, kwargs["schema"], add_description, add_type)
     return new_dict
 
 
@@ -489,7 +470,6 @@ def _add_info_from_schema(
     key_list: list = None,
 ) -> list:
     """
-    WIP
     Adds additional information from input schema to parsed metadata inplace.
 
     Arguments:
@@ -498,6 +478,9 @@ def _add_info_from_schema(
         add_type: control boolean to enable addition of type information.
         key_list: recursion list containing visited dictionary keys.
     """
+
+    if not (add_description or add_type):
+        return
 
     if key_list is None:
         key_list = []
@@ -524,6 +507,8 @@ def _add_info_from_schema(
                         dumps(schema, indent=4, default=vars),
                     )
             if schema_entry is not None:
-                new_value["description"] = schema_entry["description"]
-                new_value["type"] = schema_entry["type"]
+                if add_description:
+                    new_value["description"] = schema_entry["description"]
+                if add_type:
+                    new_value["type"] = schema_entry["type"]
                 metadata[key] = new_value

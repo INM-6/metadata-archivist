@@ -40,6 +40,7 @@ from .helper_functions import (
     _update_dict_with_parts,
     _unpack_nested_value,
     _filter_metadata,
+    _add_info_from_schema,
 )
 
 
@@ -108,8 +109,10 @@ def _format_parser_id_rule(
             if not _pattern_parts_match(reversed_branch, file_path_parts):
                 continue
 
+        parsing_context = context["!parsing"] if "!parsing" in context else None
+
         # If path information is present in parser directives match file path to given regex path
-        if "!parsing" in context and "path" in context["!parsing"]:
+        if parsing_context is not None and "path" in parsing_context:
 
             # Parsed metadata should be structured in a dictionary
             # where keys are filenames and values are metadata
@@ -126,7 +129,7 @@ def _format_parser_id_rule(
 
             # In this case the name of the file should be taken into account in the context path
             file_path_parts = list(reversed(cache_entry.rel_path.parts))
-            regex_path = context["!parsing"]["path"].split("/")
+            regex_path = parsing_context["path"].split("/")
             regex_path.reverse()
 
             # If the match is negative then we skip the current cache entry
@@ -142,44 +145,58 @@ def _format_parser_id_rule(
         metadata = cache_entry.load_metadata()
 
         # Compute additional directives if given
-        if "!parsing" in context:
-            if "keys" in context["!parsing"]:
-                metadata = _filter_metadata(
-                    metadata,
-                    context["!parsing"]["keys"],
-                    schema=parser.schema,
-                    **kwargs,
+        if parsing_context is not None and "keys" in parsing_context:
+            metadata = _filter_metadata(
+                metadata,
+                parsing_context["keys"],
+            )
+
+        add_description = False
+        if "add_description" in kwargs:
+            add_description = kwargs["add_description"]
+
+        add_type = False
+        if "add_type" in kwargs:
+            add_type = kwargs["add_type"]
+
+        _add_info_from_schema(metadata, parser.schema, add_description, add_type)
+
+        # Unpacking should only be done for singular nested values i.e. only one key per nesting level
+        if parsing_context is not None and "unpack" in parsing_context:
+            unpack = parsing_context["unpack"]
+            if isinstance(unpack, bool):
+                if not unpack:
+                    if _is_debug():
+                        _LOG.debug(
+                            "parsing context: %s",
+                            dumps(parsing_context, indent=4, default=vars),
+                        )
+                    raise ValueError(
+                        "Incorrect unpacking configuration in !parsing context: unpack=False."
+                    )
+
+                metadata = _unpack_nested_value(metadata)
+
+            elif isinstance(unpack, int):
+                if unpack == 0:
+                    if _is_debug():
+                        _LOG.debug(
+                            "parsing context: %s",
+                            dumps(parsing_context, indent=4, default=vars),
+                        )
+                    raise ValueError(
+                        "Incorrect unpacking configuration in !parsing context: unpack=0."
+                    )
+
+                metadata = _unpack_nested_value(
+                    metadata, unpack
+                )
+            else:
+                _LOG.debug("Unpack type: %s, expected types: %s or %s", str(type(unpack)), str(bool), str(int))
+                raise TypeError(
+                    "Incorrect unpacking configuration in !parsing context."
                 )
 
-            # Unpacking should only be done for singular nested values i.e. only one key per nesting level
-            if "unpack" in context["!parsing"]:
-                if isinstance(context["!parsing"]["unpack"], bool):
-                    if not context["!parsing"]["unpack"]:
-                        if _is_debug():
-                            _LOG.debug(
-                                "parsing context: %s",
-                                dumps(context["!parsing"], indent=4, default=vars),
-                            )
-                        raise RuntimeError(
-                            "Incorrect unpacking configuration in !parsing context: unpack=False."
-                        )
-
-                    metadata = _unpack_nested_value(metadata)
-
-                elif isinstance(context["!parsing"]["unpack"], int):
-                    if context["!parsing"]["unpack"] == 0:
-                        if _is_debug():
-                            _LOG.debug(
-                                "parsing context: %s",
-                                dumps(context["!parsing"], indent=4, default=vars),
-                            )
-                        raise RuntimeError(
-                            "Incorrect unpacking configuration in !parsing context: unpack=0."
-                        )
-
-                    metadata = _unpack_nested_value(
-                        metadata, context["!parsing"]["unpack"]
-                    )
 
         # Update parsed metadata
         # When in a regex context then resulting parsed metadata is a dict

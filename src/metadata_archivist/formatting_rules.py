@@ -66,11 +66,9 @@ def _format_parser_id_rule(
             _LOG.debug(
                 "schema entry key: %s\nschema entry content: %s",
                 interpreted_schema.key,
-                dumps(interpreted_schema._content, indent=4, default=vars)
-                )
-        raise RuntimeError(
-            "Invalid SchemaEntry content."
-        )
+                dumps(interpreted_schema._content, indent=4, default=vars),
+            )
+        raise RuntimeError("Invalid SchemaEntry content.")
 
     # Get context
     context = interpreted_schema.context
@@ -97,11 +95,9 @@ def _format_parser_id_rule(
                     _LOG.debug(
                         "parsed metadata: %s\ncontext: %s",
                         dumps(parsed_metadata, indent=4, default=vars),
-                        dumps(context, indent=4, default=vars)
-                        )
-                raise TypeError(
-                    "Incorrect parsed_metadata type."
-                )
+                        dumps(context, indent=4, default=vars),
+                    )
+                raise TypeError("Incorrect parsed_metadata type.")
 
             # We skip the last element as it represents the node name of the parsed metadata
             # not to be included in the path of the tree
@@ -124,11 +120,9 @@ def _format_parser_id_rule(
                     _LOG.debug(
                         "parsed metadata: %s\ncontext: %s",
                         dumps(parsed_metadata, indent=4, default=vars),
-                        dumps(context, indent=4, default=vars)
-                        )
-                raise TypeError(
-                    "Incorrect parsed_metadata type."
-                )
+                        dumps(context, indent=4, default=vars),
+                    )
+                raise TypeError("Incorrect parsed_metadata type.")
 
             # In this case the name of the file should be taken into account in the context path
             file_path_parts = list(reversed(cache_entry.rel_path.parts))
@@ -151,7 +145,10 @@ def _format_parser_id_rule(
         if "!parsing" in context:
             if "keys" in context["!parsing"]:
                 metadata = _filter_metadata(
-                    metadata, context["!parsing"]["keys"], schema=parser.schema, **kwargs
+                    metadata,
+                    context["!parsing"]["keys"],
+                    schema=parser.schema,
+                    **kwargs,
                 )
 
             # Unpacking should only be done for singular nested values i.e. only one key per nesting level
@@ -159,7 +156,10 @@ def _format_parser_id_rule(
                 if isinstance(context["!parsing"]["unpack"], bool):
                     if not context["!parsing"]["unpack"]:
                         if _is_debug():
-                            _LOG.debug("parsing context: %s", dumps(context["!parsing"], indent=4, default=vars))
+                            _LOG.debug(
+                                "parsing context: %s",
+                                dumps(context["!parsing"], indent=4, default=vars),
+                            )
                         raise RuntimeError(
                             "Incorrect unpacking configuration in !parsing context: unpack=False."
                         )
@@ -169,7 +169,10 @@ def _format_parser_id_rule(
                 elif isinstance(context["!parsing"]["unpack"], int):
                     if context["!parsing"]["unpack"] == 0:
                         if _is_debug():
-                            _LOG.debug("parsing context: %s", dumps(context["!parsing"], indent=4, default=vars))
+                            _LOG.debug(
+                                "parsing context: %s",
+                                dumps(context["!parsing"], indent=4, default=vars),
+                            )
                         raise RuntimeError(
                             "Incorrect unpacking configuration in !parsing context: unpack=0."
                         )
@@ -216,9 +219,7 @@ def _format_calculate_rule(
 
     if not isinstance(value, dict):
         _LOG.debug("value type: %s\nexpected type: %s", str(type(value)), str(dict))
-        raise TypeError(
-            "Incorrect value type found while formatting calculation"
-        )
+        raise TypeError("Incorrect value type found while formatting calculation")
 
     if "add_description" in kwargs and kwargs["add_description"]:
         _LOG.warning("Add description enabled in calculate directive. Ignoring option.")
@@ -230,7 +231,9 @@ def _format_calculate_rule(
 
     if not all(key in value for key in ["expression", "variables"]):
         if _is_debug():
-            _LOG.debug("!calculate directive value: %s", dumps(value, indent=4, default=vars))
+            _LOG.debug(
+                "!calculate directive value: %s", dumps(value, indent=4, default=vars)
+            )
         raise RuntimeError(
             "Malformed !calculate entry found while formatting calculation."
         )
@@ -242,13 +245,17 @@ def _format_calculate_rule(
     for variable in variables:
         entry = variables[variable]
         if not isinstance(entry, _SchemaEntry):
-            _LOG.debug("entry type: %s\nexpected type: %s", str(type(entry)), str(_SchemaEntry))
+            _LOG.debug(
+                "entry type: %s\nexpected type: %s", str(type(entry)), str(_SchemaEntry)
+            )
             raise TypeError(
                 "Incorrect variable type found while formatting calculation."
             )
         if not len(entry.items()) == 1:
             if _is_debug():
-                _LOG.debug("entry content: %s", dumps(entry._content, indent=4, default=vars))
+                _LOG.debug(
+                    "entry content: %s", dumps(entry._content, indent=4, default=vars)
+                )
             raise ValueError(
                 "Incorrect variable entry found while formatting calculation."
             )

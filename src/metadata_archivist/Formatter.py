@@ -16,7 +16,7 @@ Authors: Jose V., Matthias K.
 
 from pathlib import Path
 from copy import deepcopy
-from json import load, dump, dumps 
+from json import load, dump, dumps
 from typing import Optional, List, Iterable, NoReturn, Union
 
 from .Parser import AParser
@@ -241,7 +241,11 @@ class Formatter:
         if "$defs" not in self._schema:
             self._schema["$defs"] = {"node": {"properties": {"anyOf": []}}}
         elif not isinstance(self._schema["$defs"], dict):
-            _LOG.debug("$def property type: %s\nexpected type: %s", str(type(self._schema['$defs'])), str(dict))
+            _LOG.debug(
+                "$def property type: %s\nexpected type: %s",
+                str(type(self._schema["$defs"])),
+                str(dict),
+            )
             raise TypeError(
                 "Incorrect schema format, $defs property should be a dictionary."
             )
@@ -385,7 +389,7 @@ class Formatter:
                         if overwrite_meta_files:
                             _LOG.warning(
                                 "Meta file %s exists, overwriting.",
-                                str(entry.meta_path)
+                                str(entry.meta_path),
                             )
                         else:
                             _LOG.debug("Meta file path: %s", str(entry.meta_path))
@@ -461,7 +465,7 @@ class Formatter:
                                 _LOG.debug(
                                     "current metadata tree: %s\nrecursion results: %s",
                                     dumps(tree, indent=4, default=vars),
-                                    dumps(recursion_result, indent=4, default=vars)
+                                    dumps(recursion_result, indent=4, default=vars),
                                 )
                             raise RuntimeError(
                                 "Malformed recursion result when processing regex context"
@@ -484,7 +488,7 @@ class Formatter:
                             _LOG.debug(
                                 "current metadata tree: %s\nrecursion results: %s",
                                 dumps(tree, indent=4, default=vars),
-                                dumps(recursion_result, indent=4, default=vars)
+                                dumps(recursion_result, indent=4, default=vars),
                             )
                         raise RuntimeError(
                             "Malformed metadata tree when processing regex context"
@@ -507,10 +511,9 @@ class Formatter:
                     "entry key: %s\nvalue type: %s\nexpected type: %s",
                     key,
                     str(type(value)),
-                    str(helpers._SchemaEntry))
-                raise TypeError(
-                    "Unexpected value in interpreted schema."
+                    str(helpers._SchemaEntry),
                 )
+                raise TypeError("Unexpected value in interpreted schema.")
 
         return tree
 
@@ -549,7 +552,10 @@ class Formatter:
 
 
 def _combine(
-    formatter1: Formatter, formatter2: Formatter, schema: Optional[dict] = None, config: Optional[dict] = None
+    formatter1: Formatter,
+    formatter2: Formatter,
+    schema: Optional[dict] = None,
+    config: Optional[dict] = None,
 ) -> Formatter:
     """
     Function used to combine two different formatters.
@@ -575,18 +581,18 @@ def _combine(
                     _LOG.debug(
                         "formatter1.config: %s\nformatter2.config: %s",
                         dumps(formatter1.config, indent=4, default=vars),
-                        dumps(formatter2.config, indent=4, default=vars)
-                        )
+                        dumps(formatter2.config, indent=4, default=vars),
+                    )
                 raise KeyError("key mismatch in Formatter.combine.")
             if value != formatter2.config[key]:
                 if _is_debug():
                     _LOG.debug(
                         "formatter1.config: %s\nformatter2.config: %s",
                         dumps(formatter1.config, indent=4, default=vars),
-                        dumps(formatter2.config, indent=4, default=vars)
-                        )
+                        dumps(formatter2.config, indent=4, default=vars),
+                    )
                 raise ValueError("Value mismatch in Formatter.combine.")
-            
+
         config = deepcopy(formatter1.config)
 
     combined_formatter = Formatter(

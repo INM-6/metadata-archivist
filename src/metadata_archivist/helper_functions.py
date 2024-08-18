@@ -78,7 +78,9 @@ def _update_dict_with_parts(target_dict: dict, value: Any, parts: list) -> None:
         elif not isinstance(relative_root[part], dict):
             if _is_debug():
                 _LOG.debug(
-                    "key: %s\nrelative root: %s", part, dumps(relative_root, indent=4, default=vars)
+                    "key: %s\nrelative root: %s",
+                    part,
+                    dumps(relative_root, indent=4, default=vars),
                 )
             raise RuntimeError(
                 "Duplicate key with incorrect found while updating tree with path hierarchy."
@@ -130,7 +132,9 @@ def _merge_dicts(dict1: dict, dict2: dict) -> dict:
                     else:
                         merged_dict[key] = [val1, val2]
             else:
-                _LOG.debug("val1 type: %s, val2 type: %s", str(type(val1)), str(type(val2)))
+                _LOG.debug(
+                    "val1 type: %s, val2 type: %s", str(type(val1)), str(type(val2))
+                )
                 raise TypeError("Type mismatch while merge dictionaries.")
         else:
             merged_dict[key] = dict1[key]
@@ -244,12 +248,16 @@ def _pattern_parts_match(
             if not fullmatch(
                 part.format(**{context["!varname"]: context["regexp"]}), actual_parts[i]
             ):
-                _LOG.debug("pattern: '%s' did not match against '%s'", part, actual_parts[i])
+                _LOG.debug(
+                    "pattern: '%s' did not match against '%s'", part, actual_parts[i]
+                )
                 break
 
         # Else literal matching
         elif not fullmatch(part, actual_parts[i]):
-            _LOG.debug("pattern: '%s' did not match against '%s'", part, actual_parts[i])
+            _LOG.debug(
+                "pattern: '%s' did not match against '%s'", part, actual_parts[i]
+            )
             break
 
     # Everything matched in the for loop i.e. no breakpoint reached
@@ -279,7 +287,7 @@ def _unpack_nested_value(iterable: Any, level: Optional[int] = None) -> Any:
                 _LOG.debug(
                     "iterable: %s\nlevel: %i",
                     dumps(iterable, indent=4, default=vars),
-                    level
+                    level,
                 )
             raise RuntimeError("Cannot further unpack iterable.")
         return iterable
@@ -289,7 +297,7 @@ def _unpack_nested_value(iterable: Any, level: Optional[int] = None) -> Any:
             _LOG.debug(
                 "iterable: %s\nlevel: %i",
                 dumps(iterable, indent=4, default=vars),
-                level
+                level,
             )
         raise IndexError("Multiple branching possible when unpacking nested value.")
 
@@ -454,21 +462,32 @@ def _filter_metadata(metadata: dict, keys: list, **kwargs) -> dict:
     add_type = False
     if "add_type" in kwargs:
         add_type = kwargs["add_type"]
-    
+
     new_dict = {}
     for k in keys:
         _LOG.debug("Filtering key: %s", k)
         new_dict = _merge_dicts(new_dict, _filter_dict(metadata, k.split("/")))
     if add_description or add_type:
         if "schema" not in kwargs:
-            raise RuntimeError("Attempting to add description or type without input schema.")
+            raise RuntimeError(
+                "Attempting to add description or type without input schema."
+            )
         if _is_debug():
-            _LOG.debug("adding information from schema %s", dumps(kwargs["schema"], indent=4, default=vars))
+            _LOG.debug(
+                "adding information from schema %s",
+                dumps(kwargs["schema"], indent=4, default=vars),
+            )
         _add_info_from_schema(new_dict, kwargs["schema"], add_description, add_type)
     return new_dict
 
 
-def _add_info_from_schema(metadata: dict, schema: dict, add_description: bool, add_type: bool, key_list: list = None) -> list:
+def _add_info_from_schema(
+    metadata: dict,
+    schema: dict,
+    add_description: bool,
+    add_type: bool,
+    key_list: list = None,
+) -> list:
     """
     WIP
     Adds additional information from input schema to parsed metadata inplace.
@@ -486,7 +505,9 @@ def _add_info_from_schema(metadata: dict, schema: dict, add_description: bool, a
     for key in keys:
         value = metadata[key]
         if isinstance(value, dict):
-            _add_info_from_schema(value, schema, add_description, add_type, key_list + [key])
+            _add_info_from_schema(
+                value, schema, add_description, add_type, key_list + [key]
+            )
         else:
             new_value = {"value": value}
             schema_entry = None
@@ -495,8 +516,13 @@ def _add_info_from_schema(metadata: dict, schema: dict, add_description: bool, a
             except StopIteration:
                 _LOG.warning("No schema entry found for metadata value: %s", key)
                 if _is_debug():
-                    _LOG.debug("key: %s\nvalue: %s\nmetadata: %s\nschema: %s",
-                               str(key), str(value), dumps(metadata, indent=4, default=vars), dumps(schema, indent=4, default=vars))
+                    _LOG.debug(
+                        "key: %s\nvalue: %s\nmetadata: %s\nschema: %s",
+                        str(key),
+                        str(value),
+                        dumps(metadata, indent=4, default=vars),
+                        dumps(schema, indent=4, default=vars),
+                    )
             if schema_entry is not None:
                 new_value["description"] = schema_entry["description"]
                 new_value["type"] = schema_entry["type"]

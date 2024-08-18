@@ -73,9 +73,7 @@ class Explorer:
         n_path = Path(explore_path)
         if not n_path.exists():
             _LOG.debug("Target path: %s", explore_path)
-            raise RuntimeError(
-                "Nothing found in exploration target path."
-            )
+            raise RuntimeError("Nothing found in exploration target path.")
 
         if n_path.is_dir():
             self.explore = partial(_dir_explore, directory_path=n_path)

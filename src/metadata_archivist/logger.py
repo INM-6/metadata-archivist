@@ -58,7 +58,7 @@ def _set_level(level: str) -> bool:
     else:
         _LOG.warning(
             "Trying to set incorrect logging level: %s, staying at current level.",
-            level
+            level,
         )
         return False
 

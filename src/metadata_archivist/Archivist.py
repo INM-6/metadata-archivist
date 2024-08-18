@@ -132,7 +132,9 @@ class Archivist:
         if _is_debug():
             for key in key_list:
                 _LOG.debug(
-                    "No argument found for: '%s' initializing by default: '%s'", key, str(self.config[key])
+                    "No argument found for: '%s' initializing by default: '%s'",
+                    key,
+                    str(self.config[key]),
                 )
 
     def parse(self) -> None:
@@ -186,14 +188,16 @@ class Archivist:
         if self.config["auto_cleanup"]:
             if self._cache["extraction"]:
                 root_extraction_path = self._cache["explored_dirs"][0]
-                _LOG.info("Cleaning extraction directory: %s", str(root_extraction_path))
+                _LOG.info(
+                    "Cleaning extraction directory: %s", str(root_extraction_path)
+                )
                 try:
                     rmtree(root_extraction_path)
                 except Exception as e:
                     _LOG.warning(
                         "error cleaning %s: %s",
                         str(root_extraction_path),
-                        e.message if hasattr(e, 'message') else str(e)
+                        e.message if hasattr(e, "message") else str(e),
                     )
 
             # TODO: output meta files to specific directory such as to only invoke rmtree on it
@@ -206,7 +210,7 @@ class Archivist:
                         _LOG.warning(
                             "error cleaning %s: %s",
                             str(fp),
-                            e.message if hasattr(e, 'message') else str(e)
+                            e.message if hasattr(e, "message") else str(e),
                         )
             else:
                 _LOG.info("Nothing to clean.")

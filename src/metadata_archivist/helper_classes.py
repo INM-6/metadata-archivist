@@ -216,9 +216,7 @@ class _CacheEntry:
             if self.metadata is None:
                 if _is_debug():
                     _LOG.debug("CacheEntry: %s", dumps(self, indent=4, default=vars))
-                raise RuntimeError(
-                    "Failed to load metadata from CacheEntry."
-                )
+                raise RuntimeError("Failed to load metadata from CacheEntry.")
 
         return self.metadata
 
@@ -271,11 +269,13 @@ class _ParserIndexes:
             return self.ifp_indexes
         elif storage in scp_patterns:
             return self.scp_indexes
-        
-        _LOG.debug("storage value: %s\naccepted values: %s", storage, str(prs_patterns + ifp_patterns + scp_patterns))
-        raise ValueError(
-            "Incorrect value for storage name."
+
+        _LOG.debug(
+            "storage value: %s\naccepted values: %s",
+            storage,
+            str(prs_patterns + ifp_patterns + scp_patterns),
         )
+        raise ValueError("Incorrect value for storage name.")
 
     def set_index(self, parser_name: str, storage: str, index: int) -> None:
         """
@@ -409,7 +409,9 @@ class _SchemaInterpreter:
         """
 
         if not isinstance(schema, dict):
-            _LOG.debug("schema type: %s, expected type: %s", str(type(schema)), str(dict))
+            _LOG.debug(
+                "schema type: %s, expected type: %s", str(type(schema)), str(dict)
+            )
             raise RuntimeError("Incorrect schema used for iterator.")
         if "properties" not in schema or not isinstance(schema["properties"], dict):
             if _is_debug():
@@ -485,7 +487,10 @@ class _SchemaInterpreter:
                 # always be present.
                 if _parent_key is None:
                     if _is_debug():
-                        _LOG.debug("current structure: %s", dumps(_relative_root, indent=4, default=vars))
+                        _LOG.debug(
+                            "current structure: %s",
+                            dumps(_relative_root, indent=4, default=vars),
+                        )
                     raise RuntimeError("Cannot interpret rule without parent key.")
                 _relative_root = self.rules[key](
                     self, val, key, _parent_key, _relative_root
@@ -508,9 +513,7 @@ class _SchemaInterpreter:
                 else:
                     if isinstance(val, Iterable):
                         _LOG.debug("Unknown iterable type: %s", str(type(val)))
-                        raise NotImplementedError(
-                            "Unknown iterable type."
-                        )
+                        raise NotImplementedError("Unknown iterable type.")
                     else:
                         _LOG.debug("Ignoring key value pair: (%s: %s)", key, str(val))
 
@@ -527,7 +530,9 @@ class _SchemaInterpreter:
         if _is_debug():
             # Passing through dumps for pretty printing,
             # however can be costly, so checking if debug is enabled first
-            _LOG.debug("Initial structure: %s", dumps(self._schema, indent=4, default=vars))
+            _LOG.debug(
+                "Initial structure: %s", dumps(self._schema, indent=4, default=vars)
+            )
 
         if self.structure.is_empty():
             self.structure = self._interpret_schema(self._schema["properties"])
@@ -535,6 +540,9 @@ class _SchemaInterpreter:
         if _is_debug():
             # Passing through dumps for pretty printing,
             # however can be costly, so checking if debug is enabled first
-            _LOG.debug("Interpreted structure: %s", dumps(self.structure, indent=4, default=vars))
+            _LOG.debug(
+                "Interpreted structure: %s",
+                dumps(self.structure, indent=4, default=vars),
+            )
 
         return self.structure

@@ -64,7 +64,8 @@ class Exporter:
             if export_file.is_file():
                 if self.config["overwrite"]:
                     _LOG.warning(
-                        "Metadata output file exists: '%s', overwriting.", str(export_file)
+                        "Metadata output file exists: '%s', overwriting.",
+                        str(export_file),
                     )
                 else:
                     _LOG.debug("Metadata export file path: %s", str(export_file))

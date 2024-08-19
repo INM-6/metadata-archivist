@@ -112,6 +112,8 @@ class Formatter:
         else:
             self._use_schema = False
             self._schema = deepcopy(_DEFAULT_FORMATTER_SCHEMA)
+        # Attribute for SchemaInterpreter
+        self._interpreter = None
 
         # Used for updating/removing parsers
         # Indexing is done storing a triplet with parsers, patterns, schema indexes
@@ -336,6 +338,7 @@ class Formatter:
             if ex.name == parser_name:
                 return ex
         _LOG.warning("No Parser with name: %s exist", parser_name)
+        return None
 
     def parse_files(
         self,
@@ -373,8 +376,8 @@ class Formatter:
                     to_parse[pid].append(fp)
 
         # TODO: Think about parallelization scheme with ProcessPoolExecutor
-        for pid in to_parse:
-            for file_path in to_parse[pid]:
+        for pid, sorted_paths in to_parse.items():
+            for file_path in sorted_paths:
                 _LOG.debug("    parsing file: %s", str(file_path))
                 # Get parser and parse metadata
                 pix = self._indexes.get_index(pid, "prs")
@@ -396,7 +399,7 @@ class Formatter:
                             raise FileExistsError(
                                 "Unable to save parsed metadata; overwriting not allowed."
                             )
-                    with entry.meta_path.open("w") as mp:
+                    with entry.meta_path.open("w", encoding=None) as mp:
                         dump(metadata, mp, indent=4)
                     meta_files.append(entry.meta_path)
 
@@ -479,8 +482,7 @@ class Formatter:
                             break
 
                         # Otherwise we move in depth with the next node of the recursion result
-                        else:
-                            recursion_result = recursion_result[node]
+                        recursion_result = recursion_result[node]
 
                     # If the break is never reached an error has ocurred
                     else:
@@ -576,7 +578,7 @@ def _combine(
 
     if config is None:
         # Test reference
-        if config != config:
+        if formatter1.config != formatter2.config:
             for key, value in formatter1.config:
                 if key not in formatter2.config:
                     if _is_debug():

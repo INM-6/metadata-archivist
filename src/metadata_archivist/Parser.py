@@ -24,7 +24,7 @@ try:
     from jsonschema import validate, ValidationError
 
     _DO_VALIDATE = True
-except:
+except ImportError:
     _LOG.warning("JSONSchema package not found, disabling validation.")
 
     def validate(*args, **kwargs) -> bool:

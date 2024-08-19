@@ -86,8 +86,7 @@ def _update_dict_with_parts(target_dict: dict, value: Any, parts: list) -> None:
                 "Duplicate key with incorrect found while updating tree with path hierarchy."
             )
         relative_root = relative_root[part]
-    else:
-        relative_root[parts[-1]] = value
+    relative_root[parts[-1]] = value
 
 
 def _merge_dicts(dict1: dict, dict2: dict) -> dict:
@@ -111,7 +110,7 @@ def _merge_dicts(dict1: dict, dict2: dict) -> dict:
             val1 = dict1[key]
             val2 = dict2[key]
             # TODO: behavior needs to be validated
-            if type(val1) == type(val2):
+            if isinstance(val1, type(val2)):
                 if isinstance(val1, Iterable):
                     if isinstance(val1, dict):
                         merged_dict[key] = _merge_dicts(val1, val2)
@@ -208,11 +207,10 @@ def _deep_get_from_schema(schema: dict, keys: list) -> Any:
             "Iterated through schema without finding corresponding keys."
         )
 
-    else:
-        if _is_debug:
-            _LOG.debug("schema: %s", dumps(schema, indent=4, default=vars))
-            _LOG.debug("keys: %s", dumps(keys, indent=4, default=vars))
-        raise StopIteration("No key found for corresponding schema.")
+    if _is_debug():
+        _LOG.debug("schema: %s", dumps(schema, indent=4, default=vars))
+        _LOG.debug("keys: %s", dumps(keys, indent=4, default=vars))
+    raise StopIteration("No key found for corresponding schema.")
 
 
 def _pattern_parts_match(
@@ -309,8 +307,7 @@ def _unpack_nested_value(iterable: Any, level: Optional[int] = None) -> Any:
 
     if isinstance(iterable, dict):
         return _unpack_nested_value(next(iter(iterable.values())), level)
-    else:
-        return _unpack_nested_value(next(iter(iterable)), level)
+    return _unpack_nested_value(next(iter(iterable)), level)
 
 
 def _math_check(expression: str):
@@ -351,9 +348,7 @@ def _math_check(expression: str):
     trace = ""
     for s in expression:
         if s == "(":
-            if (
-                state == -1 or state == 1
-            ):  # start => par_count += 1 || operand => par_count += 1
+            if state in (-1, 1):  # start => par_count += 1 || operand => par_count += 1
                 par_count += 1
             else:
                 return False, None
@@ -374,7 +369,7 @@ def _math_check(expression: str):
             else:
                 return False, None
         elif s == "{":
-            if state == -1 or state == 1:  # start -> variable || operand -> variable
+            if state in (-1, 1):  # start -> variable || operand -> variable
                 state = 2
             else:
                 return False, None
@@ -410,8 +405,10 @@ def _math_check(expression: str):
             else:
                 return False, None
         elif fullmatch(r"\d", s):
-            if (
-                state == -1 or state == 1 or state == 3
+            if state in (
+                -1,
+                1,
+                3,
             ):  # start -> number || operand -> number || number -> number
                 trace += s
                 state = 3
@@ -426,19 +423,18 @@ def _math_check(expression: str):
                 return False, None
         else:
             return False, None
-    else:
-        if state == 3:  # number => new_var = True & -> end
-            if fullmatch(r"\d+.?\d*", trace):
-                trace = ""
-                state = 0
-                new_vals = True
-            else:
-                return False, None
+
+    if state == 3:  # number => new_var = True & -> end
+        if fullmatch(r"\d+.?\d*", trace):
+            trace = ""
+            state = 0
+            new_vals = True
+        else:
+            return False, None
 
     if par_count != 0 or trace != "" or state != 0 or len(variables) == 0:
         return False, None
-    else:
-        return True, variables
+    return True, variables
 
 
 def _filter_metadata(metadata: dict, keys: list) -> dict:

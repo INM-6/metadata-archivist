@@ -151,14 +151,8 @@ def _format_parser_id_rule(
                 parsing_context["keys"],
             )
 
-        add_description = False
-        if "add_description" in kwargs:
-            add_description = kwargs["add_description"]
-
-        add_type = False
-        if "add_type" in kwargs:
-            add_type = kwargs["add_type"]
-
+        add_description = kwargs.get("add_description", False)
+        add_type = kwargs.get("add_type", False)
         _add_info_from_schema(metadata, parser.schema, add_description, add_type)
 
         # Unpacking should only be done for singular nested values i.e. only one key per nesting level
@@ -279,7 +273,11 @@ def _format_calculate_rule(
         )
 
     formatted_expression = expression.format(**parsing_values)
-    result = eval(formatted_expression)
+    result = eval(
+        formatted_expression,
+        {"__builtins__": None, "math": __import__("math")},
+        {},
+    )
 
     if add_description or add_type:
         # In calculate directive description or type are retrieved from formatting schema

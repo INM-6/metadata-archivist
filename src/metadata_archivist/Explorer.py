@@ -104,18 +104,19 @@ def _check_archive(file_path: Path, extraction_directory: str) -> Tuple[Path, Ca
 
     if is_zipfile(file_path):
         raise NotImplementedError("ZIP extractor not yet implemented.")
-    elif is_tarfile(file_path):
+
+    if is_tarfile(file_path):
         decompress_method = partial(
             _decompress_tar,
             archive_path=file_path,
             extraction_directory=extraction_directory,
         )
-    else:
-        _LOG.debug("Archive suffix: %s", file_path.suffix)
-        raise RuntimeError("Unknown archive format.")
 
-    # Returning file path is used for protected set method of internal _archive_path attribute.
-    return decompress_method
+        # Returning file path is used for protected set method of internal _archive_path attribute.
+        return decompress_method
+
+    _LOG.debug("Archive suffix: %s", file_path.suffix)
+    raise RuntimeError("Unknown archive format.")
 
 
 def _decompress_tar(

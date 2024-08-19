@@ -33,7 +33,7 @@ class _FormatterCache:
 
     def __init__(self):
         """Constructor for FormatterCache."""
-        self._cache = dict()
+        self._cache = {}
         self._iterator = None
 
     def add(self, parser_name: str) -> None:
@@ -105,7 +105,7 @@ class _ParserCache:
 
     def __init__(self):
         """Constructor for ParserCache"""
-        self._entries = list()
+        self._entries = []
         self._iterator = None
 
     def add(self, *args):
@@ -210,7 +210,7 @@ class _CacheEntry:
                     "Cache entry does not contain metadata and meta path not found."
                 )
 
-            with self.meta_path.open("r") as f:
+            with self.meta_path.open("r", encoding=None) as f:
                 self.metadata = load(f)
 
             if self.metadata is None:
@@ -241,9 +241,9 @@ class _ParserIndexes:
 
     def __init__(self) -> None:
         """Constructor of ParserIndexes class."""
-        self.prs_indexes = dict()
-        self.ifp_indexes = dict()
-        self.scp_indexes = dict()
+        self.prs_indexes = {}
+        self.ifp_indexes = {}
+        self.scp_indexes = {}
 
     def _get_storage(self, storage: str) -> dict:
         """
@@ -265,9 +265,9 @@ class _ParserIndexes:
         scp_patterns = ["scp", "schema_properties"]
         if storage in prs_patterns:
             return self.prs_indexes
-        elif storage in ifp_patterns:
+        if storage in ifp_patterns:
             return self.ifp_indexes
-        elif storage in scp_patterns:
+        if storage in scp_patterns:
             return self.scp_indexes
 
         _LOG.debug(
@@ -309,8 +309,7 @@ class _ParserIndexes:
                 "ifp": self.ifp_indexes.get(parser_name),
                 "scp": self.scp_indexes.get(parser_name),
             }
-        else:
-            return self._get_storage(storage)[parser_name]
+        return self._get_storage(storage)[parser_name]
 
     def drop_indexes(self, parser_name: str) -> dict:
         """
@@ -522,8 +521,7 @@ class _SchemaInterpreter:
                     if isinstance(val, Iterable):
                         _LOG.debug("Unknown iterable type: %s", str(type(val)))
                         raise NotImplementedError("Unknown iterable type.")
-                    else:
-                        _LOG.debug("Ignoring key value pair: (%s: %s)", key, str(val))
+                    _LOG.debug("Ignoring key value pair: (%s: %s)", key, str(val))
 
         return _relative_root
 

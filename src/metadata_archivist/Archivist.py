@@ -24,19 +24,17 @@ from .Formatter import Formatter
 from .logger import _LOG, _set_level, _is_debug
 
 
-"""
-Default configuration parameters for the Archivist class:
-"extraction_directory": string path to extraction directory (not used if exploring a directory). Default "." .
-"output_directory": string path to output directory. Default "." .
-"output_file": string name of resulting metadata file. Default "metadata.json" .
-"lazy_load": control boolean to enable parser lazy loading. Needs compilation after parsing. Default False .
-"overwrite": control boolean to allow overwriting existing metadata file. Default True .
-"auto_cleanup": control boolean to clean up (delete extracted files and parsed files if lazy loading) after generating metadata. Default True .
-"verbose": string value of verbosity level. Default "info" .
-"add_description": control boolean to add schema description attributes to resulting metadata. Default True .
-"add_type": control boolean to add schema type attributes to resulting metadata. Default False .
-"output_format": "string value of metadata file output format. Default "JSON" .
-"""
+# Default configuration parameters for the Archivist class:
+# "extraction_directory": string path to extraction directory (not used if exploring a directory). Default "." .
+# "output_directory": string path to output directory. Default "." .
+# "output_file": string name of resulting metadata file. Default "metadata.json" .
+# "lazy_load": control boolean to enable parser lazy loading. Needs compilation after parsing. Default False .
+# "overwrite": control boolean to allow overwriting existing metadata file. Default True .
+# "auto_cleanup": control boolean to clean up (delete extracted files and parsed files if lazy loading) after generating metadata. Default True .
+# "verbose": string value of verbosity level. Default "info" .
+# "add_description": control boolean to add schema description attributes to resulting metadata. Default True .
+# "add_type": control boolean to add schema type attributes to resulting metadata. Default False .
+# "output_format": "string value of metadata file output format. Default "JSON" .
 DEFAULT_CONFIG = {
     "extraction_directory": ".",
     "output_directory": ".",
@@ -119,10 +117,10 @@ class Archivist:
             kwargs.pop("verbose", None)
 
         # Init rest of config params
-        for key in kwargs:
+        for key, value in kwargs.items():
             if key in self.config:
-                if type(kwargs[key]) == type(self.config[key]):
-                    self.config[key] = kwargs[key]
+                if isinstance(value, type(self.config[key])):
+                    self.config[key] = value
                     key_list.remove(key)
                 else:
                     _LOG.warning("Incorrect type for argument: %s, ignoring value", key)
@@ -193,7 +191,7 @@ class Archivist:
                 )
                 try:
                     rmtree(root_extraction_path)
-                except Exception as e:
+                except OSError as e:
                     _LOG.warning(
                         "error cleaning %s: %s",
                         str(root_extraction_path),
@@ -206,7 +204,7 @@ class Archivist:
                     _LOG.info("Cleaning meta file: %s", str(fp))
                     try:
                         fp.unlink()
-                    except Exception as e:
+                    except FileNotFoundError as e:
                         _LOG.warning(
                             "error cleaning %s: %s",
                             str(fp),

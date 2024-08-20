@@ -31,7 +31,7 @@ except ImportError:
         """Mock validate method for compatibility. Returns True."""
         return True
 
-    ValidationError = Exception
+    ValidationError = ValueError
     _DO_VALIDATE = False
 
 

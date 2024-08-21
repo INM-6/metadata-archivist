@@ -32,8 +32,7 @@ Authors: Jose V., Matthias K.
 from json import dumps
 from typing import Union
 
-from .Formatter import Formatter
-
+from .formatter import Formatter
 from .logger import LOG, is_debug
 from .helper_classes import SchemaEntry
 from .helper_functions import (

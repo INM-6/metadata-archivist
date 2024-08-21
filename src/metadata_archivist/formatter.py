@@ -19,8 +19,7 @@ from copy import deepcopy
 from json import load, dump, dumps
 from typing import Optional, List, Iterable, NoReturn, Union, Tuple
 
-from .Parser import AParser
-
+from .parser import AParser
 from .logger import LOG, is_debug
 from . import helper_classes as helpers
 from .helper_functions import (

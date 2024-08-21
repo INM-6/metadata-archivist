@@ -19,8 +19,8 @@ Authors: Matthias K., Jose V.
 
 """
 
-from .Formatter import Formatter
-from .Parser import AParser
-from .Explorer import Explorer
-from .Exporter import Exporter
-from .Archivist import Archivist, DEFAULT_CONFIG
+from .formatter import Formatter
+from .parser import AParser
+from .explorer import Explorer
+from .exporter import Exporter
+from .archivist import Archivist, DEFAULT_CONFIG

@@ -16,10 +16,10 @@ from shutil import rmtree
 from copy import deepcopy
 from typing import Union, Iterable, Optional
 
-from .Parser import AParser
-from .Exporter import Exporter
-from .Explorer import Explorer
-from .Formatter import Formatter
+from .parser import AParser
+from .exporter import Exporter
+from .explorer import Explorer
+from .formatter import Formatter
 
 from .logger import LOG, set_level, is_debug
 

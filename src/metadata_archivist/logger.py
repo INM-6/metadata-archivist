@@ -7,7 +7,10 @@ Internally used logging class extension.
 Initializes logger from logging module.
 Sets custom message formatter.
 
-Only for internal use.
+exports:
+    LOG: logging object.
+    set_level: function to change logging level via strings.
+    is_debug: function to test if logging object is in debug level.
 
 Authors: Jose V., Matthias K.
 
@@ -22,7 +25,7 @@ class _LogFormatter(logging.Formatter):
     Designed to have a specific format style depending on record level.
     """
 
-    def format(self, record):
+    def format(self, record) -> str:
         if record.levelno == logging.INFO:
             self._style._fmt = "%(message)s"
         elif record.levelno == logging.DEBUG:
@@ -35,11 +38,11 @@ class _LogFormatter(logging.Formatter):
 _HANDLER = logging.StreamHandler()
 _HANDLER.setFormatter(_LogFormatter())
 logging.basicConfig(handlers=[_HANDLER], level=logging.INFO)
-_LOG = logging.getLogger()
-_LOG.addHandler(_HANDLER)
+LOG = logging.getLogger()
+LOG.addHandler(_HANDLER)
 
 
-def _set_level(level: str) -> bool:
+def set_level(level: str) -> bool:
     """
     Function used to set LOG object logging level.
 
@@ -50,13 +53,13 @@ def _set_level(level: str) -> bool:
         success boolean.
     """
     if level == "warning":
-        _LOG.setLevel(logging.WARNING)
+        LOG.setLevel(logging.WARNING)
     elif level == "info":
-        _LOG.setLevel(logging.INFO)
+        LOG.setLevel(logging.INFO)
     elif level == "debug":
-        _LOG.setLevel(logging.DEBUG)
+        LOG.setLevel(logging.DEBUG)
     else:
-        _LOG.warning(
+        LOG.warning(
             "Trying to set incorrect logging level: %s, staying at current level.",
             level,
         )
@@ -65,6 +68,6 @@ def _set_level(level: str) -> bool:
     return True
 
 
-def _is_debug() -> bool:
+def is_debug() -> bool:
     """Status function which returns true if logging level is defined to DEBUG."""
-    return _LOG.level == logging.DEBUG
+    return LOG.level == logging.DEBUG

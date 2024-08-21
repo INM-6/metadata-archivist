@@ -15,8 +15,8 @@ Authors: Jose V., Matthias K.
 from pathlib import Path
 from abc import ABC, abstractmethod
 
-from .logger import _LOG
-from .helper_functions import _pattern_parts_match
+from .logger import LOG
+from .helper_functions import pattern_parts_match
 
 # Try to load jsonschema package components for validation
 # In case of failure, validation is disabled
@@ -24,8 +24,9 @@ try:
     from jsonschema import validate, ValidationError
 
     _DO_VALIDATE = True
+
 except ImportError:
-    _LOG.warning("JSONSchema package not found, disabling validation.")
+    LOG.warning("JSONSchema package not found, disabling validation.")
 
     def validate(*args, **kwargs) -> bool:
         """Mock validate method for compatibility. Returns True."""
@@ -78,9 +79,8 @@ class AParser(ABC):
         self._schema = schema
         self.validate_output = _DO_VALIDATE and validate_output
 
-        self._formatters = (
-            []
-        )  # For two way relationship (Formatter - Parser) update handling
+        # For two way relationship (Formatter - Parser) update handling
+        self._formatters = []
 
     @property
     def input_file_pattern(self) -> str:
@@ -126,7 +126,7 @@ class AParser(ABC):
         self._name = name
         self._add_to_formatters()
 
-    def _get_reference(self) -> str:
+    def get_reference(self) -> str:
         """
         Returns unique reference for Parser.
         """
@@ -147,7 +147,7 @@ class AParser(ABC):
         for f in self._formatters:
             f.remove_parser(self)
 
-    def _parse_file(self, file_path: Path) -> dict:
+    def run_parser(self, file_path: Path) -> dict:
         """
         Internal wrapper for the user defined parsing method,
         takes care of prior file checking and applies validate on parsed metadata.
@@ -160,12 +160,12 @@ class AParser(ABC):
         """
 
         if not file_path.is_file():
-            _LOG.debug("Path: %s", str(file_path))
+            LOG.debug("Path: %s", str(file_path))
             raise RuntimeError("Given path does not point to file.")
 
         pattern = self.input_file_pattern.split("/")
         pattern.reverse()
-        if _pattern_parts_match(pattern, list(reversed(file_path.parts))):
+        if pattern_parts_match(pattern, list(reversed(file_path.parts))):
             parsed_metadata = self.parse(file_path)
             self.run_validation(parsed_metadata)
 
@@ -194,7 +194,7 @@ class AParser(ABC):
                 validate(instance=metadata, schema=self.schema)
             except ValidationError as e:
                 # TODO: better exception mechanism
-                _LOG.warning(e.message)
+                LOG.warning(e.message)
 
     # Considering the name of the Parser as unique then we can use
     # the name property for equality/hashing

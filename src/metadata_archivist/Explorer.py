@@ -19,8 +19,8 @@ from collections.abc import Callable
 from typing import List, Tuple, Union
 from tarfile import is_tarfile, open as t_open
 
-from .logger import _LOG
-from .helper_functions import _pattern_parts_match, _check_dir
+from .logger import LOG
+from .helper_functions import pattern_parts_match, check_dir
 
 
 # Accepted archive file formats
@@ -53,6 +53,7 @@ class Explorer:
         """
 
         self.config = config
+        self.explore = None  # Defined in path setter wrapper
         self.path = path
 
     @property
@@ -72,7 +73,7 @@ class Explorer:
 
         n_path = Path(explore_path)
         if not n_path.exists():
-            _LOG.debug("Target path: %s", explore_path)
+            LOG.debug("Target path: %s", explore_path)
             raise RuntimeError("Nothing found in exploration target path.")
 
         if n_path.is_dir():
@@ -99,7 +100,7 @@ def _check_archive(file_path: Path, extraction_directory: str) -> Tuple[Path, Ca
     """
 
     if not file_path.is_file():
-        _LOG.debug("Path to file: %s", str(file_path))
+        LOG.debug("Path to file: %s", str(file_path))
         raise FileNotFoundError("Incorrect path to file.")
 
     if is_zipfile(file_path):
@@ -115,7 +116,7 @@ def _check_archive(file_path: Path, extraction_directory: str) -> Tuple[Path, Ca
         # Returning file path is used for protected set method of internal _archive_path attribute.
         return decompress_method
 
-    _LOG.debug("Archive suffix: %s", file_path.suffix)
+    LOG.debug("Archive suffix: %s", file_path.suffix)
     raise RuntimeError("Unknown archive format.")
 
 
@@ -140,12 +141,12 @@ def _decompress_tar(
             2. list of Path objects of decompressed files.
     """
 
-    _LOG.info("Extracting archive: %s ...", archive_path.name)
-    _LOG.debug("   exploring using patterns: %s", str(input_file_patterns))
+    LOG.info("Extracting archive: %s ...", archive_path.name)
+    LOG.debug("   exploring using patterns: %s", str(input_file_patterns))
 
     created = False
     if not isinstance(extraction_directory, Path):
-        extraction_directory, created = _check_dir(extraction_directory)
+        extraction_directory, created = check_dir(extraction_directory)
 
     archive_name = archive_path.stem.split(".")[0]
     directory_path = extraction_directory.joinpath(archive_name)
@@ -158,7 +159,7 @@ def _decompress_tar(
         item = t.next()
         while item is not None:
             if item.isfile():
-                _LOG.debug("   processing file: %s", item.name)
+                LOG.debug("   processing file: %s", item.name)
                 item_path = directory_path.joinpath(item.name)
                 if any(item.name.endswith(format) for format in _ACCEPTED_FORMATS):
                     t.extract(item, path=directory_path)
@@ -172,7 +173,7 @@ def _decompress_tar(
                     item_path.unlink()
 
                 elif any(
-                    _pattern_parts_match(
+                    pattern_parts_match(
                         list(reversed(pat.split("/"))),
                         list(reversed(item.name.split("/"))),
                     )
@@ -183,7 +184,7 @@ def _decompress_tar(
                     explored_dirs.append(item_path.parent)
             item = t.next()
 
-    _LOG.info("Done!")
+    LOG.info("Done!")
 
     # Returned paths are used for parsing and automatic clean-up.
     return directory_path, explored_dirs, explored_files
@@ -207,18 +208,18 @@ def _dir_explore(
             2. list of Path objects of explored files.
     """
 
-    _LOG.info("Exploring directory: %s ...", directory_path.name)
-    _LOG.debug("   exploring using patterns: %s", str(input_file_patterns))
+    LOG.info("Exploring directory: %s ...", directory_path.name)
+    LOG.debug("   exploring using patterns: %s", str(input_file_patterns))
 
     explored_dirs = [directory_path]
     explored_files = []
 
     for item_path in directory_path.glob("*"):
         if item_path.is_file():
-            _LOG.debug("   processing file: %s", item_path.name)
+            LOG.debug("   processing file: %s", item_path.name)
             # TODO: think about precompiling patterns to optimize regex match time
             if any(
-                _pattern_parts_match(
+                pattern_parts_match(
                     list(reversed(pat.split("/"))), list(reversed(item_path.parts))
                 )
                 for pat in input_file_patterns
@@ -232,7 +233,7 @@ def _dir_explore(
             explored_dirs.extend(new_explored_dirs)
             explored_files.extend(new_explored_files)
 
-    _LOG.info("Done!")
+    LOG.info("Done!")
 
     # Returned paths are used for parsing and automatic clean-up.
     return directory_path, explored_dirs, explored_files

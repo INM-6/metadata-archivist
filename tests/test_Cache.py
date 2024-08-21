@@ -7,7 +7,7 @@ import unittest
 import sys
 
 sys.path.append("src")
-from metadata_archivist.helper_classes import _FormatterCache, _CacheEntry, _ParserCache
+from metadata_archivist.helper_classes import FormatterCache, CacheEntry, ParserCache
 
 
 class TestCacheEntry(unittest.TestCase):
@@ -21,7 +21,7 @@ class TestCacheEntry(unittest.TestCase):
         file_path = Path("path/to/decompress/path/to/file.txt")
         metadata = None
 
-        cache_entry_1 = _CacheEntry(explored_path=decompress_path, file_path=file_path)
+        cache_entry_1 = CacheEntry(explored_path=decompress_path, file_path=file_path)
 
         self.assertEqual(cache_entry_1.explored_path, decompress_path)
         self.assertEqual(cache_entry_1.file_path, file_path)
@@ -51,7 +51,7 @@ class TestParserCache(unittest.TestCase):
 
         # self.assertEqual(cache_extractor.id, extractor_id)
 
-        parser_cache = _ParserCache()
+        parser_cache = ParserCache()
 
         # cache entry
         decompress_path = Path("path/to/decompress")
@@ -95,7 +95,7 @@ class TestCache(unittest.TestCase):
         ]
         metadata = [{"foo": "bar"}, {"foo2": "bar2"}]
 
-        cache = _FormatterCache()
+        cache = FormatterCache()
         cache.add(parser_id_1)
 
         cache[parser_id_1].add(decompress_path[0], file_path[0], metadata[0])

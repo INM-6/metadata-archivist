@@ -20,7 +20,8 @@ Arguments:
 Returns:
     interpreted schema entry.
 
-Only for internal use.
+exports:
+    INTERPRETATION_RULES: dictionary mapping schema keys to interpretation rules.
 
 Authors: Jose V., Matthias K.
 
@@ -31,9 +32,9 @@ from json import dumps
 from copy import deepcopy
 from typing import Optional, Union
 
-from .logger import _LOG, _is_debug
-from .helper_classes import _SchemaInterpreter, _SchemaEntry
-from .helper_functions import _math_check
+from .logger import LOG, is_debug
+from .helper_classes import SchemaInterpreter, SchemaEntry
+from .helper_functions import math_check
 
 
 # Constants for schema specific/special values to be considered when parsing.
@@ -43,36 +44,36 @@ _KNOWN_REFS = [
 
 
 def _interpret_simple_property_rule(
-    interpreter: _SchemaInterpreter,
+    interpreter: SchemaInterpreter,
     prop_val: dict,
     prop_key: str,
     parent_key: str,
-    entry: _SchemaEntry,
-) -> _SchemaEntry:
+    entry: SchemaEntry,
+) -> SchemaEntry:
     # Known simple properties return recursion results without branching
-    return interpreter._interpret_schema(prop_val, parent_key, entry)
+    return interpreter.interpret_schema(prop_val, parent_key, entry)
 
 
 def _interpret_pattern_property_rule(
-    interpreter: _SchemaInterpreter,
+    interpreter: SchemaInterpreter,
     prop_val: dict,
     prop_key: str,
     parent_key: str,
-    entry: _SchemaEntry,
-) -> _SchemaEntry:
+    entry: SchemaEntry,
+) -> SchemaEntry:
     # We create a regex context and recurse over the contents of the property.
     entry.context.update({"useRegex": True})
 
-    return interpreter._interpret_schema(prop_val, parent_key, entry)
+    return interpreter.interpret_schema(prop_val, parent_key, entry)
 
 
 def _interpret_parsing_directive_rule(
-    interpreter: _SchemaInterpreter,
+    interpreter: SchemaInterpreter,
     prop_val: Union[str, dict],
     prop_key: str,
     parent_key: str,
-    entry: _SchemaEntry,
-) -> _SchemaEntry:
+    entry: SchemaEntry,
+) -> SchemaEntry:
     # We create an !parsing context but keep on with current recursion level
     # Contents of this dictionary are not supposed to be handled by the interpreter.
     entry.context.update({prop_key: prop_val})
@@ -81,16 +82,16 @@ def _interpret_parsing_directive_rule(
 
 
 def _interpret_varname_directive_rule(
-    interpreter: _SchemaInterpreter,
+    interpreter: SchemaInterpreter,
     prop_val: dict,
     prop_key: str,
     parent_key: str,
-    entry: _SchemaEntry,
-) -> _SchemaEntry:
+    entry: SchemaEntry,
+) -> SchemaEntry:
     # Check if regex context is present in current entry
     if "useRegex" not in entry.context:
-        if _is_debug():
-            _LOG.debug(
+        if is_debug():
+            LOG.debug(
                 "SchemaEntry context: %s", dumps(entry.context, indent=4, default=vars)
             )
         raise RuntimeError("Contextless !varname found.")
@@ -102,16 +103,16 @@ def _interpret_varname_directive_rule(
 
 
 def _interpret_reference_rule(
-    interpreter: _SchemaInterpreter,
+    interpreter: SchemaInterpreter,
     prop_val: dict,
     prop_key: str,
     parent_key: str,
-    entry: _SchemaEntry,
-) -> _SchemaEntry:
+    entry: SchemaEntry,
+) -> SchemaEntry:
     # Check if reference is well formed against knowledge base
     if not any(prop_val.startswith(ss) for ss in _KNOWN_REFS):
-        if _is_debug():
-            _LOG.debug(
+        if is_debug():
+            LOG.debug(
                 "Reference item: (%s, %s)",
                 prop_key,
                 dumps(prop_val, indent=4, default=vars),
@@ -119,17 +120,17 @@ def _interpret_reference_rule(
         raise ValueError("Malformed reference prop_value.")
 
     # Get schema definitions
-    defs = interpreter._schema["$defs"]
+    defs = interpreter.schema["$defs"]
 
     # Call _process_refs to check for correctness before creating parsing context.
-    entry = __interpret_refs(defs, prop_val, entry)
+    entry = _interpret_refs(defs, prop_val, entry)
 
     return entry
 
 
-def __interpret_refs(
-    definitions: dict, prop_val: str, entry: _SchemaEntry
-) -> _SchemaEntry:
+def _interpret_refs(
+    definitions: dict, prop_val: str, entry: SchemaEntry
+) -> SchemaEntry:
     """
     Auxiliary function to check reference to Parser.
 
@@ -144,17 +145,17 @@ def __interpret_refs(
     # Test correctness of reference
     val_split = prop_val.split("/")
     if len(val_split) < 3:
-        _LOG.debug("Reference value: %s", prop_val)
+        LOG.debug("Reference value: %s", prop_val)
         raise ValueError("Malformed reference.")
 
     # Test for existence of Parser id
     pid = val_split[2]
     if pid not in definitions:
-        _LOG.debug("Given parser name: %s", pid)
+        LOG.debug("Given parser name: %s", pid)
         raise KeyError("Parser not found.")
 
     # Add identified Parser to context
-    _LOG.debug("Processing reference to: %s", pid)
+    LOG.debug("Processing reference to: %s", pid)
     entry["!parser_id"] = pid
 
     # Further process reference e.g. filters, internal property references -> links
@@ -168,7 +169,7 @@ def __interpret_refs(
 
 
 def __interpret_sub_schema(
-    sub_schema: dict, entry: _SchemaEntry, filters: Optional[list] = None
+    sub_schema: dict, entry: SchemaEntry, filters: Optional[list] = None
 ) -> list:
     """
     WIP
@@ -193,18 +194,18 @@ def __interpret_sub_schema(
 
 
 def _interpret_calculate_directive_rule(
-    interpreter: _SchemaInterpreter,
+    interpreter: SchemaInterpreter,
     prop_val: dict,
     prop_key: str,
     parent_key: str,
-    entry: _SchemaEntry,
-) -> _SchemaEntry:
+    entry: SchemaEntry,
+) -> SchemaEntry:
     # Calculates simple math expressions using values from parsers.
     # Requires referenced parsers to return numerical values.
     # references can be supplemented with !parsing directives to properly select value.
     if not all(key in prop_val for key in ["expression", "variables"]):
-        if _is_debug():
-            _LOG.debug(
+        if is_debug():
+            LOG.debug(
                 "Directive item: (%s, %s)",
                 prop_key,
                 dumps(prop_val, indent=4, default=vars),
@@ -213,27 +214,27 @@ def _interpret_calculate_directive_rule(
 
     expression = prop_val["expression"]
     if not isinstance(expression, str):
-        _LOG.debug(
+        LOG.debug(
             "Expression type: %s, expected type: %s", str(type(expression)), str(str)
         )
         raise TypeError("Incorrect expression type in !calculate directive.")
 
     cleaned_expr = sub(r"\s", "", expression)
-    correct, variable_names = _math_check(cleaned_expr)
+    correct, variable_names = math_check(cleaned_expr)
     if not correct:
-        _LOG.debug("Expression: %s", cleaned_expr)
+        LOG.debug("Expression: %s", cleaned_expr)
         raise ValueError("Incorrect expression value in !calculate directive.")
 
     variables = prop_val["variables"]
     if not isinstance(variables, dict):
-        _LOG.debug(
+        LOG.debug(
             "Variables type: %s, expected type: %s", str(type(variables)), str(str)
         )
         raise TypeError("Incorrect variables type in !calculate directive.")
 
     if len(variable_names) != len(variables):
-        if _is_debug():
-            _LOG.debug(
+        if is_debug():
+            LOG.debug(
                 "Expression: %s\nexpression variables: %s\ndefined variables: %s",
                 expression,
                 str(variable_names),
@@ -245,25 +246,25 @@ def _interpret_calculate_directive_rule(
     variable_entries = {}
     for variable in variables:
         if not variable in variable_names:
-            _LOG.debug("Variable name: %s", variable)
+            LOG.debug("Variable name: %s", variable)
             raise RuntimeError("Variable name mismatch in !calculate directive.")
 
         value = variables[variable]
         if not isinstance(value, dict):
-            _LOG.debug(
+            LOG.debug(
                 "Variables type: %s, expected type: %s", str(type(variable)), str(dict)
             )
             raise TypeError("Incorrect variable type in !calculate directive.")
 
         if not "$ref" in value:
-            if _is_debug():
-                _LOG.debug("Variable content: %s", dumps(value, indent=4, default=vars))
+            if is_debug():
+                LOG.debug("Variable content: %s", dumps(value, indent=4, default=vars))
             raise RuntimeError(
                 "Variable does not reference a Parser in !calculate directive."
             )
 
         # We create a SchemaEntry in the context to be specially handled by the Formatter
-        new_entry = _SchemaEntry(
+        new_entry = SchemaEntry(
             key=prop_key,
             key_path=deepcopy(entry.key_path),
             context=deepcopy(entry.context),
@@ -285,7 +286,7 @@ def _interpret_calculate_directive_rule(
     return entry
 
 
-_INTERPRETATION_RULES = {
+INTERPRETATION_RULES = {
     "properties": _interpret_simple_property_rule,
     "unevaluatedProperties": _interpret_simple_property_rule,
     "additionalProperties": _interpret_simple_property_rule,

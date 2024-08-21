@@ -4,6 +4,14 @@
 
 Module containing collection of convenience classes internally used.
 
+exports:
+    CacheEntry: Cache of metadata entry generated from Parser output.
+    ParserCache: Cache for metadata caches from all outputs of a Parser.
+    FormatterCache: Cache for ParserCaches generated for all Parsers of a Formatter.
+    ParserIndexes: Wrapper for dictionaries containing indexes of parsers in Formatter internal structure.
+    SchemaEntry: Class containing context rich schema entry. Generated from schema interpretation.
+    SchemaInterpreter: Class orchestrating schema interpretation and generation of context rich entries.
+
 Authors: Jose V., Matthias K.
 
 """
@@ -11,152 +19,13 @@ Authors: Jose V., Matthias K.
 from pathlib import Path
 from copy import deepcopy
 from json import load, dumps
-from collections.abc import Iterable
 from typing import Optional, Dict, Union, Any
+from collections.abc import Iterable, Iterator, ItemsView
 
-from .logger import _LOG, _is_debug
-
-
-class _FormatterCache:
-    """
-    Convenience class for storing ParserCache objects.
-    For each Parser a _ParserCache object is created which will store all parsing results.
-    Iteration is possible by using dictionary iterator on the actual cache storage.
-
-    Attributes are only used internally.
-
-    Methods:
-        add: add new ParserCache using Parser name.
-        drop: drop ParserCache using Parser name.
-        is_empty: empty test for internal dictionary containing ParserCaches.
-    """
-
-    def __init__(self):
-        """Constructor for FormatterCache."""
-        self._cache = {}
-        self._iterator = None
-
-    def add(self, parser_name: str) -> None:
-        """
-        Method to add new ParserCache to internal dictionary.
-
-        Arguments:
-            parser_name: string name of Parser to create a ParserCache for.
-        """
-        if parser_name not in self._cache:
-            self._cache[parser_name] = _ParserCache()
-        else:
-            _LOG.debug("Parser name: %s", parser_name)
-            raise KeyError("Parser already exists in cache.")
-
-    def drop(self, parser_name: str) -> None:
-        """
-        Method to drop ParserCache from internal dictionary.
-
-        Arguments:
-            parser_name: string name of Parser to drop its ParserCache for.
-        """
-        self._cache.pop(parser_name, None)
-
-    def __getitem__(self, parser_name: str):
-        """
-        Get operator for internal dictionary using Parser names.
-
-        Arguments:
-            parser_name: string name of Parser to fetch from internal dictionary.
-        """
-        return self._cache[parser_name]
-
-    def __iter__(self):
-        """
-        Iteration operator.
-        Iteration is done by iterating over the storage dictionary.
-        """
-        self._iterator = iter(self._cache)
-        return self
-
-    def __next__(self):
-        """
-        Next operator.
-        When iterating over a dictionary keys are returned,
-        here we return the corresponding _ParserCache objects.
-        """
-        if self._iterator is None:
-            raise StopIteration
-        return self._cache[next(self._iterator)]
-
-    def is_empty(self):
-        """Empty test method for internal ParserCache dictionary."""
-        return len(self._cache) == 0
+from .logger import LOG, is_debug
 
 
-class _ParserCache:
-    """
-    Convenience class for storing CacheEntry objects.
-    For each file parsed by the corresponding parser a CacheEntry object is created.
-    Iteration is possible by using list iterator on the actual entry storage.
-
-    Attributes are only used internally.
-
-    Methods:
-        add: add new CacheEntry for parsed file.
-        is_empty: empty test for internal list containing CacheEntries.
-    """
-
-    def __init__(self):
-        """Constructor for ParserCache"""
-        self._entries = []
-        self._iterator = None
-
-    def add(self, *args):
-        """
-        Method to add CacheEntry to internal list.
-
-        Arguments are directly passed on to CacheEntry (cf constructor).
-
-        Returns:
-            new CacheEntry.
-        """
-        entry = _CacheEntry(*args)
-        self._entries.append(entry)
-        return entry
-
-    def __getitem__(self, index: int):
-        """
-        Get operator for internal list using index.
-
-        Arguments:
-            index integer where CacheEntry is located at.
-
-        Returns:
-            indexed CacheEntry.
-        """
-        return self._entries[index]
-
-    def __iter__(self):
-        """
-        Iteration operator.
-        Iteration is done by iterating over the storage dictionary.
-        """
-        self._iterator = iter(self._entries)
-        return self
-
-    def __next__(self):
-        """
-        Next operator.
-        When iterating over a dictionary keys are returned,
-        here we return the corresponding _ParserCache objects.
-        """
-        if self._iterator is None:
-            raise StopIteration
-        return next(self._iterator)
-
-    def is_empty(self):
-        """Empty test method for internal CacheEntry list."""
-        return len(self._entries) == 0
-
-
-class _CacheEntry:
+class CacheEntry:
     """
     Convenience class for storing parsing results.
     For each parsed file a _CacheEntry object is created, after parsing, the results can be
@@ -175,7 +44,7 @@ class _CacheEntry:
 
     def __init__(
         self, explored_path: Path, file_path: Path, metadata: Optional[dict] = None
-    ):
+    ) -> None:
         """
         Constructor of CacheEntry.
 
@@ -210,18 +79,157 @@ class _CacheEntry:
                     "Cache entry does not contain metadata and meta path not found."
                 )
 
-            with self.meta_path.open("r", encoding=None) as f:
+            with self.meta_path.open("r") as f:
                 self.metadata = load(f)
 
             if self.metadata is None:
-                if _is_debug():
-                    _LOG.debug("CacheEntry: %s", dumps(self, indent=4, default=vars))
+                if is_debug():
+                    LOG.debug("CacheEntry: %s", dumps(self, indent=4, default=vars))
                 raise RuntimeError("Failed to load metadata from CacheEntry.")
 
         return self.metadata
 
 
-class _ParserIndexes:
+class ParserCache:
+    """
+    Convenience class for storing CacheEntry objects.
+    For each file parsed by the corresponding parser a CacheEntry object is created.
+    Iteration is possible by using list iterator on the actual entry storage.
+
+    Attributes are only used internally.
+
+    Methods:
+        add: add new CacheEntry for parsed file.
+        is_empty: empty test for internal list containing CacheEntries.
+    """
+
+    def __init__(self) -> None:
+        """Constructor for ParserCache"""
+        self._entries = []
+        self._iterator = None
+
+    def add(self, *args) -> CacheEntry:
+        """
+        Method to add CacheEntry to internal list.
+
+        Arguments are directly passed on to CacheEntry (cf constructor).
+
+        Returns:
+            new CacheEntry.
+        """
+        entry = CacheEntry(*args)
+        self._entries.append(entry)
+        return entry
+
+    def __getitem__(self, index: int) -> CacheEntry:
+        """
+        Get operator for internal list using index.
+
+        Arguments:
+            index integer where CacheEntry is located at.
+
+        Returns:
+            indexed CacheEntry.
+        """
+        return self._entries[index]
+
+    def __iter__(self) -> Iterator[CacheEntry]:
+        """
+        Iteration operator.
+        Iteration is done by iterating over the storage dictionary.
+        """
+        self._iterator = iter(self._entries)
+        return self
+
+    def __next__(self) -> CacheEntry:
+        """
+        Next operator.
+        When iterating over a dictionary keys are returned,
+        here we return the corresponding _ParserCache objects.
+        """
+        if self._iterator is None:
+            raise StopIteration
+        return next(self._iterator)
+
+    def is_empty(self) -> bool:
+        """Empty test method for internal CacheEntry list."""
+        return len(self._entries) == 0
+
+
+class FormatterCache:
+    """
+    Convenience class for storing ParserCache objects.
+    For each Parser a _ParserCache object is created which will store all parsing results.
+    Iteration is possible by using dictionary iterator on the actual cache storage.
+
+    Attributes are only used internally.
+
+    Methods:
+        add: add new ParserCache using Parser name.
+        drop: drop ParserCache using Parser name.
+        is_empty: empty test for internal dictionary containing ParserCaches.
+    """
+
+    def __init__(self) -> None:
+        """Constructor for FormatterCache."""
+        self._cache = {}
+        self._iterator = None
+
+    def add(self, parser_name: str) -> None:
+        """
+        Method to add new ParserCache to internal dictionary.
+
+        Arguments:
+            parser_name: string name of Parser to create a ParserCache for.
+        """
+        if parser_name not in self._cache:
+            self._cache[parser_name] = ParserCache()
+        else:
+            LOG.debug("Parser name: %s", parser_name)
+            raise KeyError("Parser already exists in cache.")
+
+    def drop(self, parser_name: str) -> None:
+        """
+        Method to drop ParserCache from internal dictionary.
+
+        Arguments:
+            parser_name: string name of Parser to drop its ParserCache for.
+        """
+        self._cache.pop(parser_name)
+
+    def __getitem__(self, parser_name: str) -> ParserCache:
+        """
+        Get operator for internal dictionary using Parser names.
+
+        Arguments:
+            parser_name: string name of Parser to fetch from internal dictionary.
+        """
+        return self._cache[parser_name]
+
+    def __iter__(self) -> Iterator[ParserCache]:
+        """
+        Iteration operator.
+        Iteration is done by iterating over the storage dictionary.
+        """
+        self._iterator = iter(self._cache)
+        return self
+
+    def __next__(self) -> ParserCache:
+        """
+        Next operator.
+        When iterating over a dictionary keys are returned,
+        here we return the corresponding _ParserCache objects.
+        """
+        if self._iterator is None:
+            raise StopIteration
+        return self._cache[next(self._iterator)]
+
+    def is_empty(self) -> bool:
+        """Empty test method for internal ParserCache dictionary."""
+        return len(self._cache) == 0
+
+
+class ParserIndexes:
     """
     Indexing class for storing different indexes for each Parser:
         index in parsers list.
@@ -241,9 +249,9 @@ class _ParserIndexes:
 
     def __init__(self) -> None:
         """Constructor of ParserIndexes class."""
-        self.prs_indexes = {}
-        self.ifp_indexes = {}
-        self.scp_indexes = {}
+        self._prs_indexes = {}
+        self._ifp_indexes = {}
+        self._scp_indexes = {}
 
     def _get_storage(self, storage: str) -> dict:
         """
@@ -264,13 +272,13 @@ class _ParserIndexes:
         ifp_patterns = ["ifp", "input_file_patterns"]
         scp_patterns = ["scp", "schema_properties"]
         if storage in prs_patterns:
-            return self.prs_indexes
+            return self._prs_indexes
         if storage in ifp_patterns:
-            return self.ifp_indexes
+            return self._ifp_indexes
         if storage in scp_patterns:
-            return self.scp_indexes
+            return self._scp_indexes
 
-        _LOG.debug(
+        LOG.debug(
             "storage value: %s\naccepted values: %s",
             storage,
             str(prs_patterns + ifp_patterns + scp_patterns),
@@ -305,9 +313,9 @@ class _ParserIndexes:
         """
         if storage is None:
             return {
-                "prs": self.prs_indexes.get(parser_name),
-                "ifp": self.ifp_indexes.get(parser_name),
-                "scp": self.scp_indexes.get(parser_name),
+                "prs": self._prs_indexes.get(parser_name),
+                "ifp": self._ifp_indexes.get(parser_name),
+                "scp": self._scp_indexes.get(parser_name),
             }
         return self._get_storage(storage)[parser_name]
 
@@ -322,13 +330,13 @@ class _ParserIndexes:
             dictionary of storage names and index pairs corresponding to Parser.
         """
         return {
-            "prs": self.prs_indexes.pop(parser_name),
-            "ifp": self.ifp_indexes.pop(parser_name),
-            "scp": self.scp_indexes.pop(parser_name),
+            "prs": self._prs_indexes.pop(parser_name),
+            "ifp": self._ifp_indexes.pop(parser_name),
+            "scp": self._scp_indexes.pop(parser_name),
         }
 
 
-class _SchemaEntry:
+class SchemaEntry:
     """
     Convenience superset of dictionary class.
     Used to recursively generate nested dictionary structure to serve as an intermediary between schema and metadata file.
@@ -338,6 +346,7 @@ class _SchemaEntry:
 
     Attributes:
         key: schema key used as entry name.
+        key_path: sequence of keys from schema used as entry name. Built by recursion in interpretation.
         context: dictionary containing information of schema properties where entry is created.
 
     Methods:
@@ -365,19 +374,19 @@ class _SchemaEntry:
         self._content = {}
         self._iterator = None
 
-    def __getitem__(self, key) -> Any:
+    def __getitem__(self, key: str) -> Any:
         """Value retrieval method for entry content using key."""
         return self._content[key]
 
-    def __setitem__(self, key, value) -> None:
+    def __setitem__(self, key: str, value: Any) -> None:
         """Value insertion method for entry content using key."""
         self._content[key] = value
 
-    def __contains__(self, key) -> bool:
+    def __contains__(self, key: str) -> bool:
         """Key presence test for entry content."""
         return key in self._content
 
-    def items(self):
+    def items(self) -> ItemsView[str, Any]:
         """Entry content items get method."""
         return self._content.items()
 
@@ -386,7 +395,7 @@ class _SchemaEntry:
         return len(self._content) == 0
 
 
-class _SchemaInterpreter:
+class SchemaInterpreter:
     """
     Functionality class used for interpreting the schema.
     When defining the JSON schema with additional directives,
@@ -396,6 +405,7 @@ class _SchemaInterpreter:
     usable as a mirror for structuring the final metadata file.
 
     Attributes:
+        schema: dictionary containing schema to interpret.
         structure: root SchemaEntry used for interpretation.
         rules: dictionary of interpretation rules.
 
@@ -412,37 +422,37 @@ class _SchemaInterpreter:
         """
 
         if not isinstance(schema, dict):
-            _LOG.debug(
+            LOG.debug(
                 "schema type: %s, expected type: %s", str(type(schema)), str(dict)
             )
             raise RuntimeError("Incorrect schema used for iterator.")
         if "properties" not in schema or not isinstance(schema["properties"], dict):
-            if _is_debug():
-                _LOG.debug("schema: %s", dumps(schema, indent=4, default=vars))
+            if is_debug():
+                LOG.debug("schema: %s", dumps(schema, indent=4, default=vars))
             raise RuntimeError(
                 "Incorrect schema structure, root is expected to contain properties dictionary."
             )
         if "$defs" not in schema or not isinstance(schema["$defs"], dict):
-            if _is_debug():
-                _LOG.debug("schema: %s", dumps(schema, indent=4, default=vars))
+            if is_debug():
+                LOG.debug("schema: %s", dumps(schema, indent=4, default=vars))
             raise RuntimeError(
                 "Incorrect schema structure, root is expected to contain $defs dictionary."
             )
 
-        self._schema = schema
-        self.structure = _SchemaEntry()
+        self.schema = schema
+        self.structure = SchemaEntry()
 
         # We load INTERPRETATION_RULES directly in instance to avoid circular importing issues
-        from .interpretation_rules import _INTERPRETATION_RULES
+        from .interpretation_rules import INTERPRETATION_RULES
 
-        self.rules = deepcopy(_INTERPRETATION_RULES)
+        self.rules = INTERPRETATION_RULES
 
-    def _interpret_schema(
+    def interpret_schema(
         self,
         properties: dict,
         _parent_key: Optional[str] = None,
-        _relative_root: Optional[_SchemaEntry] = None,
-    ):
+        _relative_root: Optional[SchemaEntry] = None,
+    ) -> SchemaEntry:
         """
         Recursive method to explore JSON schema.
         Following the technical assumptions made (cf. README.md/SchemaInterpreter),
@@ -489,8 +499,8 @@ class _SchemaInterpreter:
                 # rules must be defined in individual items of the properties, hence a parent key should
                 # always be present.
                 if _parent_key is None:
-                    if _is_debug():
-                        _LOG.debug(
+                    if is_debug():
+                        LOG.debug(
                             "current structure: %s",
                             dumps(_relative_root, indent=4, default=vars),
                         )
@@ -502,10 +512,10 @@ class _SchemaInterpreter:
             else:
                 # Case dict i.e. branch
                 if isinstance(val, dict):
-                    _relative_root[key] = self._interpret_schema(
+                    _relative_root[key] = self.interpret_schema(
                         val,
                         key,
-                        _SchemaEntry(
+                        SchemaEntry(
                             key=key,
                             key_path=_relative_root.key_path + [key],
                             context=deepcopy(_relative_root.context),
@@ -514,18 +524,18 @@ class _SchemaInterpreter:
 
                 # Case str i.e. leaf
                 elif isinstance(val, str):
-                    _LOG.debug("Ignoring key value pair: (%s: %s)", key, val)
+                    LOG.debug("Ignoring key value pair: (%s: %s)", key, val)
 
                 # Else not-implemented/ignored
                 else:
                     if isinstance(val, Iterable):
-                        _LOG.debug("Unknown iterable type: %s", str(type(val)))
+                        LOG.debug("Unknown iterable type: %s", str(type(val)))
                         raise NotImplementedError("Unknown iterable type.")
-                    _LOG.debug("Ignoring key value pair: (%s: %s)", key, str(val))
+                    LOG.debug("Ignoring key value pair: (%s: %s)", key, str(val))
 
         return _relative_root
 
-    def generate(self) -> _SchemaEntry:
+    def generate(self) -> SchemaEntry:
         """
         Convenience function to launch interpretation recursion over the schema.
         Results is also internally stored for future access.
@@ -533,20 +543,20 @@ class _SchemaInterpreter:
         Returns:
             self contained SchemaEntry
         """
-        if _is_debug():
+        if is_debug():
             # Passing through dumps for pretty printing,
             # however can be costly, so checking if debug is enabled first
-            _LOG.debug(
-                "Initial structure: %s", dumps(self._schema, indent=4, default=vars)
+            LOG.debug(
+                "Initial structure: %s", dumps(self.schema, indent=4, default=vars)
             )
 
         if self.structure.is_empty():
-            self.structure = self._interpret_schema(self._schema["properties"])
+            self.structure = self.interpret_schema(self.schema["properties"])
 
-        if _is_debug():
+        if is_debug():
             # Passing through dumps for pretty printing,
             # however can be costly, so checking if debug is enabled first
-            _LOG.debug(
+            LOG.debug(
                 "Interpreted structure: %s",
                 dumps(self.structure, indent=4, default=vars),
             )

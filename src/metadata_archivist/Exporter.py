@@ -15,8 +15,8 @@ Authors: Jose V., Matthias K.
 from json import dump
 from pathlib import Path
 
-from .logger import _LOG
-from .helper_functions import _check_dir
+from .logger import LOG
+from .helper_functions import check_dir
 
 
 class Exporter:
@@ -49,13 +49,13 @@ class Exporter:
             metadata: dictionary to export.
         """
 
-        _LOG.info("Exporting metadata ...")
+        LOG.info("Exporting metadata ...")
 
         export_format = self.config["output_format"].upper()
         if export_format not in _KNOWN_FORMATS:
-            _LOG.debug("Export format type: %s", export_format)
+            LOG.debug("Export format type: %s", export_format)
             raise RuntimeError("Unknown export format type.")
-        export_directory = _check_dir(
+        export_directory = check_dir(
             self.config["output_directory"], allow_existing=True
         )[0]
         export_file = export_directory / self.config["output_file"]
@@ -63,24 +63,24 @@ class Exporter:
         if export_file.exists():
             if export_file.is_file():
                 if self.config["overwrite"]:
-                    _LOG.warning(
+                    LOG.warning(
                         "Metadata output file exists: '%s', overwriting.",
                         str(export_file),
                     )
                 else:
-                    _LOG.debug("Metadata export file path: %s", str(export_file))
+                    LOG.debug("Metadata export file path: %s", str(export_file))
                     raise RuntimeError(
                         "Metadata output file exists; overwriting not allowed."
                     )
             else:
-                _LOG.debug("Metadata export file path: %s not a file", str(export_file))
+                LOG.debug("Metadata export file path: %s not a file", str(export_file))
                 raise RuntimeError(
                     "Conflicting path to metadata output file; cannot overwrite."
                 )
 
         _KNOWN_FORMATS[export_format](metadata, export_file)
 
-        _LOG.info("Done!")
+        LOG.info("Done!")
 
 
 def _export_json(json_object: dict, outfile: Path) -> None:
@@ -92,7 +92,7 @@ def _export_json(json_object: dict, outfile: Path) -> None:
         outfile: Path object to target file.
     """
 
-    _LOG.debug("   exporting JSON to file: %s", str(outfile))
+    LOG.debug("   exporting JSON to file: %s", str(outfile))
 
     with outfile.open("w") as f:
         dump(json_object, f, indent=4)

@@ -4,6 +4,18 @@
 
 Module containing collection of convenience functions internally used.
 
+exports:
+    check_dir: Checks string path to directory, if none exists in destination then creates new.
+    update_dict_with_parts: Inserts value in depth of nested dictionary using a sequence of keys to follow.
+    merge_dicts: Merges two different dictionary in depth.
+    filter_dict: Filters nested dictionary using sequence of keys to retrieve deep values.
+    deep_get_from_schema: Retrieves deep values from schema while skipping known container keys.
+    pattern_parts_match: Matches sequence of patterns to sequence of strings.
+    unpack_nested_value: Retrieves value from depth of nested single-width dictionary.
+    math_check: Check mathematical expression with possible variable name replacement.
+    filter_metadata: Filters metadata dictionary by matching patterns of sequences of keys.
+    add_info_from_schema: Retrieves information from schema and annotates metadata with it.
+
 Authors: Jose V., Matthias K.
 
 """
@@ -15,7 +27,7 @@ from copy import deepcopy
 from collections.abc import Iterable
 from typing import Optional, Any, Tuple
 
-from .logger import _LOG, _is_debug
+from .logger import LOG, is_debug
 
 
 # List of known property names in schema
@@ -27,7 +39,7 @@ _KNOWN_PROPERTIES = [
 ]
 
 
-def _check_dir(dir_path: str, allow_existing: bool = False) -> Tuple[Path, bool]:
+def check_dir(dir_path: str, allow_existing: bool = False) -> Tuple[Path, bool]:
     """
     Checks directory path.
     If a directory with the same name already exists then continue.
@@ -47,10 +59,10 @@ def _check_dir(dir_path: str, allow_existing: bool = False) -> Tuple[Path, bool]
     if str(path) != ".":
         if path.exists():
             if not allow_existing:
-                _LOG.debug("directory path: %s", str(path))
+                LOG.debug("directory path: %s", str(path))
                 raise RuntimeError("Directory already exists.")
             if not path.is_dir():
-                _LOG.debug("found path: %s", str(path))
+                LOG.debug("found path: %s", str(path))
                 raise NotADirectoryError("Incorrect path to directory.")
         else:
             path.mkdir(parents=True)
@@ -59,7 +71,7 @@ def _check_dir(dir_path: str, allow_existing: bool = False) -> Tuple[Path, bool]
     return path, False
 
 
-def _update_dict_with_parts(target_dict: dict, value: Any, parts: list) -> None:
+def update_dict_with_parts(target_dict: dict, value: Any, parts: list) -> None:
     """
     In place, deep dictionary update.
     Generates and dynamically fills the target dictionary tree following a key sequence.
@@ -76,8 +88,8 @@ def _update_dict_with_parts(target_dict: dict, value: Any, parts: list) -> None:
         if part not in relative_root:
             relative_root[part] = {}
         elif not isinstance(relative_root[part], dict):
-            if _is_debug():
-                _LOG.debug(
+            if is_debug():
+                LOG.debug(
                     "key: %s\nrelative root: %s",
                     part,
                     dumps(relative_root, indent=4, default=vars),
@@ -89,7 +101,7 @@ def _update_dict_with_parts(target_dict: dict, value: Any, parts: list) -> None:
     relative_root[parts[-1]] = value
 
 
-def _merge_dicts(dict1: dict, dict2: dict) -> dict:
+def merge_dicts(dict1: dict, dict2: dict) -> dict:
     """
     Recursively merges dictionaries going in depth for nested structures.
 
@@ -113,7 +125,7 @@ def _merge_dicts(dict1: dict, dict2: dict) -> dict:
             if isinstance(val1, type(val2)):
                 if isinstance(val1, Iterable):
                     if isinstance(val1, dict):
-                        merged_dict[key] = _merge_dicts(val1, val2)
+                        merged_dict[key] = merge_dicts(val1, val2)
                     elif isinstance(val1, list):
                         merged_dict[key] = val1 + val2
                     elif isinstance(val1, set):
@@ -123,7 +135,7 @@ def _merge_dicts(dict1: dict, dict2: dict) -> dict:
                     elif isinstance(val1, frozenset):
                         merged_dict[key] = frozenset(list(val1) + list(val2))
                     else:
-                        _LOG.debug("Unknown iterable type: %s", str(type(val1)))
+                        LOG.debug("Unknown iterable type: %s", str(type(val1)))
                         raise RuntimeError("Unknown Iterable type.")
                 else:
                     if val1 == val2:
@@ -131,7 +143,7 @@ def _merge_dicts(dict1: dict, dict2: dict) -> dict:
                     else:
                         merged_dict[key] = [val1, val2]
             else:
-                _LOG.debug(
+                LOG.debug(
                     "val1 type: %s, val2 type: %s", str(type(val1)), str(type(val2))
                 )
                 raise TypeError("Type mismatch while merge dictionaries.")
@@ -143,7 +155,7 @@ def _merge_dicts(dict1: dict, dict2: dict) -> dict:
     return merged_dict
 
 
-def _filter_dict(input_dict: dict, filter_keys: list, _level: int = 0) -> dict:
+def filter_dict(input_dict: dict, filter_keys: list, _level: int = 0) -> dict:
     """
     Recursively filters input dictionary by providing filtering keys.
     Keys can be exact or defined as regular expression.
@@ -164,13 +176,13 @@ def _filter_dict(input_dict: dict, filter_keys: list, _level: int = 0) -> dict:
         for k in input_dict:
             if fullmatch(filter_keys[_level], k):
                 if isinstance(input_dict[k], dict):
-                    new_dict[k] = _filter_dict(input_dict[k], filter_keys, _level + 1)
+                    new_dict[k] = filter_dict(input_dict[k], filter_keys, _level + 1)
                 else:
                     new_dict[k] = deepcopy(input_dict[k])
     return new_dict
 
 
-def _deep_get_from_schema(schema: dict, keys: list) -> Any:
+def deep_get_from_schema(schema: dict, keys: list) -> Any:
     """
     Fetches value located in depth of the schema.
     Uses a sequence of keys to navigate tree.
@@ -190,30 +202,30 @@ def _deep_get_from_schema(schema: dict, keys: list) -> Any:
         if key in schema:
             if key_count - 1 > 0:
                 keys.pop(0)
-                return _deep_get_from_schema(schema[key], keys)
+                return deep_get_from_schema(schema[key], keys)
             return schema[key]
 
         for k in schema:
             if k in _KNOWN_PROPERTIES:
                 try:
-                    return _deep_get_from_schema(schema[k], keys)
+                    return deep_get_from_schema(schema[k], keys)
                 except StopIteration:
                     pass
 
-        if _is_debug():
-            _LOG.debug("schema: %s", dumps(schema, indent=4, default=vars))
-            _LOG.debug("keys: %s", dumps(keys, indent=4, default=vars))
+        if is_debug():
+            LOG.debug("schema: %s", dumps(schema, indent=4, default=vars))
+            LOG.debug("keys: %s", dumps(keys, indent=4, default=vars))
         raise StopIteration(
             "Iterated through schema without finding corresponding keys."
         )
 
-    if _is_debug():
-        _LOG.debug("schema: %s", dumps(schema, indent=4, default=vars))
-        _LOG.debug("keys: %s", dumps(keys, indent=4, default=vars))
+    if is_debug():
+        LOG.debug("schema: %s", dumps(schema, indent=4, default=vars))
+        LOG.debug("keys: %s", dumps(keys, indent=4, default=vars))
     raise StopIteration("No key found for corresponding schema.")
 
 
-def _pattern_parts_match(
+def pattern_parts_match(
     pattern_parts: list, actual_parts: list, context: Optional[dict] = None
 ) -> bool:
     """
@@ -238,24 +250,22 @@ def _pattern_parts_match(
         if fullmatch(r"\{\w+\}", part) and context is not None:
             # !varname and regexp should always be in context in this case
             if "!varname" not in context or "regexp" not in context:
-                if _is_debug():
-                    _LOG.debug("context: %s", dumps(context, indent=4, default=vars))
+                if is_debug():
+                    LOG.debug("context: %s", dumps(context, indent=4, default=vars))
                 raise RuntimeError("Badly structured context for pattern matching.")
 
             # Match against same index element in file path
             if not fullmatch(
                 part.format(**{context["!varname"]: context["regexp"]}), actual_parts[i]
             ):
-                _LOG.debug(
+                LOG.debug(
                     "pattern: '%s' did not match against '%s'", part, actual_parts[i]
                 )
                 break
 
         # Else literal matching
         elif not fullmatch(part, actual_parts[i]):
-            _LOG.debug(
-                "pattern: '%s' did not match against '%s'", part, actual_parts[i]
-            )
+            LOG.debug("pattern: '%s' did not match against '%s'", part, actual_parts[i])
             break
 
     # Everything matched in the for loop i.e. no breakpoint reached
@@ -265,7 +275,7 @@ def _pattern_parts_match(
     return is_match
 
 
-def _unpack_nested_value(iterable: Any, level: Optional[int] = None) -> Any:
+def unpack_nested_value(iterable: Any, level: Optional[int] = None) -> Any:
     """
     Helper function to unpack any type of nested value
     i.e. unpacking a nested container where each nesting level contains a single value,
@@ -281,8 +291,8 @@ def _unpack_nested_value(iterable: Any, level: Optional[int] = None) -> Any:
 
     if not isinstance(iterable, Iterable):
         if level is not None and level > 0:
-            if _is_debug():
-                _LOG.debug(
+            if is_debug():
+                LOG.debug(
                     "iterable: %s\nlevel: %i",
                     dumps(iterable, indent=4, default=vars),
                     level,
@@ -291,8 +301,8 @@ def _unpack_nested_value(iterable: Any, level: Optional[int] = None) -> Any:
         return iterable
 
     if len(iterable) > 1 and (level is None or level > 0):
-        if _is_debug():
-            _LOG.debug(
+        if is_debug():
+            LOG.debug(
                 "iterable: %s\nlevel: %i",
                 dumps(iterable, indent=4, default=vars),
                 level,
@@ -306,11 +316,11 @@ def _unpack_nested_value(iterable: Any, level: Optional[int] = None) -> Any:
             return iterable
 
     if isinstance(iterable, dict):
-        return _unpack_nested_value(next(iter(iterable.values())), level)
-    return _unpack_nested_value(next(iter(iterable)), level)
+        return unpack_nested_value(next(iter(iterable.values())), level)
+    return unpack_nested_value(next(iter(iterable)), level)
 
 
-def _math_check(expression: str):
+def math_check(expression: str) -> Tuple[bool, set]:
     """
     Stack machine for checking basic math expressions.
     transition rules:
@@ -437,7 +447,7 @@ def _math_check(expression: str):
     return True, variables
 
 
-def _filter_metadata(metadata: dict, keys: list) -> dict:
+def filter_metadata(metadata: dict, keys: list) -> dict:
     """
     Filters parsed metadata by providing keys corresponding to metadata attributes.
     If metadata is a nested dictionary then keys can be shaped as UNIX paths,
@@ -453,18 +463,18 @@ def _filter_metadata(metadata: dict, keys: list) -> dict:
 
     new_dict = {}
     for k in keys:
-        _LOG.debug("Filtering key: %s", k)
-        new_dict = _merge_dicts(new_dict, _filter_dict(metadata, k.split("/")))
+        LOG.debug("Filtering key: %s", k)
+        new_dict = merge_dicts(new_dict, filter_dict(metadata, k.split("/")))
     return new_dict
 
 
-def _add_info_from_schema(
+def add_info_from_schema(
     metadata: dict,
     schema: dict,
     add_description: bool,
     add_type: bool,
     key_list: list = None,
-) -> list:
+) -> None:
     """
     Adds additional information from input schema to parsed metadata inplace.
 
@@ -484,18 +494,18 @@ def _add_info_from_schema(
     for key in keys:
         value = metadata[key]
         if isinstance(value, dict):
-            _add_info_from_schema(
+            add_info_from_schema(
                 value, schema, add_description, add_type, key_list + [key]
             )
         else:
             new_value = {"value": value}
             schema_entry = None
             try:
-                schema_entry = _deep_get_from_schema(schema, key_list + [key])
+                schema_entry = deep_get_from_schema(schema, key_list + [key])
             except StopIteration:
-                _LOG.warning("No schema entry found for metadata value: %s", key)
-                if _is_debug():
-                    _LOG.debug(
+                LOG.warning("No schema entry found for metadata value: %s", key)
+                if is_debug():
+                    LOG.debug(
                         "key: %s\nvalue: %s\nmetadata: %s\nschema: %s",
                         str(key),
                         str(value),

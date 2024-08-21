@@ -21,7 +21,7 @@ from .Exporter import Exporter
 from .Explorer import Explorer
 from .Formatter import Formatter
 
-from .logger import _LOG, _set_level, _is_debug
+from .logger import LOG, set_level, is_debug
 
 
 # Default configuration parameters for the Archivist class:
@@ -111,7 +111,7 @@ class Archivist:
 
         # Init logger object with verbose configuration
         if "verbose" in kwargs:
-            if _set_level(kwargs["verbose"]):
+            if set_level(kwargs["verbose"]):
                 self.config["verbose"] = kwargs["verbose"]
             key_list.remove("verbose")
             kwargs.pop("verbose", None)
@@ -123,13 +123,13 @@ class Archivist:
                     self.config[key] = value
                     key_list.remove(key)
                 else:
-                    _LOG.warning("Incorrect type for argument: %s, ignoring value", key)
+                    LOG.warning("Incorrect type for argument: %s, ignoring value", key)
             else:
-                _LOG.warning("Unused argument: %s", key)
+                LOG.warning("Unused argument: %s", key)
 
-        if _is_debug():
+        if is_debug():
             for key in key_list:
-                _LOG.debug(
+                LOG.debug(
                     "No argument found for: '%s' initializing by default: '%s'",
                     key,
                     str(self.config[key]),
@@ -186,13 +186,11 @@ class Archivist:
         if self.config["auto_cleanup"]:
             if self._cache["extraction"]:
                 root_extraction_path = self._cache["explored_dirs"][0]
-                _LOG.info(
-                    "Cleaning extraction directory: %s", str(root_extraction_path)
-                )
+                LOG.info("Cleaning extraction directory: %s", str(root_extraction_path))
                 try:
                     rmtree(root_extraction_path)
                 except OSError as e:
-                    _LOG.warning(
+                    LOG.warning(
                         "error cleaning %s: %s",
                         str(root_extraction_path),
                         e.message if hasattr(e, "message") else str(e),
@@ -201,17 +199,17 @@ class Archivist:
             # TODO: output meta files to specific directory such as to only invoke rmtree on it
             elif len(self._cache["meta_files"]) > 0:
                 for fp in self._cache["meta_files"]:
-                    _LOG.info("Cleaning meta file: %s", str(fp))
+                    LOG.info("Cleaning meta file: %s", str(fp))
                     try:
                         fp.unlink()
                     except FileNotFoundError as e:
-                        _LOG.warning(
+                        LOG.warning(
                             "error cleaning %s: %s",
                             str(fp),
                             e.message if hasattr(e, "message") else str(e),
                         )
             else:
-                _LOG.info("Nothing to clean.")
+                LOG.info("Nothing to clean.")
                 return
 
-            _LOG.info("Done!")
+            LOG.info("Done!")

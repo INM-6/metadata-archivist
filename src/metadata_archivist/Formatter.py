@@ -17,16 +17,16 @@ Authors: Jose V., Matthias K.
 from pathlib import Path
 from copy import deepcopy
 from json import load, dump, dumps
-from typing import Optional, List, Iterable, NoReturn, Union
+from typing import Optional, List, Iterable, NoReturn, Union, Tuple
 
 from .Parser import AParser
 
-from .logger import _LOG, _is_debug
+from .logger import LOG, is_debug
 from . import helper_classes as helpers
 from .helper_functions import (
-    _update_dict_with_parts,
-    _merge_dicts,
-    _pattern_parts_match,
+    update_dict_with_parts,
+    merge_dicts,
+    pattern_parts_match,
 )
 
 
@@ -94,7 +94,7 @@ class Formatter:
             config: Optional, dictionary containing formatter configuration.
         """
 
-        # Protected
+        # Wrapped attributes:
         # These attributes should only be modified through the add, update remove methods
         self._parsers = []
         self._input_file_patterns = []
@@ -112,20 +112,22 @@ class Formatter:
         else:
             self._use_schema = False
             self._schema = deepcopy(_DEFAULT_FORMATTER_SCHEMA)
+
+        # Internal attributes:
         # Attribute for SchemaInterpreter
         self._interpreter = None
 
         # Used for updating/removing parsers
         # Indexing is done storing a triplet with parsers, patterns, schema indexes
-        self._indexes = helpers._ParserIndexes()
+        self._indexes = helpers.ParserIndexes()
 
         # For parser result caching
-        self._cache = helpers._FormatterCache()
+        self._cache = helpers.FormatterCache()
 
         # Formatting rules
-        from .formatting_rules import _FORMATTING_RULES
+        from .formatting_rules import FORMATTING_RULES
 
-        self._rules = deepcopy(_FORMATTING_RULES)
+        self._rules = FORMATTING_RULES
 
         # Public
         self.config = config
@@ -225,7 +227,7 @@ class Formatter:
                 )
         else:
             if len(self.metadata) > 0:
-                _LOG.warning(
+                LOG.warning(
                     "Compiling available metadata after disabling lazy loading."
                 )
             self.compile_metadata()
@@ -243,7 +245,7 @@ class Formatter:
         if "$defs" not in self._schema:
             self._schema["$defs"] = {"node": {"properties": {"anyOf": []}}}
         elif not isinstance(self._schema["$defs"], dict):
-            _LOG.debug(
+            LOG.debug(
                 "$def property type: %s\nexpected type: %s",
                 str(type(self._schema["$defs"])),
                 str(dict),
@@ -253,7 +255,7 @@ class Formatter:
             )
 
         pid = parser.name
-        p_ref = parser._get_reference()
+        p_ref = parser.get_reference()
         self._schema["$defs"][pid] = parser.schema
 
         if "node" not in self._schema["$defs"]:
@@ -303,7 +305,7 @@ class Formatter:
         self._input_file_patterns[ifp_index] = parser.input_file_pattern
         scp_index = self._indexes.get_index(pid, "scp")
         self._schema["$defs"]["node"]["properties"]["anyOf"][scp_index] = {
-            "$ref": parser._get_reference()
+            "$ref": parser.get_reference()
         }
 
     def remove_parser(self, parser: AParser) -> None:
@@ -326,19 +328,23 @@ class Formatter:
         self._cache.drop(pid)
         parser._formatters.remove(self)
 
-    def get_parser(self, parser_name: str) -> AParser:
+    def get_parser(self, parser_name: str) -> Tuple[AParser, helpers.ParserCache]:
         """
         Retrieves parser from self contained list.
 
         Arguments:
             parser: AParser instance.
+
+        Returns:
+            Tuple of:
+                Parser instance and corresponding internal ParserCache.
         """
 
         for ex in self.parsers:
             if ex.name == parser_name:
-                return ex
-        _LOG.warning("No Parser with name: %s exist", parser_name)
-        return None
+                return ex, self._cache[parser_name]
+        LOG.warning("No Parser with name: %s exist", parser_name)
+        return None, None
 
     def parse_files(
         self,
@@ -360,7 +366,7 @@ class Formatter:
             list of lazy load cache file Paths (empty if lazy load disabled).
         """
 
-        _LOG.info("Parsing files ...")
+        LOG.info("Parsing files ...")
 
         to_parse = {}
         meta_files = []
@@ -368,21 +374,21 @@ class Formatter:
         for parser in self._parsers:
             pid = parser.name
             to_parse[pid] = []
-            _LOG.debug("    preparing parser: %s", pid)
+            LOG.debug("    preparing parser: %s", pid)
             for fp in file_paths:
                 pattern = parser.input_file_pattern.split("/")
                 pattern.reverse()
-                if _pattern_parts_match(pattern, list(reversed(fp.parts))):
+                if pattern_parts_match(pattern, list(reversed(fp.parts))):
                     to_parse[pid].append(fp)
 
         # TODO: Think about parallelization scheme with ProcessPoolExecutor
         for pid, sorted_paths in to_parse.items():
             for file_path in sorted_paths:
-                _LOG.debug("    parsing file: %s", str(file_path))
+                LOG.debug("    parsing file: %s", str(file_path))
                 # Get parser and parse metadata
                 pix = self._indexes.get_index(pid, "prs")
                 parser = self._parsers[pix]
-                metadata = parser._parse_file(file_path)
+                metadata = parser.run_parser(file_path)
 
                 if not self.config["lazy_load"]:
                     self._cache[pid].add(explored_path, file_path, metadata)
@@ -390,12 +396,12 @@ class Formatter:
                     entry = self._cache[pid].add(explored_path, file_path)
                     if entry.meta_path.exists():
                         if overwrite_meta_files:
-                            _LOG.warning(
+                            LOG.warning(
                                 "Meta file %s exists, overwriting.",
                                 str(entry.meta_path),
                             )
                         else:
-                            _LOG.debug("Meta file path: %s", str(entry.meta_path))
+                            LOG.debug("Meta file path: %s", str(entry.meta_path))
                             raise FileExistsError(
                                 "Unable to save parsed metadata; overwriting not allowed."
                             )
@@ -403,12 +409,12 @@ class Formatter:
                         dump(metadata, mp, indent=4)
                     meta_files.append(entry.meta_path)
 
-        _LOG.info("Done!")
+        LOG.info("Done!")
 
         return meta_files
 
     def _update_metadata_tree_with_schema(
-        self, interpreted_schema: helpers._SchemaEntry, branch: Optional[list] = None
+        self, interpreted_schema: helpers.SchemaEntry, branch: Optional[list] = None
     ) -> dict:
         """
         Recursively generate metadata file using interpreted_schema obtained with SchemaInterpreter.
@@ -436,7 +442,7 @@ class Formatter:
         for key, value in interpreted_schema.items():
 
             # Only process SchemaEntries
-            if isinstance(value, helpers._SchemaEntry):
+            if isinstance(value, helpers.SchemaEntry):
 
                 branch.append(key)
 
@@ -445,7 +451,7 @@ class Formatter:
                 # If current context contains regex information (children always inherit context)
                 # We merge all recursion results from children and return the resulting merge
                 if "useRegex" in context:
-                    tree = _merge_dicts(
+                    tree = merge_dicts(
                         tree, self._update_metadata_tree_with_schema(value, branch)
                     )
 
@@ -464,8 +470,8 @@ class Formatter:
 
                         # Check the length of the recursion result and and existence of node
                         if len(recursion_result) > 1 or node not in recursion_result:
-                            if _is_debug():
-                                _LOG.debug(
+                            if is_debug():
+                                LOG.debug(
                                     "current metadata tree: %s\nrecursion results: %s",
                                     dumps(tree, indent=4, default=vars),
                                     dumps(recursion_result, indent=4, default=vars),
@@ -486,8 +492,8 @@ class Formatter:
 
                     # If the break is never reached an error has ocurred
                     else:
-                        if _is_debug():
-                            _LOG.debug(
+                        if is_debug():
+                            LOG.debug(
                                 "current metadata tree: %s\nrecursion results: %s",
                                 dumps(tree, indent=4, default=vars),
                                 dumps(recursion_result, indent=4, default=vars),
@@ -509,11 +515,11 @@ class Formatter:
                 )
             # Nodes should not be of a different type than SchemaEntry
             else:
-                _LOG.debug(
+                LOG.debug(
                     "entry key: %s\nvalue type: %s\nexpected type: %s",
                     key,
                     str(type(value)),
-                    str(helpers._SchemaEntry),
+                    str(helpers.SchemaEntry),
                 )
                 raise TypeError("Unexpected value in interpreted schema.")
 
@@ -527,28 +533,28 @@ class Formatter:
             unified metadata dictionary, with default structure or custom schema structure.
         """
 
-        _LOG.info("Compiling metadata ...")
+        LOG.info("Compiling metadata ...")
 
         if self._cache.is_empty():
             raise RuntimeError("Metadata needs to be parsed before compiling.")
 
         if self._use_schema:
-            _LOG.debug("    using schema structure ...")
-            self._interpreter = helpers._SchemaInterpreter(self.schema)
+            LOG.debug("    using schema structure ...")
+            self._interpreter = helpers.SchemaInterpreter(self.schema)
             self.metadata = self._update_metadata_tree_with_schema(
                 self._interpreter.generate()
             )
 
         else:
-            _LOG.debug("    using file path structure ...")
+            LOG.debug("    using file path structure ...")
             for parser_cache in self._cache:
                 for cache_entry in parser_cache:
-                    _update_dict_with_parts(
+                    update_dict_with_parts(
                         self.metadata,
                         cache_entry.load_metadata(),
                         list(cache_entry.rel_path.parts),
                     )
-        _LOG.info("Done!")
+        LOG.info("Done!")
 
         return self.metadata
 
@@ -581,16 +587,16 @@ def _combine(
         if formatter1.config != formatter2.config:
             for key, value in formatter1.config:
                 if key not in formatter2.config:
-                    if _is_debug():
-                        _LOG.debug(
+                    if is_debug():
+                        LOG.debug(
                             "formatter1.config: %s\nformatter2.config: %s",
                             dumps(formatter1.config, indent=4, default=vars),
                             dumps(formatter2.config, indent=4, default=vars),
                         )
                     raise KeyError("key mismatch in Formatter.combine.")
                 if value != formatter2.config[key]:
-                    if _is_debug():
-                        _LOG.debug(
+                    if is_debug():
+                        LOG.debug(
                             "formatter1.config: %s\nformatter2.config: %s",
                             dumps(formatter1.config, indent=4, default=vars),
                             dumps(formatter2.config, indent=4, default=vars),

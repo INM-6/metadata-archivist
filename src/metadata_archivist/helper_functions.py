@@ -29,7 +29,6 @@ from typing import Optional, Any, Tuple
 
 from metadata_archivist.logger import LOG, is_debug
 
-
 # List of known property names in schema
 _KNOWN_PROPERTIES = [
     "properties",

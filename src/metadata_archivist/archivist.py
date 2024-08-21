@@ -22,7 +22,6 @@ from metadata_archivist.explorer import Explorer
 from metadata_archivist.formatter import Formatter
 from metadata_archivist.logger import LOG, set_level, is_debug
 
-
 # Default configuration parameters for the Archivist class:
 # "extraction_directory": string path to extraction directory (not used if exploring a directory). Default "." .
 # "output_directory": string path to output directory. Default "." .

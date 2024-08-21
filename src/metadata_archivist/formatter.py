@@ -22,6 +22,7 @@ from typing import Optional, List, Iterable, NoReturn, Union, Tuple
 from metadata_archivist.parser import AParser
 from metadata_archivist.logger import LOG, is_debug
 from metadata_archivist import helper_classes as helpers
+from metadata_archivist.formatting_rules import FORMATTING_RULES
 from metadata_archivist.helper_functions import (
     update_dict_with_parts,
     merge_dicts,
@@ -122,11 +123,6 @@ class Formatter:
 
         # For parser result caching
         self._cache = helpers.FormatterCache()
-
-        # Formatting rules
-        from metadata_archivist.formatting_rules import FORMATTING_RULES
-
-        self._rules = FORMATTING_RULES
 
         # Public
         self.config = config
@@ -284,7 +280,7 @@ class Formatter:
         self._indexes.set_index(pid, "ifp", len(self._input_file_patterns))
         self._input_file_patterns.append(parser.input_file_pattern)
         self._extend_json_schema(parser)
-        parser._formatters.append(self)
+        parser.register_formatter(self)
 
     def update_parser(self, parser: AParser) -> None:
         """
@@ -325,7 +321,7 @@ class Formatter:
         self._schema["$defs"]["node"]["properties"]["anyOf"].pop(indexes["scp"], None)
         self._schema["$defs"].pop(pid, None)
         self._cache.drop(pid)
-        parser._formatters.remove(self)
+        parser.remove_formatter(self)
 
     def get_parser(self, parser_name: str) -> Tuple[AParser, helpers.ParserCache]:
         """
@@ -508,8 +504,8 @@ class Formatter:
                 branch.pop()
 
             # If entry corresponds to an parser reference
-            elif key in self._rules:
-                tree = self._rules[key](
+            elif key in FORMATTING_RULES:
+                tree = FORMATTING_RULES[key](
                     self, interpreted_schema, branch, value, **deepcopy(self.config)
                 )
             # Nodes should not be of a different type than SchemaEntry

@@ -13,10 +13,14 @@ Authors: Jose V., Matthias K.
 """
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 from abc import ABC, abstractmethod
 
 from metadata_archivist.logger import LOG
 from metadata_archivist.helper_functions import pattern_parts_match
+
+if TYPE_CHECKING:
+    from metadata_archivist.formatter import Formatter
 
 # Try to load jsonschema package components for validation
 # In case of failure, validation is disabled
@@ -52,6 +56,9 @@ class AParser(ABC):
         validate_output: control boolean to enable parsing output validation against self contained schema.
 
     Methods:
+        register_formatter: method to add a Formatter instance to known list. Used for two way instance updating.
+        remove_formatter: method to remove a Formatter instance from known list.
+        run_parsing: wrapper around parse method for additional checks and automated validation.
         parse: Abstract method for file parsing, user defined.
         run_validation: If jsonschema package is available, validates self contained parsed metadata against self contained schema.
     """
@@ -127,10 +134,26 @@ class AParser(ABC):
         self._add_to_formatters()
 
     def get_reference(self) -> str:
-        """
-        Returns unique reference for Parser.
-        """
+        """Returns unique reference for Parser."""
         return f"#/$defs/{self._name}"  # str(self.__hash__()) for more complex cases
+
+    def register_formatter(self, formatter: "Formatter") -> None:
+        """
+        Appends a formatter to self contained formatters list.
+
+        Arguments:
+            formatter: Formatter instance to append.
+        """
+        self._formatters.append(formatter)
+
+    def remove_formatter(self, formatter: "Formatter") -> None:
+        """
+        Removes a formatter from self contained formatters list.
+
+        Arguments:
+            formatter: Formatter instance to remove.
+        """
+        self._formatters.remove(formatter)
 
     def _add_to_formatters(self) -> None:
         """Reverse add of related parsers."""

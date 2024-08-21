@@ -17,12 +17,13 @@ Authors: Jose V., Matthias K.
 """
 
 from pathlib import Path
-from copy import deepcopy
 from json import load, dumps
 from typing import Optional, Dict, Union, Any
 from collections.abc import Iterable, Iterator, ItemsView
 
 from metadata_archivist.logger import LOG, is_debug
+from metadata_archivist.helper_functions import merge_dicts
+from metadata_archivist.interpretation_rules import INTERPRETATION_RULES
 
 
 class CacheEntry:
@@ -352,6 +353,7 @@ class SchemaEntry:
     Methods:
         items: returns key value pair item view of entry content.
         is_empty: returns True is entry content is empty.
+        inherit: returns a new instance of SchemaEntry with extended attributes.
     """
 
     def __init__(
@@ -393,6 +395,16 @@ class SchemaEntry:
     def is_empty(self) -> bool:
         """Entry empty content test."""
         return len(self._content) == 0
+
+    def inherit(
+        self, key: str, key_path: Optional[list], context: Optional[dict]
+    ) -> "SchemaEntry":
+        """Instance inheritance function with attribute extension."""
+        return SchemaEntry(
+            key=key,
+            key_path=self.key_path + key_path,
+            context=merge_dicts(context, self.context),
+        )
 
 
 class SchemaInterpreter:
@@ -442,11 +454,6 @@ class SchemaInterpreter:
         self.schema = schema
         self.structure = SchemaEntry()
 
-        # We load INTERPRETATION_RULES directly in instance to avoid circular importing issues
-        from metadata_archivist.interpretation_rules import INTERPRETATION_RULES
-
-        self.rules = INTERPRETATION_RULES
-
     def interpret_schema(
         self,
         properties: dict,
@@ -494,7 +501,7 @@ class SchemaInterpreter:
 
             # If the key is known as an interpretation rule
             # call the function mapped into the INTERPRETATION_RULE dictionary
-            if key in self.rules:
+            if key in INTERPRETATION_RULES:
                 # This error is only raised if an interpretation rule is found at root of schema properties
                 # rules must be defined in individual items of the properties, hence a parent key should
                 # always be present.
@@ -505,7 +512,7 @@ class SchemaInterpreter:
                             dumps(_relative_root, indent=4, default=vars),
                         )
                     raise RuntimeError("Cannot interpret rule without parent key.")
-                _relative_root = self.rules[key](
+                _relative_root = INTERPRETATION_RULES[key](
                     self, val, key, _parent_key, _relative_root
                 )
 
@@ -515,10 +522,10 @@ class SchemaInterpreter:
                     _relative_root[key] = self.interpret_schema(
                         val,
                         key,
-                        SchemaEntry(
+                        _relative_root.inherit(
                             key=key,
-                            key_path=_relative_root.key_path + [key],
-                            context=deepcopy(_relative_root.context),
+                            key_path=[key],
+                            context={},
                         ),
                     )
 

@@ -22,7 +22,6 @@ from tarfile import is_tarfile, open as t_open
 from metadata_archivist.logger import LOG
 from metadata_archivist.helper_functions import pattern_parts_match, check_dir
 
-
 # Accepted archive file formats
 _ACCEPTED_FORMATS = ["tgz", "tar", "tar.gz"]
 

@@ -29,13 +29,13 @@ Authors: Jose V., Matthias K.
 
 from re import sub
 from json import dumps
-from copy import deepcopy
-from typing import Optional, Union
+from typing import Optional, Union, TYPE_CHECKING
 
 from metadata_archivist.logger import LOG, is_debug
-from metadata_archivist.helper_classes import SchemaInterpreter, SchemaEntry
 from metadata_archivist.helper_functions import math_check
 
+if TYPE_CHECKING:
+    from metadata_archivist.helper_classes import SchemaInterpreter, SchemaEntry
 
 # Constants for schema specific/special values to be considered when parsing.
 _KNOWN_REFS = [
@@ -44,23 +44,23 @@ _KNOWN_REFS = [
 
 
 def _interpret_simple_property_rule(
-    interpreter: SchemaInterpreter,
+    interpreter: "SchemaInterpreter",
     prop_val: dict,
     prop_key: str,
     parent_key: str,
-    entry: SchemaEntry,
-) -> SchemaEntry:
+    entry: "SchemaEntry",
+) -> "SchemaEntry":
     # Known simple properties return recursion results without branching
     return interpreter.interpret_schema(prop_val, parent_key, entry)
 
 
 def _interpret_pattern_property_rule(
-    interpreter: SchemaInterpreter,
+    interpreter: "SchemaInterpreter",
     prop_val: dict,
     prop_key: str,
     parent_key: str,
-    entry: SchemaEntry,
-) -> SchemaEntry:
+    entry: "SchemaEntry",
+) -> "SchemaEntry":
     # We create a regex context and recurse over the contents of the property.
     entry.context.update({"useRegex": True})
 
@@ -68,12 +68,12 @@ def _interpret_pattern_property_rule(
 
 
 def _interpret_parsing_directive_rule(
-    interpreter: SchemaInterpreter,
+    interpreter: "SchemaInterpreter",
     prop_val: Union[str, dict],
     prop_key: str,
     parent_key: str,
-    entry: SchemaEntry,
-) -> SchemaEntry:
+    entry: "SchemaEntry",
+) -> "SchemaEntry":
     # We create an !parsing context but keep on with current recursion level
     # Contents of this dictionary are not supposed to be handled by the interpreter.
     entry.context.update({prop_key: prop_val})
@@ -82,12 +82,12 @@ def _interpret_parsing_directive_rule(
 
 
 def _interpret_varname_directive_rule(
-    interpreter: SchemaInterpreter,
+    interpreter: "SchemaInterpreter",
     prop_val: dict,
     prop_key: str,
     parent_key: str,
-    entry: SchemaEntry,
-) -> SchemaEntry:
+    entry: "SchemaEntry",
+) -> "SchemaEntry":
     # Check if regex context is present in current entry
     if "useRegex" not in entry.context:
         if is_debug():
@@ -103,12 +103,12 @@ def _interpret_varname_directive_rule(
 
 
 def _interpret_reference_rule(
-    interpreter: SchemaInterpreter,
+    interpreter: "SchemaInterpreter",
     prop_val: dict,
     prop_key: str,
     parent_key: str,
-    entry: SchemaEntry,
-) -> SchemaEntry:
+    entry: "SchemaEntry",
+) -> "SchemaEntry":
     # Check if reference is well formed against knowledge base
     if not any(prop_val.startswith(ss) for ss in _KNOWN_REFS):
         if is_debug():
@@ -129,8 +129,8 @@ def _interpret_reference_rule(
 
 
 def _interpret_refs(
-    definitions: dict, prop_val: str, entry: SchemaEntry
-) -> SchemaEntry:
+    definitions: dict, prop_val: str, entry: "SchemaEntry"
+) -> "SchemaEntry":
     """
     Auxiliary function to check reference to Parser.
 
@@ -169,7 +169,7 @@ def _interpret_refs(
 
 
 def __interpret_sub_schema(
-    sub_schema: dict, entry: SchemaEntry, filters: Optional[list] = None
+    sub_schema: dict, entry: "SchemaEntry", filters: Optional[list] = None
 ) -> list:
     """
     WIP
@@ -194,12 +194,12 @@ def __interpret_sub_schema(
 
 
 def _interpret_calculate_directive_rule(
-    interpreter: SchemaInterpreter,
+    interpreter: "SchemaInterpreter",
     prop_val: dict,
     prop_key: str,
     parent_key: str,
-    entry: SchemaEntry,
-) -> SchemaEntry:
+    entry: "SchemaEntry",
+) -> "SchemaEntry":
     # Calculates simple math expressions using values from parsers.
     # Requires referenced parsers to return numerical values.
     # references can be supplemented with !parsing directives to properly select value.
@@ -264,10 +264,10 @@ def _interpret_calculate_directive_rule(
             )
 
         # We create a SchemaEntry in the context to be specially handled by the Formatter
-        new_entry = SchemaEntry(
+        new_entry = entry.inherit(
             key=prop_key,
-            key_path=deepcopy(entry.key_path),
-            context=deepcopy(entry.context),
+            key_path=[],
+            context={},
         )
 
         if "!parsing" in value:

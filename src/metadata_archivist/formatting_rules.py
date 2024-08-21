@@ -30,9 +30,8 @@ Authors: Jose V., Matthias K.
 """
 
 from json import dumps
-from typing import Union
+from typing import Union, TYPE_CHECKING
 
-from metadata_archivist.formatter import Formatter
 from metadata_archivist.logger import LOG, is_debug
 from metadata_archivist.helper_classes import SchemaEntry
 from metadata_archivist.helper_functions import (
@@ -43,9 +42,12 @@ from metadata_archivist.helper_functions import (
     add_info_from_schema,
 )
 
+if TYPE_CHECKING:
+    from metadata_archivist.formatter import Formatter
+
 
 def _format_parser_id_rule(
-    formatter: Formatter,
+    formatter: "Formatter",
     interpreted_schema: SchemaEntry,
     branch: list,
     value: str,
@@ -220,7 +222,7 @@ def _format_parser_id_rule(
 
 
 def _format_calculate_rule(
-    formatter: Formatter,
+    formatter: "Formatter",
     interpreted_schema: SchemaEntry,
     branch: list,
     value: dict,

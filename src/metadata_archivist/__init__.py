@@ -19,13 +19,7 @@ Authors: Matthias K., Jose V.
 
 """
 
-__all__ = [
-    "formatter",
-    "parser",
-    "explorer",
-    "exporter",
-    "archivist"
-]
+__all__ = ["formatter", "parser", "explorer", "exporter", "archivist"]
 
 from metadata_archivist.formatter import Formatter
 from metadata_archivist.parser import AParser

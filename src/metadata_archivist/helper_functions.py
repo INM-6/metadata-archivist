@@ -27,7 +27,7 @@ from copy import deepcopy
 from collections.abc import Iterable
 from typing import Optional, Any, Tuple
 
-from .logger import LOG, is_debug
+from metadata_archivist.logger import LOG, is_debug
 
 
 # List of known property names in schema

@@ -19,10 +19,10 @@ from copy import deepcopy
 from json import load, dump, dumps
 from typing import Optional, List, Iterable, NoReturn, Union, Tuple
 
-from .parser import AParser
-from .logger import LOG, is_debug
-from . import helper_classes as helpers
-from .helper_functions import (
+from metadata_archivist.parser import AParser
+from metadata_archivist.logger import LOG, is_debug
+from metadata_archivist import helper_classes as helpers
+from metadata_archivist.helper_functions import (
     update_dict_with_parts,
     merge_dicts,
     pattern_parts_match,
@@ -124,7 +124,7 @@ class Formatter:
         self._cache = helpers.FormatterCache()
 
         # Formatting rules
-        from .formatting_rules import FORMATTING_RULES
+        from metadata_archivist.formatting_rules import FORMATTING_RULES
 
         self._rules = FORMATTING_RULES
 

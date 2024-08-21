@@ -32,9 +32,9 @@ from json import dumps
 from copy import deepcopy
 from typing import Optional, Union
 
-from .logger import LOG, is_debug
-from .helper_classes import SchemaInterpreter, SchemaEntry
-from .helper_functions import math_check
+from metadata_archivist.logger import LOG, is_debug
+from metadata_archivist.helper_classes import SchemaInterpreter, SchemaEntry
+from metadata_archivist.helper_functions import math_check
 
 
 # Constants for schema specific/special values to be considered when parsing.

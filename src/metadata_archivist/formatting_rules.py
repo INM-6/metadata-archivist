@@ -32,10 +32,10 @@ Authors: Jose V., Matthias K.
 from json import dumps
 from typing import Union
 
-from .formatter import Formatter
-from .logger import LOG, is_debug
-from .helper_classes import SchemaEntry
-from .helper_functions import (
+from metadata_archivist.formatter import Formatter
+from metadata_archivist.logger import LOG, is_debug
+from metadata_archivist.helper_classes import SchemaEntry
+from metadata_archivist.helper_functions import (
     pattern_parts_match,
     update_dict_with_parts,
     unpack_nested_value,

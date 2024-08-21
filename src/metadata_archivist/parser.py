@@ -15,8 +15,8 @@ Authors: Jose V., Matthias K.
 from pathlib import Path
 from abc import ABC, abstractmethod
 
-from .logger import LOG
-from .helper_functions import pattern_parts_match
+from metadata_archivist.logger import LOG
+from metadata_archivist.helper_functions import pattern_parts_match
 
 # Try to load jsonschema package components for validation
 # In case of failure, validation is disabled

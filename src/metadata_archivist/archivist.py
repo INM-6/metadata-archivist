@@ -16,12 +16,11 @@ from shutil import rmtree
 from copy import deepcopy
 from typing import Union, Iterable, Optional
 
-from .parser import AParser
-from .exporter import Exporter
-from .explorer import Explorer
-from .formatter import Formatter
-
-from .logger import LOG, set_level, is_debug
+from metadata_archivist.parser import AParser
+from metadata_archivist.exporter import Exporter
+from metadata_archivist.explorer import Explorer
+from metadata_archivist.formatter import Formatter
+from metadata_archivist.logger import LOG, set_level, is_debug
 
 
 # Default configuration parameters for the Archivist class:

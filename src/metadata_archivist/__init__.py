@@ -19,8 +19,16 @@ Authors: Matthias K., Jose V.
 
 """
 
-from .formatter import Formatter
-from .parser import AParser
-from .explorer import Explorer
-from .exporter import Exporter
-from .archivist import Archivist, DEFAULT_CONFIG
+__all__ = [
+    "formatter",
+    "parser",
+    "explorer",
+    "exporter",
+    "archivist"
+]
+
+from metadata_archivist.formatter import Formatter
+from metadata_archivist.parser import AParser
+from metadata_archivist.explorer import Explorer
+from metadata_archivist.exporter import Exporter
+from metadata_archivist.archivist import Archivist, DEFAULT_CONFIG

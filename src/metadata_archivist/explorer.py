@@ -19,8 +19,8 @@ from collections.abc import Callable
 from typing import List, Tuple, Union
 from tarfile import is_tarfile, open as t_open
 
-from .logger import LOG
-from .helper_functions import pattern_parts_match, check_dir
+from metadata_archivist.logger import LOG
+from metadata_archivist.helper_functions import pattern_parts_match, check_dir
 
 
 # Accepted archive file formats

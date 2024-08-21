@@ -15,8 +15,8 @@ Authors: Jose V., Matthias K.
 from json import dump
 from pathlib import Path
 
-from .logger import LOG
-from .helper_functions import check_dir
+from metadata_archivist.logger import LOG
+from metadata_archivist.helper_functions import check_dir
 
 
 class Exporter:

@@ -22,7 +22,7 @@ from json import load, dumps
 from typing import Optional, Dict, Union, Any
 from collections.abc import Iterable, Iterator, ItemsView
 
-from .logger import LOG, is_debug
+from metadata_archivist.logger import LOG, is_debug
 
 
 class CacheEntry:
@@ -443,7 +443,7 @@ class SchemaInterpreter:
         self.structure = SchemaEntry()
 
         # We load INTERPRETATION_RULES directly in instance to avoid circular importing issues
-        from .interpretation_rules import INTERPRETATION_RULES
+        from metadata_archivist.interpretation_rules import INTERPRETATION_RULES
 
         self.rules = INTERPRETATION_RULES
 

@@ -17,13 +17,13 @@ from functools import partial
 from zipfile import is_zipfile
 from collections.abc import Callable
 from typing import List, Tuple, Union
-from tarfile import is_tarfile, open as t_open
+from tarfile import is_tarfile, TarFile, open as t_open
 
 from metadata_archivist.logger import LOG
 from metadata_archivist.helper_functions import pattern_parts_match, check_dir
 
 # Accepted archive file formats
-_ACCEPTED_FORMATS = ["tgz", "tar", "tar.gz"]
+_ACCEPTED_FORMATS = list(TarFile.OPEN_METH.keys()) + ["tgz", "txz", "tbz", "tbz2"]
 
 
 class Explorer:

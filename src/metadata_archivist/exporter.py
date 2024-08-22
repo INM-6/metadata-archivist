@@ -12,8 +12,6 @@ Authors: Jose V., Matthias K.
 
 """
 
-from typing import Callable
-
 from metadata_archivist.logger import LOG
 from metadata_archivist.helper_functions import check_dir
 from metadata_archivist.export_rules import EXPORT_RULES
@@ -23,33 +21,12 @@ class Exporter:
     """
     Convenience class for handling different export formats.
 
-    Class attributes:
-        RULES: dictionary containing export rules. Used for registering new rules too.
-
-    Instance attributes:
+    Attributes:
         config: Dictionary containing configuration parameters.
 
     Methods:
         export: exporting procedure corresponding to output format in configuration.
-        register_rule: method to add new rule to RULES dictionary. All rules should have same signature.
     """
-
-    RULES = EXPORT_RULES
-
-    @classmethod
-    def register_rule(cls, format_name: str, rule: Callable) -> None:
-        """
-        Class method to register new rules in RULES dictionary.
-
-        Arguments:
-            format_name: string name of format to export.
-            rule: callable rule to export to new format.
-        """
-
-        if format_name in cls.RULES:
-            LOG.warning("Replacing current export rule for %s", format_name)
-
-        cls.RULES[format_name] = rule
 
     def __init__(self, config: dict) -> None:
         """
@@ -73,7 +50,7 @@ class Exporter:
         LOG.info("Exporting metadata ...")
 
         export_format = self.config["output_format"].upper()
-        if export_format not in Exporter.RULES:
+        if export_format not in EXPORT_RULES:
             LOG.debug("Export format type: %s", export_format)
             raise RuntimeError("Unknown export format type.")
         export_directory = check_dir(
@@ -99,6 +76,6 @@ class Exporter:
                     "Conflicting path to metadata output file; cannot overwrite."
                 )
 
-        Exporter.RULES[export_format](metadata, export_file)
+        EXPORT_RULES[export_format](metadata, export_file)
 
         LOG.info("Done!")

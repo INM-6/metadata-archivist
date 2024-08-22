@@ -22,6 +22,7 @@ Authors: Jose V., Matthias K.
 """
 
 from pathlib import Path
+from typing import Callable
 from json import dump as j_dump
 from pickle import dump as p_dump, HIGHEST_PROTOCOL
 
@@ -86,3 +87,18 @@ EXPORT_RULES = {
     "PICKLE": _export_pickle,
     "YAML": _export_yaml,
 }
+
+
+def register_export_rule(format_name: str, rule: Callable) -> None:
+    """
+    Class method to register new rules in RULES dictionary.
+
+    Arguments:
+        format_name: string name of format to export.
+        rule: callable rule to export to new format.
+    """
+
+    if format_name in EXPORT_RULES:
+        raise KeyError("Export rule already exists")
+
+    EXPORT_RULES[format_name] = rule

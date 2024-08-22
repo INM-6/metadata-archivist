@@ -214,7 +214,9 @@ class Formatter:
 
             encoding_key = self.config["encoding_key"]
             if encoding_key is None:
-                self._encoding_key = sha3_256(p_dumps(self.config, protocol=HIGHEST_PROTOCOL)).digest()
+                self._encoding_key = sha3_256(
+                    p_dumps(self.config, protocol=HIGHEST_PROTOCOL)
+                ).digest()
 
             elif isinstance(encoding_key, bytes):
                 self._encoding_key = encoding_key
@@ -224,9 +226,9 @@ class Formatter:
                     self._encoding_key = f.read()
 
             else:
-                LOG.debug("config encoding key value: %s", str(encoding_key)) 
+                LOG.debug("config encoding key value: %s", str(encoding_key))
                 raise ValueError("No appropriate encoding key could be generated.")
-            
+
         return self._encoding_key
 
     def export_schema(self) -> dict:
@@ -421,7 +423,11 @@ class Formatter:
                     self._cache[pid].add(explored_path, file_path, metadata)
                 else:
                     entry = self._cache[pid].add(explored_path, file_path)
-                    entry.save_metadata(metadata, self._encoding_key, overwrite=self.config.get("overwrite", True))
+                    entry.save_metadata(
+                        metadata,
+                        self._encoding_key,
+                        overwrite=self.config.get("overwrite", True),
+                    )
                     meta_files.append(entry.meta_path)
 
         LOG.info("Done!")

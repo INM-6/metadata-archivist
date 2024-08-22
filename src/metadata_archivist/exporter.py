@@ -48,7 +48,7 @@ class Exporter:
 
         if format_name in cls.RULES:
             LOG.warning("Replacing current export rule for %s", format_name)
-        
+
         cls.RULES[format_name] = rule
 
     def __init__(self, config: dict) -> None:

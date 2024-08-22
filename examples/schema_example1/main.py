@@ -54,7 +54,7 @@ if __name__ == "__main__":
         output_file="metadata.json",
         overwrite=True,
         auto_cleanup=True,
-        verbose=args.verbosity,
+        verbosity=args.verbosity,
     )
 
     arch.parse()

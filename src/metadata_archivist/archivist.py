@@ -29,7 +29,7 @@ from metadata_archivist.logger import LOG, set_level, is_debug
 # "lazy_load": control boolean to enable parser lazy loading. Needs compilation after parsing. Default False .
 # "overwrite": control boolean to allow overwriting existing metadata file. Default True .
 # "auto_cleanup": control boolean to clean up (delete extracted files and parsed files if lazy loading) after generating metadata. Default True .
-# "verbose": string value of verbosity level. Default "info" .
+# "verbosity": string value of verbosity level. Default "info" .
 # "add_description": control boolean to add schema description attributes to resulting metadata. Default True .
 # "add_type": control boolean to add schema type attributes to resulting metadata. Default False .
 # "output_format": "string value of metadata file output format. Default "JSON" .
@@ -41,7 +41,7 @@ DEFAULT_CONFIG = {
     "lazy_load": False,
     "overwrite": True,
     "auto_cleanup": True,
-    "verbose": "info",
+    "verbosity": "info",
     "add_description": False,
     "add_type": False,
     "output_format": "JSON",
@@ -110,11 +110,11 @@ class Archivist:
         key_list = list(self.config.keys())
 
         # Init logger object with verbose configuration
-        if "verbose" in kwargs:
-            if set_level(kwargs["verbose"]):
-                self.config["verbose"] = kwargs["verbose"]
-            key_list.remove("verbose")
-            kwargs.pop("verbose", None)
+        if "verbosity" in kwargs:
+            if set_level(kwargs["verbosity"]):
+                self.config["verbosity"] = kwargs["verbosity"]
+            key_list.remove("verbosity")
+            kwargs.pop("verbosity", None)
 
         # Init rest of config params
         for key, value in kwargs.items():

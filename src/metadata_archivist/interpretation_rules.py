@@ -288,8 +288,6 @@ def _interpret_calculate_directive_rule(
 
 INTERPRETATION_RULES = {
     "properties": _interpret_simple_property_rule,
-    "unevaluatedProperties": _interpret_simple_property_rule,
-    "additionalProperties": _interpret_simple_property_rule,
     "patternProperties": _interpret_pattern_property_rule,
     "!parsing": _interpret_parsing_directive_rule,
     "$ref": _interpret_reference_rule,

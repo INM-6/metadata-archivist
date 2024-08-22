@@ -30,6 +30,25 @@ from metadata_archivist.helper_functions import merge_dicts
 from metadata_archivist.interpretation_rules import INTERPRETATION_RULES
 
 
+# List of ignored JSON schema iterable keys
+_IGNORED_KEYWORDS = [
+    "additionalProperties",
+    "unevaluatedProperties",
+    "required",
+    "dependentRequired",
+    "dependentSchemas",
+    "propertyNames",
+    "if",
+    "then",
+    "else",
+    "enum",
+    "allOf",
+    "anyOf",
+    "oneOf",
+    "not",
+]
+
+
 class CacheEntry:
     """
     Convenience class for storing parsing results.
@@ -478,17 +497,17 @@ class SchemaInterpreter:
             LOG.debug(
                 "schema type: %s, expected type: %s", str(type(schema)), str(dict)
             )
-            raise RuntimeError("Incorrect schema used for iterator.")
+            raise TypeError("Incorrect schema used for iterator.")
         if "properties" not in schema or not isinstance(schema["properties"], dict):
             if is_debug():
                 LOG.debug("schema: %s", dumps(schema, indent=4, default=vars))
-            raise RuntimeError(
+            raise ValueError(
                 "Incorrect schema structure, root is expected to contain properties dictionary."
             )
         if "$defs" not in schema or not isinstance(schema["$defs"], dict):
             if is_debug():
                 LOG.debug("schema: %s", dumps(schema, indent=4, default=vars))
-            raise RuntimeError(
+            raise ValueError(
                 "Incorrect schema structure, root is expected to contain $defs dictionary."
             )
 
@@ -505,7 +524,7 @@ class SchemaInterpreter:
         Recursive method to explore JSON schema.
         Following the technical assumptions made (cf. README.md/SchemaInterpreter),
         only the properties at the root of the schema are interpreted (recursively so),
-        items of the property are of type key[str] -> value[dict|str],
+        items of the property are of type key[str] -> value[dict|literal],
         any other type is currently ignored as NotImplemented feature.
         When interpreting we generate a SchemaEntry with nested tree structure.
 
@@ -515,7 +534,7 @@ class SchemaInterpreter:
         without creating a new branch.
         If the dictionary is a special property then: either it is a composite directive
         e.g. !parsing in which case context is added then the current recursion will
-        continue until arriving at a leaf (str) and leaf processing is in charge of using
+        continue until arriving at a leaf (literal) and leaf processing is in charge of using
         the enriched entry. Otherwise, the property indicates a new recursion with additional
         context e.g. patternProperties indicate a new recursion with regular expression file
         matching. However the no new branch is created and the recursion results are added to
@@ -540,9 +559,13 @@ class SchemaInterpreter:
         # For all the properties in the given schema
         for key, val in properties.items():
 
+            # If key is a known ignored keyword
+            if key in _IGNORED_KEYWORDS:
+                LOG.debug("Ignoring schema keyword: %s", key)
+
             # If the key is known as an interpretation rule
             # call the function mapped into the INTERPRETATION_RULE dictionary
-            if key in INTERPRETATION_RULES:
+            elif key in INTERPRETATION_RULES:
                 # This error is only raised if an interpretation rule is found at root of schema properties
                 # rules must be defined in individual items of the properties, hence a parent key should
                 # always be present.
@@ -556,7 +579,7 @@ class SchemaInterpreter:
                 _relative_root = INTERPRETATION_RULES[key](
                     self, val, key, _parent_key, _relative_root
                 )
-
+                
             else:
                 # Case dict i.e. branch
                 if isinstance(val, dict):
@@ -570,16 +593,14 @@ class SchemaInterpreter:
                         ),
                     )
 
-                # Case str i.e. leaf
-                elif isinstance(val, str):
-                    LOG.debug("Ignoring key value pair: (%s: %s)", key, val)
-
-                # Else not-implemented/ignored
-                else:
-                    if isinstance(val, Iterable):
-                        LOG.debug("Unknown iterable type: %s", str(type(val)))
-                        raise NotImplementedError("Unknown iterable type.")
+                # Case literal i.e. leaf
+                elif isinstance(val, (str, bool, int, float)):
                     LOG.debug("Ignoring key value pair: (%s: %s)", key, str(val))
+
+                # Else not-implemented
+                else:
+                    LOG.debug("Unknown iterable type: %s", str(type(val)))
+                    raise NotImplementedError("Unknown iterable type.")
 
         return _relative_root
 

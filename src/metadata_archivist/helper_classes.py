@@ -26,34 +26,8 @@ from pickle import loads as p_loads, dumps as p_dumps, HIGHEST_PROTOCOL
 
 
 from metadata_archivist.logger import LOG, is_debug
-from metadata_archivist.helper_functions import merge_dicts
+from metadata_archivist.helper_functions import merge_dicts, IGNORED_ITERABLE_KEYWORDS
 from metadata_archivist.interpretation_rules import INTERPRETATION_RULES
-
-
-# List of ignored JSON schema iterable keys
-_IGNORED_ITERABLE_KEYWORDS = [
-    "additionalProperties",
-    "allOf",
-    "anyOf",
-    "contains",
-    "contentSchema",
-    "dependentRequired",
-    "dependentSchemas",
-    "else",
-    "enum",
-    "examples",
-    "if",
-    "items",
-    "not",
-    "oneOf",
-    "prefixItems",
-    "propertyNames",
-    "required",
-    "then",
-    "type",
-    "unevaluatedItems",
-    "unevaluatedProperties",
-]
 
 
 class CacheEntry:
@@ -567,7 +541,7 @@ class SchemaInterpreter:
         for key, val in properties.items():
 
             # If key is a known ignored keyword
-            if key in _IGNORED_ITERABLE_KEYWORDS:
+            if key in IGNORED_ITERABLE_KEYWORDS:
                 LOG.debug("Ignoring schema keyword: %s", key)
 
             # If the key is known as an interpretation rule

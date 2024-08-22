@@ -29,13 +29,35 @@ from typing import Optional, Any, Tuple
 
 from metadata_archivist.logger import LOG, is_debug
 
-# List of known property names in schema
-_KNOWN_PROPERTIES = [
-    "properties",
-    "unevaluatedProperties",
+
+# List of ignored JSON schema iterable keys
+IGNORED_ITERABLE_KEYWORDS = [
     "additionalProperties",
-    "patternProperties",
+    "allOf",
+    "anyOf",
+    "contains",
+    "contentSchema",
+    "dependentRequired",
+    "dependentSchemas",
+    "else",
+    "enum",
+    "examples",
+    "if",
+    "items",
+    "not",
+    "oneOf",
+    "prefixItems",
+    "propertyNames",
+    "required",
+    "then",
+    "type",
+    "unevaluatedItems",
+    "unevaluatedProperties",
 ]
+
+
+# List of known iterable keywords in schema
+KNOWN_ITERABLE_KEYWORDS = sorted(IGNORED_ITERABLE_KEYWORDS + ["properties", "patternProperties"])
 
 
 def check_dir(dir_path: str, allow_existing: bool = False) -> Tuple[Path, bool]:
@@ -205,7 +227,7 @@ def deep_get_from_schema(schema: dict, keys: list) -> Any:
             return schema[key]
 
         for k in schema:
-            if k in _KNOWN_PROPERTIES:
+            if k in KNOWN_ITERABLE_KEYWORDS:
                 try:
                     return deep_get_from_schema(schema[k], keys)
                 except StopIteration:

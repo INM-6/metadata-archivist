@@ -6,34 +6,18 @@
             "type": "object",
             "patternProperties": {
                 "^basin_.*": {
-                    "!varname": "basin",
                     "type": "object",
                     "description": "some description",
                     "properties": {
                         "basin_information": {
-                            "!parsing": {
-                                "path": ".*/{basin}/basin.yml",
-                                "keys": [
-                                    "river",
-                                    "size"
-                                ]
-                            },
                             "$ref": "#/$defs/basin_character_parser"
                         }
                     }
                 },
                 "^station_.*": {
-                    "!varname": "station",
                     "type": "object",
                     "properties": {
                         "station_information": {
-                            "!parsing": {
-                                "path": ".*/{station}/station.yml",
-                                "keys": [
-                                    "river",
-                                    "mean_disch"
-                                ]
-                            },
                             "$ref": "#/$defs/station_character_parser"
                         }
                     }

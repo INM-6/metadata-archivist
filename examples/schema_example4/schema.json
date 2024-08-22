@@ -4,66 +4,14 @@
     "properties": {
         "real_time_factor": {
             "type": "number",
-            "description": "ratio of wall clock time to simulation time",
-            "!calculate": {
-                "expression": "{val1} / {val2}",
-                "variables": {
-                    "val1": {
-                        "!parsing": {
-                            "keys": [
-                                "real"
-                            ],
-                            "unpack": 1
-                        },
-                        "$ref": "#/$defs/time_parser"
-                    },
-                    "val2": {
-                        "!parsing": {
-                            "keys": [
-                                "parameters/sim_time"
-                            ],
-                            "unpack": 2
-                        },
-                        "$ref": "#/$defs/yml_parser"
-                    }
-                }
-            }
+            "description": "ratio of wall clock time to simulation time"
         },
         "model": {
-            "!parsing": {
-                "keys": [
-                    "parameters/scale"
-                ],
-                "unpack": 1
-            },
             "$ref": "#/$defs/yml_parser"
         },
         "virtual_processes": {
             "type": "number",
-            "description": "total number of digital processing units i.e. #MPI * #threads",
-            "!calculate": {
-                "expression": "{val1} * {val2}",
-                "variables": {
-                    "val1": {
-                        "!parsing": {
-                            "keys": [
-                                "parameters/num_procs"
-                            ],
-                            "unpack": true
-                        },
-                        "$ref": "#/$defs/yml_parser"
-                    },
-                    "val2": {
-                        "!parsing": {
-                            "keys": [
-                                "parameters/threads_per_proc"
-                            ],
-                            "unpack": true
-                        },
-                        "$ref": "#/$defs/yml_parser"
-                    }
-                }
-            }
+            "description": "total number of digital processing units i.e. #MPI * #threads"
         }
     },
     "$defs": {

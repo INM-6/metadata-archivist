@@ -31,21 +31,28 @@ from metadata_archivist.interpretation_rules import INTERPRETATION_RULES
 
 
 # List of ignored JSON schema iterable keys
-_IGNORED_KEYWORDS = [
+_IGNORED_ITERABLE_KEYWORDS = [
     "additionalProperties",
-    "unevaluatedProperties",
-    "required",
-    "dependentRequired",
-    "dependentSchemas",
-    "propertyNames",
-    "if",
-    "then",
-    "else",
-    "enum",
     "allOf",
     "anyOf",
-    "oneOf",
+    "contains",
+    "contentSchema",
+    "dependentRequired",
+    "dependentSchemas",
+    "else",
+    "enum",
+    "examples",
+    "if",
+    "items",
     "not",
+    "oneOf",
+    "prefixItems",
+    "propertyNames",
+    "required",
+    "then",
+    "type",
+    "unevaluatedItems",
+    "unevaluatedProperties",
 ]
 
 
@@ -141,7 +148,7 @@ class CacheEntry:
                 raise FileExistsError(
                     "Unable to save parsed metadata; overwriting not allowed."
                 )
-            
+
         pickle_dump = p_dumps(metadata, protocol=HIGHEST_PROTOCOL)
         self._digest = new(key, pickle_dump, sha3_256).hexdigest()
 
@@ -560,7 +567,7 @@ class SchemaInterpreter:
         for key, val in properties.items():
 
             # If key is a known ignored keyword
-            if key in _IGNORED_KEYWORDS:
+            if key in _IGNORED_ITERABLE_KEYWORDS:
                 LOG.debug("Ignoring schema keyword: %s", key)
 
             # If the key is known as an interpretation rule
@@ -579,7 +586,7 @@ class SchemaInterpreter:
                 _relative_root = INTERPRETATION_RULES[key](
                     self, val, key, _parent_key, _relative_root
                 )
-                
+
             else:
                 # Case dict i.e. branch
                 if isinstance(val, dict):

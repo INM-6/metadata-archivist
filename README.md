@@ -6,14 +6,17 @@ From the user perspective, the **Archivist** class is provided with all inputs a
 Then, each **Parser** (light red) employs user defined functions (gray) to extract specific information from the respective files.
 After this, the **Formatter** (light red) collects the parsing results; if a schema (gray) is provided, the composite result can be structured following user design. The final processed metadata is output in a format of choice by the **Exporter** (light red).
 
-Excerpt from [DOI]()
+Excerpt from [Villamar et al. 2024, Metadata practices for simulation workflows, arxiv]()
+
 
 ## Description
 The Metadata Archivist is a simple framework to process multiple heterogenous input files and unify the parsed information into a singular structured output.
 Users must define their own parsing procedures, then with a convenience class offered by our framework, orchestrate exploration the exploration of a given directory or archive, filtering of files to process, parse and optionally structure the target, lastly export the output to a selected format.
 
+
 ## Installation
 Package is pip installable with (at the root of the repository):
+
 ```shell
 pip install -e .
 ```
@@ -22,11 +25,12 @@ Currently there are no external dependencies, however if the [jsonschema](https:
 
 TESTED WITH PYTHON v3.10.12
 
+
 ## Modules:
 * Parser.py: abstract class to parse metadata from file. To be specialized by custom parser made by users.
 * Explorer.py: class for retrieving files from compressed archives or directories. Filtering is done by comparing file names against input file patterns defined in Parsers.
 * Formatter: class for handling Parsers. Coordinates parsing of files using Explorer output and user defined Parsers. If a user schema is provided, formats the metadata output according to the defined schema using a schema interpreter.
-* Exporter.py: class to save formatted metadata to file. Currently only available export format is JSON.
+* Exporter.py: class to save formatted metadata to file.
 * Archivist.py: class for orchestrating Explorer, Formatter, and Exporter classes.
 * interpretation_rules.py: Module containing collection of rules as functions to interpreter user defined schema.
 * formatting_rules.py: Module containing collection of rules as functions to format according to interpreted schema.
@@ -35,27 +39,38 @@ TESTED WITH PYTHON v3.10.12
 * helper_functions.py: Module containing collection of convenience functions internally used.
 * logger.py: internally used logging class extension.
 
+### Note on dynamical rule modules:
+Interpretation|Formatting|Export functions work based on a map of known keyword to corresponding function rule.
+This means that, **before running a parsing->interpreting->formatting->export pipeline**, users can register additional rules through the available ```register_*_rule``` methods for custom functionality. *with \* in interpretation|formatting|export*
+
+These rules should follow the signature from their homologues. For example: all export rules must accept a dictionary object and a path object as their arguments in that order. See corresponding interpretation|formatting rule modules for the other signatures.
+
+
 ## Examples:
 We have provided some example implementation files in the [examples](./examples/) directory.
 Some have additional requirements like [PyYAML](https://pypi.org/project/PyYAML/) or [f90nml](https://pypi.org/project/f90nml/).
-Additionally a jupyter example can be found at [schema_tutorial](./examples/schema_example4/schema_tutorial.ipynb).
 
 To run Python examples:
 ```shell
 python main.py
 ```
 
+Additionally a Jupyter example can be found at [schema tutorial](./examples/schema_example4/schema_tutorial.ipynb).
+
+
 ## How to cite:
 [Villamar et al. 2024, Metadata practices for simulation workflows, arxiv]()
+
 
 ## How to contribute:
 Check our [CONTRIBUTING](./CONTRIBUTING.md) guidelines.
 
+
 ## Schema Interpreter Notes
-To be able to parse abstract schema and generate correctly structured metadata files,
-an interpretable data structure is needed to convert implicit schema definitions to explicit functional rules.
+To be able to parse abstract schema and generate correctly structured metadata files, an interpretable data structure is needed to convert implicit schema definitions to explicit functional rules. To describe such data structure we use the JSONSchema data description language and we expand upon it with additional vocabulary that describes custom functionality linked to structuring operations.
 
 **Note:** Known JSONSchema vocabulary is based on [Draft 2020-12](https://json-schema.org/draft/2020-12/json-schema-core)
+
 
 ### Terms
 * Exploration target:
@@ -74,10 +89,12 @@ an interpretable data structure is needed to convert implicit schema definitions
   * On a broad perspective, the properties (tree) of the schema are composed of either acyclic nested structure (branches) or literals (leafs).
   * Parsers and their results can be referenced at bottom level structures.
 
+
 ### Basic premise
 The structure of the unified metadata file can be separated by structure stemming from the formatting results and structure stemming from the parsing results.
 When using a schema, the structure of the formatting results are solely dictated by the schema.
 Hence, when exploring the schema to generate the interpretable data structure one can consider the branching in the schema structure as branching of the metadata structure and the parsing structure as a terminal value.
+
 
 ### Technical assumptions
 - We only recognize two data types in the schema, dictionaries and strings i.e. the schema is composed of key[str] -> value[dict|literal],
@@ -94,11 +111,14 @@ Hence, when exploring the schema to generate the interpretable data structure on
   - Only one reference to a definition is accepted per named dictionary.
   - !parsing instructions point to dictionaries but this are not considered branches of the metadata structure, instead are considered as additional contextual information.
   - !parsing instructions must always precede the reference.
+- All keywords of custom directives (i.e. non JSONSchema compliant keywords uniquely used for interpretation), should start with "!", this way the Formatter can create a clean version of the JSONSchema that can potentially validate the structure metadata.
+
 
 ## Contact:
 Jose Villamar, Institute for Advanced Simulation (IAS-6), Jülich Research Centre, Jülich, Germany, j.villamar@fz-juelich.de
 
 Matthias Kelbling, Department of Computational Hydrosystems, Helmholtz-Centre for Environmental Research, Leipzig, Germany, matthias.kelbling@ufz.de
+
 
 ## License:
 GPL v3.0 [LICENSE](./LICENSE)

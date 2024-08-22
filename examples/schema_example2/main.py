@@ -30,8 +30,6 @@ args = arg_parser.parse_args()
 
 
 my_schema = {
-    "$schema": "https://abc",
-    "$id": "https://abc.json",
     "description": "my example schema 2",
     "type": "object",
     "properties": {

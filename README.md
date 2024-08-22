@@ -69,7 +69,7 @@ an interpretable data structure is needed to convert implicit schema definitions
  * The Formatter produces results on either a default structure following the metadata archive tree or a JSON schema can be provided to specify the structure and contents.
 * JSON schema:
   * Through the properties (and only the properties) of the schema the user can define the structure of the unified metadata file.
-  * On a broad perspective, the properties (tree) of the schema are composed of either acyclic nested structure (branches) or simple values (leafs).
+  * On a broad perspective, the properties (tree) of the schema are composed of either acyclic nested structure (branches) or literals (leafs).
   * Parsers and their results can be referenced at bottom level structures.
 
 ### Basic premise
@@ -78,9 +78,9 @@ When using a schema, the structure of the formatting results are solely dictated
 Hence, when exploring the schema to generate the interpretable data structure one can consider the branching in the schema structure as branching of the metadata structure and the parsing structure as a terminal value.
 
 ### Technical assumptions
-- We only recognize two data types in the schema, dictionaries and strings i.e. the schema is composed of key[str] -> value[dict|str],
+- We only recognize two data types in the schema, dictionaries and strings i.e. the schema is composed of key[str] -> value[dict|literal],
   - Any other type is considered as an non-implemented feature.
-  - From this we assume that we either explore a dictionary as a branch or a string as a leaf.
+  - From this we assume that we either explore a dictionary as a branch or a literal as a leaf.
 - Currently the only functional leafs are either references to parsers definitions, !varname for patternProperties, and !calculate directives that combine both previous functional leafs,
   - All other leafs are considered as JSON Schema specific values and ignored.
   - It is possible to reference internal parser properties however this can only be done inside the parser definition.
@@ -89,7 +89,7 @@ Hence, when exploring the schema to generate the interpretable data structure on
   - !varname instructions can only be found in a patterProperty context.
 - Exploring starts from the properties at the root of the schema and a recursion is applied over every dictionary found inside.
 - A Parser must always be introduced inside a named dictionary containing an optional !parsing instruction and a mandatory reference to its definition (structure name -> {(!parsing: dict)?, $ref: $def})
-  - Only one reference to a definition is accepted per named dictionary. (TODO: expand on the future?)
+  - Only one reference to a definition is accepted per named dictionary.
   - !parsing instructions point to dictionaries but this are not considered branches of the metadata structure, instead are considered as additional contextual information.
   - !parsing instructions must always precede the reference.
 

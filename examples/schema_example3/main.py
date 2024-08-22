@@ -30,6 +30,7 @@ args = arg_parser.parse_args()
 
 
 my_schema = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "description": "my example schema 3",
     "type": "object",
     "properties": {

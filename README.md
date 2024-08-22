@@ -55,6 +55,8 @@ Check our [CONTRIBUTING](./CONTRIBUTING.md) guidelines.
 To be able to parse abstract schema and generate correctly structured metadata files,
 an interpretable data structure is needed to convert implicit schema definitions to explicit functional rules.
 
+**Note:** Known JSONSchema vocabulary is based on [Draft 2020-12](https://json-schema.org/draft/2020-12/json-schema-core)
+
 ### Terms
 * Exploration target:
   * Directory or archive containing a tree structure of sub-directories (branches) and raw metadata files (leafs).
@@ -95,6 +97,7 @@ Hence, when exploring the schema to generate the interpretable data structure on
 
 ## Contact:
 Jose Villamar, Institute for Advanced Simulation (IAS-6), Jülich Research Centre, Jülich, Germany, j.villamar@fz-juelich.de
+
 Matthias Kelbling, Department of Computational Hydrosystems, Helmholtz-Centre for Environmental Research, Leipzig, Germany, matthias.kelbling@ufz.de
 
 ## License:

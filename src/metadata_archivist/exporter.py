@@ -12,11 +12,9 @@ Authors: Jose V., Matthias K.
 
 """
 
-from json import dump
-from pathlib import Path
-
 from metadata_archivist.logger import LOG
 from metadata_archivist.helper_functions import check_dir
+from metadata_archivist.export_rules import EXPORT_RULES
 
 
 class Exporter:
@@ -52,7 +50,7 @@ class Exporter:
         LOG.info("Exporting metadata ...")
 
         export_format = self.config["output_format"].upper()
-        if export_format not in _KNOWN_FORMATS:
+        if export_format not in EXPORT_RULES:
             LOG.debug("Export format type: %s", export_format)
             raise RuntimeError("Unknown export format type.")
         export_directory = check_dir(
@@ -78,24 +76,6 @@ class Exporter:
                     "Conflicting path to metadata output file; cannot overwrite."
                 )
 
-        _KNOWN_FORMATS[export_format](metadata, export_file)
+        EXPORT_RULES[export_format](metadata, export_file)
 
         LOG.info("Done!")
-
-
-def _export_json(json_object: dict, outfile: Path) -> None:
-    """
-    Exports JSON object to file.
-
-    Arguments:
-        object: JSON object to export.
-        outfile: Path object to target file.
-    """
-
-    LOG.debug("   exporting JSON to file: %s", str(outfile))
-
-    with outfile.open("w") as f:
-        dump(json_object, f, indent=4)
-
-
-_KNOWN_FORMATS = {"JSON": _export_json}

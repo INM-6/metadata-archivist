@@ -30,6 +30,7 @@ TESTED WITH PYTHON v3.10.12
 * Archivist.py: class for orchestrating Explorer, Formatter, and Exporter classes.
 * interpretation_rules.py: Module containing collection of rules as functions to interpreter user defined schema.
 * formatting_rules.py: Module containing collection of rules as functions to format according to interpreted schema.
+* export_rules.py: Module containing collection of rules as functions to export metadata according to user defined format.
 * helper_classes.py: Module containing collection of convenience classes internally used.
 * helper_functions.py: Module containing collection of convenience functions internally used.
 * logger.py: internally used logging class extension.

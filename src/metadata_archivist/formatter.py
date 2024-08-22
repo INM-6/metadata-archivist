@@ -16,7 +16,9 @@ Authors: Jose V., Matthias K.
 
 from pathlib import Path
 from copy import deepcopy
-from json import load, dump, dumps
+from json import load, dumps
+from hashlib import sha3_256
+from pickle import dumps as p_dumps, HIGHEST_PROTOCOL
 from typing import Optional, List, Iterable, NoReturn, Union, Tuple
 
 from metadata_archivist.parser import AParser
@@ -73,6 +75,7 @@ class Formatter:
         add_parser: method to add Parser to list, updates internal schema file.
         update_parser: method to update Parser in list, updates internal schema file.
         remove_parser: method to remove Parser from list, updates internal schema file.
+        get_encoding_key: method to generate encoding key for encoded cache saving.
         get_parser: method to retrieve Parser from list, uses Parser name for matching.
         parse_files: method to trigger parsing procedures on a given list of input files.
         compile_metadata: method to trigger structuring of parsing results.
@@ -102,9 +105,9 @@ class Formatter:
         if schema is not None:
             if isinstance(schema, dict):
                 self._schema = schema
-            elif isinstance(schema, str):
+            elif isinstance(schema, (str, Path)):
                 schema_path = Path(schema)
-                with schema_path.open() as f:
+                with schema_path.open("r", encoding="utf-8") as f:
                     self._schema = load(f)
             else:
                 raise TypeError("Schema must be dict or Path.")
@@ -124,6 +127,9 @@ class Formatter:
         # For parser result caching
         self._cache = helpers.FormatterCache()
 
+        # For securing cached pickles
+        self._encoding_key = None
+
         # Public
         self.config = config
         self.metadata = {}
@@ -131,6 +137,8 @@ class Formatter:
         self.combine = lambda formatter2, schema=None: _combine(
             formatter1=self, formatter2=formatter2, schema=schema
         )
+
+        self.get_encoding_key()
 
         if parsers is not None:
             if isinstance(parsers, AParser):
@@ -194,6 +202,32 @@ class Formatter:
             for ex in self._parsers:
                 # TODO: Needs consistency checks
                 self._extend_json_schema(ex)
+
+    def get_encoding_key(self) -> bytes:
+        """
+        Method to get or generate encoding key from self contained configuration.
+        If no encoding key provided in the form of a bytes object or path to a binary file then,
+        encoding key is generated from encrypted configuration file.
+        """
+
+        if self._encoding_key is None:
+
+            encoding_key = self.config["encoding_key"]
+            if encoding_key is None:
+                self._encoding_key = sha3_256(p_dumps(self.config, protocol=HIGHEST_PROTOCOL)).digest()
+
+            elif isinstance(encoding_key, bytes):
+                self._encoding_key = encoding_key
+
+            elif isinstance(encoding_key, (str, Path)):
+                with Path(encoding_key).open("rb", encoding=None) as f:
+                    self._encoding_key = f.read()
+
+            else:
+                LOG.debug("config encoding key value: %s", str(encoding_key)) 
+                raise ValueError("No appropriate encoding key could be generated.")
+            
+        return self._encoding_key
 
     def export_schema(self) -> dict:
         """
@@ -345,7 +379,6 @@ class Formatter:
         self,
         explored_path: Path,
         file_paths: List[Path],
-        overwrite_meta_files: bool = True,
     ) -> List[Path]:
         """
         Method to orchestrate parsing of list of given input files by self contained parsers.
@@ -355,7 +388,6 @@ class Formatter:
         Arguments:
             explored_path: Path object pointing to root exploration target.
             file_paths: List of Path objects pointing to target files for parsing.
-            overwrite_meta_files: control boolean to enable overwriting of lazy load cache files.
 
         Returns:
             list of lazy load cache file Paths (empty if lazy load disabled).
@@ -389,19 +421,7 @@ class Formatter:
                     self._cache[pid].add(explored_path, file_path, metadata)
                 else:
                     entry = self._cache[pid].add(explored_path, file_path)
-                    if entry.meta_path.exists():
-                        if overwrite_meta_files:
-                            LOG.warning(
-                                "Meta file %s exists, overwriting.",
-                                str(entry.meta_path),
-                            )
-                        else:
-                            LOG.debug("Meta file path: %s", str(entry.meta_path))
-                            raise FileExistsError(
-                                "Unable to save parsed metadata; overwriting not allowed."
-                            )
-                    with entry.meta_path.open("w", encoding=None) as mp:
-                        dump(metadata, mp, indent=4)
+                    entry.save_metadata(metadata, self._encoding_key, overwrite=self.config.get("overwrite", True))
                     meta_files.append(entry.meta_path)
 
         LOG.info("Done!")
@@ -546,7 +566,7 @@ class Formatter:
                 for cache_entry in parser_cache:
                     update_dict_with_parts(
                         self.metadata,
-                        cache_entry.load_metadata(),
+                        cache_entry.load_metadata(self._encoding_key),
                         list(cache_entry.rel_path.parts),
                     )
         LOG.info("Done!")

@@ -16,10 +16,14 @@ Authors: Jose V., Matthias K.
 
 """
 
+from json import dumps
 from pathlib import Path
-from json import load, dumps
+from hashlib import sha3_256
+from hmac import new, compare_digest
 from typing import Optional, Dict, Union, Any
 from collections.abc import Iterable, Iterator, ItemsView
+from pickle import loads as p_loads, dumps as p_dumps, HIGHEST_PROTOCOL
+
 
 from metadata_archivist.logger import LOG, is_debug
 from metadata_archivist.helper_functions import merge_dicts
@@ -60,28 +64,35 @@ class CacheEntry:
         self.file_path = file_path
         self.rel_path = file_path.relative_to(explored_path)
         self.metadata = metadata
-        if metadata is None:
-            self.meta_path = Path(str(file_path) + ".meta")
-        else:
-            self.meta_path = None
+        self.meta_path = Path(str(file_path) + ".meta.pkl")
+        self._digest = None
 
-    def load_metadata(self) -> dict:
+    def load_metadata(self, key: bytes) -> dict:
         """
         Loads cached metadata.
         If no cache exists this implies that lazy loading is enabled,
         metadata is loaded then from the self generated meta path.
 
+        Arguments:
+            key: bytes key used to secure pickled file.
+
         Returns:
             self contained parsed metadata dictionary.
         """
-        if self.metadata is None:
-            if self.meta_path is None:
-                raise RuntimeError(
-                    "Cache entry does not contain metadata and meta path not found."
-                )
 
-            with self.meta_path.open("r") as f:
-                self.metadata = load(f)
+        if self.metadata is None:
+            if self._digest is None:
+                if is_debug():
+                    LOG.debug("CacheEntry: %s", dumps(self, indent=4, default=vars))
+                raise RuntimeError("Metadata has not been cached yet.")
+
+            with self.meta_path.open("rb", encoding=None) as f:
+                bytes_read = f.read()
+                new_digest = new(key, bytes_read, sha3_256).hexdigest()
+                if compare_digest(self._digest, new_digest):
+                    self.metadata = p_loads(bytes_read)
+                else:
+                    raise ValueError("Encoded pickle has been tampered with.")
 
             if self.metadata is None:
                 if is_debug():
@@ -89,6 +100,36 @@ class CacheEntry:
                 raise RuntimeError("Failed to load metadata from CacheEntry.")
 
         return self.metadata
+
+    def save_metadata(self, metadata: dict, key: bytes, overwrite: bool = True) -> None:
+        """
+        Saves metadata to file and releases object from memory.
+
+        Arguments:
+            metadata: dictionary to save.
+            key: bytes key used to secure pickled file.
+            overwrite_meta_files : control boolean to enable overwriting of lazy load cache files.
+        """
+
+        if self.meta_path.exists():
+            if overwrite:
+                LOG.warning(
+                    "Meta file %s exists, overwriting.",
+                    str(self.meta_path),
+                )
+            else:
+                LOG.debug("Meta file path: %s", str(self.meta_path))
+                raise FileExistsError(
+                    "Unable to save parsed metadata; overwriting not allowed."
+                )
+            
+        pickle_dump = p_dumps(metadata, protocol=HIGHEST_PROTOCOL)
+        self._digest = new(key, pickle_dump, sha3_256).hexdigest()
+
+        with self.meta_path.open("wb", encoding=None) as f:
+            f.write(pickle_dump)
+
+        del metadata
 
 
 class ParserCache:

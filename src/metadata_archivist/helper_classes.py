@@ -27,7 +27,10 @@ from pickle import loads as p_loads, dumps as p_dumps, HIGHEST_PROTOCOL
 
 from metadata_archivist.logger import LOG, is_debug
 from metadata_archivist.helper_functions import merge_dicts, IGNORED_ITERABLE_KEYWORDS
-from metadata_archivist.interpretation_rules import INTERPRETATION_RULES
+from metadata_archivist.interpretation_rules import (
+    INTERPRETATION_RULES,
+    register_interpretation_rule,
+)
 
 
 class CacheEntry:
@@ -612,3 +615,7 @@ class SchemaInterpreter:
             )
 
         return self.structure
+
+
+# Class level method to register interpretation rules
+SchemaInterpreter.register_rule = register_interpretation_rule

@@ -24,7 +24,10 @@ from typing import Optional, List, Iterable, NoReturn, Union, Tuple
 from metadata_archivist.parser import AParser
 from metadata_archivist.logger import LOG, is_debug
 from metadata_archivist import helper_classes as helpers
-from metadata_archivist.formatting_rules import FORMATTING_RULES
+from metadata_archivist.formatting_rules import (
+    FORMATTING_RULES,
+    register_formatting_rule,
+)
 from metadata_archivist.helper_functions import (
     update_dict_with_parts,
     merge_dicts,
@@ -348,7 +351,9 @@ class Formatter:
         self._input_file_patterns.pop(indexes["ifp"], None)
 
         if self._use_schema:
-            self._schema["$defs"]["node"]["properties"]["anyOf"].pop(indexes["scp"], None)
+            self._schema["$defs"]["node"]["properties"]["anyOf"].pop(
+                indexes["scp"], None
+            )
             self._schema["$defs"].pop(pid, None)
 
         self._cache.drop(pid)
@@ -575,6 +580,13 @@ class Formatter:
         return self.metadata
 
 
+# Class level method to register formatting rules
+Formatter.register_formatting_rule = register_formatting_rule
+
+# Indirection to class level method to register interpretation rules
+Formatter.register_interpretation_rule = helpers.SchemaInterpreter.register_rule
+
+
 def _combine(
     formatter1: Formatter,
     formatter2: Formatter,
@@ -639,4 +651,5 @@ def _combine(
     return combined_formatter
 
 
+# Class level method to combine two instances
 Formatter.combine = _combine

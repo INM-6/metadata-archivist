@@ -14,7 +14,7 @@ Authors: Jose V., Matthias K.
 
 from metadata_archivist.logger import LOG
 from metadata_archivist.helper_functions import check_dir
-from metadata_archivist.export_rules import EXPORT_RULES
+from metadata_archivist.export_rules import EXPORT_RULES, register_export_rule
 
 
 class Exporter:
@@ -79,3 +79,7 @@ class Exporter:
         EXPORT_RULES[export_format](metadata, export_file)
 
         LOG.info("Done!")
+
+
+# Class level method to register export rules
+Exporter.register_rule = register_export_rule

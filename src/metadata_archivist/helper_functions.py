@@ -57,7 +57,9 @@ IGNORED_ITERABLE_KEYWORDS = [
 
 
 # List of known iterable keywords in schema
-KNOWN_ITERABLE_KEYWORDS = sorted(IGNORED_ITERABLE_KEYWORDS + ["properties", "patternProperties"])
+KNOWN_ITERABLE_KEYWORDS = sorted(
+    IGNORED_ITERABLE_KEYWORDS + ["properties", "patternProperties"]
+)
 
 
 def check_dir(dir_path: str, allow_existing: bool = False) -> Tuple[Path, bool]:

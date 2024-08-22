@@ -26,3 +26,6 @@ from metadata_archivist.parser import AParser
 from metadata_archivist.explorer import Explorer
 from metadata_archivist.exporter import Exporter
 from metadata_archivist.archivist import Archivist, DEFAULT_CONFIG
+from metadata_archivist.interpretation_rules import register_interpretation_rule
+from metadata_archivist.formatting_rules import register_formatting_rule
+from metadata_archivist.export_rules import register_export_rule

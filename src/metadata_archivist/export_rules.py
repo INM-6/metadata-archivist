@@ -91,7 +91,7 @@ EXPORT_RULES = {
 
 def register_export_rule(format_name: str, rule: Callable) -> None:
     """
-    Class method to register new rules in RULES dictionary.
+    Function to register new rules in the EXPORT_RULES dictionary.
 
     Arguments:
         format_name: string name of format to export.

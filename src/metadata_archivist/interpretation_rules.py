@@ -29,6 +29,7 @@ Authors: Jose V., Matthias K.
 
 from re import sub
 from json import dumps
+from typing import Callable
 from typing import Optional, Union, TYPE_CHECKING
 
 from metadata_archivist.logger import LOG, is_debug
@@ -294,3 +295,18 @@ INTERPRETATION_RULES = {
     "!varname": _interpret_varname_directive_rule,
     "!calculate": _interpret_calculate_directive_rule,
 }
+
+
+def register_interpretation_rule(interpretation_key: str, rule: Callable) -> None:
+    """
+    Function to register new rules in the INTERPRETATION_RULES dictionary.
+
+    Arguments:
+        interpretation_key: string keyword of schema to interpret.
+        rule: callable rule to export to new format.
+    """
+
+    if interpretation_key in INTERPRETATION_RULES:
+        raise KeyError("Export rule already exists")
+
+    INTERPRETATION_RULES[interpretation_key] = rule

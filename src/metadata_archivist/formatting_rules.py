@@ -30,6 +30,7 @@ Authors: Jose V., Matthias K.
 """
 
 from json import dumps
+from typing import Callable
 from typing import Union, TYPE_CHECKING
 
 from metadata_archivist.logger import LOG, is_debug
@@ -295,3 +296,18 @@ FORMATTING_RULES = {
     "!parser_id": _format_parser_id_rule,
     "!calculate": _format_calculate_rule,
 }
+
+
+def register_formatting_rule(formatting_key: str, rule: Callable) -> None:
+    """
+    Function to register new rules in the FORMATTING_RULES dictionary.
+
+    Arguments:
+        formatting_key: string key name of interpreted schema.
+        rule: callable rule to export to new format.
+    """
+
+    if formatting_key in FORMATTING_RULES:
+        raise KeyError("Export rule already exists")
+
+    FORMATTING_RULES[formatting_key] = rule

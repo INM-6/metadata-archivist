@@ -32,6 +32,7 @@ from metadata_archivist.helper_functions import (
     update_dict_with_parts,
     merge_dicts,
     pattern_parts_match,
+    remove_directives_from_schema,
 )
 
 
@@ -217,13 +218,16 @@ class Formatter:
 
     def export_schema(self) -> dict:
         """
-        TODO
         Removes interpretation directives from schema, such that result respects JSONSchema standard.
 
         Returns:
             cleaned schema dictionary.
         """
-        return deepcopy(self._schema)
+
+        if not self._use_schema:
+            return None
+
+        return remove_directives_from_schema(self._schema)
 
     def set_lazy_load(self, lazy_load: bool) -> None:
         """

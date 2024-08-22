@@ -15,6 +15,7 @@ exports:
     math_check: Check mathematical expression with possible variable name replacement.
     filter_metadata: Filters metadata dictionary by matching patterns of sequences of keys.
     add_info_from_schema: Retrieves information from schema and annotates metadata with it.
+    remove_directives_from_schema: Recursively removes custom interpreting directives from schema.
 
 Authors: Jose V., Matthias K.
 
@@ -541,3 +542,25 @@ def add_info_from_schema(
                 if add_type:
                     new_value["type"] = schema_entry["type"]
                 metadata[key] = new_value
+
+
+def remove_directives_from_schema(schema: dict) -> dict:
+    """
+    Recursively removes custom interpreting directives from schema.
+    Directives are keywords starting with '!'
+
+    Arguments:
+        schema: formatter schema potentially with directives to remove.
+
+    Returns partial copy of schema dictionary without directives.
+    """
+
+    new_schema = {}
+    for key, value in schema.items():
+        if not key.startswith("!"):
+            if not isinstance(value, dict):
+                new_schema[key] = value
+            else:
+                new_schema[key] = remove_directives_from_schema(value)
+
+    return new_schema

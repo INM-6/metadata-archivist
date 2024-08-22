@@ -165,7 +165,7 @@ def _decompress_tar(
                     _, new_explored_dirs, new_explored_files = _decompress_tar(
                         input_file_patterns,
                         archive_path=item_path,
-                        extraction_directory=directory_path,
+                        extraction_directory=item_path.parent,
                     )
                     explored_dirs.extend(new_explored_dirs)
                     explored_files.extend(new_explored_files)

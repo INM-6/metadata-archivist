@@ -21,12 +21,8 @@ import logging
 
 _stderr = logging.StreamHandler(stream=sys.stderr)
 
-_simple_format = logging.Formatter(
-    "%(levelname)s : %(message)s"
-)
-_info_format = logging.Formatter(
-    "%(levelname)s : %(module)s : %(message)s"
-)
+_simple_format = logging.Formatter("%(levelname)s : %(message)s")
+_info_format = logging.Formatter("%(levelname)s : %(module)s : %(message)s")
 _full_format = logging.Formatter(
     "\n%(name)s | %(asctime)s | %(levelname)s : %(levelno)s | %(filename)s : %(funcName)s : %(lineno)s | %(processName)s : %(process)d | %(message)s\n"
 )

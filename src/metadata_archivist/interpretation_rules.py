@@ -253,7 +253,9 @@ def _interpret_calculate_directive_rule(
         value = variables[variable]
         if not isinstance(value, dict):
             LOG.debug(
-                "Variables type '%s' , expected type '%s'", str(type(variable)), str(dict)
+                "Variables type '%s' , expected type '%s'",
+                str(type(variable)),
+                str(dict),
             )
             raise TypeError("Incorrect variable type in !calculate directive.")
 

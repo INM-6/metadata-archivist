@@ -257,7 +257,9 @@ def _format_calculate_rule(
         entry = variables[variable]
         if not isinstance(entry, SchemaEntry):
             LOG.debug(
-                "entry type '%s' , expected type '%s'", str(type(entry)), str(SchemaEntry)
+                "entry type '%s' , expected type '%s'",
+                str(type(entry)),
+                str(SchemaEntry),
             )
             raise TypeError(
                 "Incorrect variable type found while formatting calculation."

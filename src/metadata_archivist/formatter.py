@@ -32,27 +32,6 @@ from metadata_archivist.helper_functions import (
 )
 
 
-_DEFAULT_FORMATTER_SCHEMA = {
-    "$schema": "https://abc",
-    "$id": "https://abc.json",
-    "description": "A plain schema for directory structures",
-    "type": "object",
-    "properties": {
-        "name": {"type": "string"},
-        "children": {"type": "array", "items": {"$ref": "#"}},
-        "node": {"$ref": "#/$defs/node"},
-    },
-    "$defs": {
-        "node": {
-            "$id": "/schemas/address",
-            "$schema": "http://abc",
-            "type": "object",
-            "properties": {"anyOf": []},
-        }
-    },
-}
-
-
 class Formatter:
     """
     A Formatter creates a metadata object (dict) that
@@ -111,12 +90,14 @@ class Formatter:
                     self._schema = load(f)
             else:
                 raise TypeError("Schema must be dict or Path.")
-            self._use_schema = True
         else:
-            self._use_schema = False
-            self._schema = deepcopy(_DEFAULT_FORMATTER_SCHEMA)
+            self._schema = None
 
         # Internal attributes:
+
+        # Schema usage enabled
+        self._use_schema = bool(self._schema is not None)
+
         # Attribute for SchemaInterpreter
         self._interpreter = None
 
@@ -273,6 +254,9 @@ class Formatter:
             parser: AParser instance containing schema description of parsing output.
         """
 
+        if not self._use_schema:
+            return
+
         if "$defs" not in self._schema:
             self._schema["$defs"] = {"node": {"properties": {"anyOf": []}}}
         elif not isinstance(self._schema["$defs"], dict):
@@ -309,13 +293,17 @@ class Formatter:
 
         if parser in self.parsers:
             raise RuntimeError("Parser is already in Formatter.")
+
         pid = parser.name
         self._cache.add(pid)
         self._indexes.set_index(pid, "prs", len(self._parsers))
         self._parsers.append(parser)
         self._indexes.set_index(pid, "ifp", len(self._input_file_patterns))
         self._input_file_patterns.append(parser.input_file_pattern)
-        self._extend_json_schema(parser)
+
+        if self._use_schema:
+            self._extend_json_schema(parser)
+
         parser.register_formatter(self)
 
     def update_parser(self, parser: AParser) -> None:
@@ -330,14 +318,17 @@ class Formatter:
 
         if parser not in self._parsers:
             raise RuntimeError("Unknown Parser.")
+
         pid = parser.name
         self._schema["$defs"][pid] = parser.schema
         ifp_index = self._indexes.get_index(pid, "ifp")
         self._input_file_patterns[ifp_index] = parser.input_file_pattern
-        scp_index = self._indexes.get_index(pid, "scp")
-        self._schema["$defs"]["node"]["properties"]["anyOf"][scp_index] = {
-            "$ref": parser.get_reference()
-        }
+
+        if self._use_schema:
+            scp_index = self._indexes.get_index(pid, "scp")
+            self._schema["$defs"]["node"]["properties"]["anyOf"][scp_index] = {
+                "$ref": parser.get_reference()
+            }
 
     def remove_parser(self, parser: AParser) -> None:
         """
@@ -350,12 +341,16 @@ class Formatter:
         """
         if parser not in self._parsers:
             raise RuntimeError("Unknown Parser.")
+
         pid = parser.name
         indexes = self._indexes.drop_indexes(pid)
         self._parsers.pop(indexes["prs"], None)
         self._input_file_patterns.pop(indexes["ifp"], None)
-        self._schema["$defs"]["node"]["properties"]["anyOf"].pop(indexes["scp"], None)
-        self._schema["$defs"].pop(pid, None)
+
+        if self._use_schema:
+            self._schema["$defs"]["node"]["properties"]["anyOf"].pop(indexes["scp"], None)
+            self._schema["$defs"].pop(pid, None)
+
         self._cache.drop(pid)
         parser.remove_formatter(self)
 

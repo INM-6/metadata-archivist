@@ -183,7 +183,7 @@ class AParser(ABC):
         """
 
         if not file_path.is_file():
-            LOG.debug("Path: %s", str(file_path))
+            LOG.debug("Path '%s'", str(file_path))
             raise RuntimeError("Given path does not point to file.")
 
         pattern = self.input_file_pattern.split("/")

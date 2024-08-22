@@ -93,7 +93,7 @@ def _interpret_varname_directive_rule(
     if "useRegex" not in entry.context:
         if is_debug():
             LOG.debug(
-                "SchemaEntry context: %s", dumps(entry.context, indent=4, default=vars)
+                "SchemaEntry context = %s", dumps(entry.context, indent=4, default=vars)
             )
         raise RuntimeError("Contextless !varname found.")
     # Add a !varname context which contains the name to use
@@ -114,7 +114,7 @@ def _interpret_reference_rule(
     if not any(prop_val.startswith(ss) for ss in _KNOWN_REFS):
         if is_debug():
             LOG.debug(
-                "Reference item: (%s, %s)",
+                "Reference item ('%s' , %s)",
                 prop_key,
                 dumps(prop_val, indent=4, default=vars),
             )
@@ -146,17 +146,17 @@ def _interpret_refs(
     # Test correctness of reference
     val_split = prop_val.split("/")
     if len(val_split) < 3:
-        LOG.debug("Reference value: %s", prop_val)
+        LOG.debug("Reference value '%s'", prop_val)
         raise ValueError("Malformed reference.")
 
     # Test for existence of Parser id
     pid = val_split[2]
     if pid not in definitions:
-        LOG.debug("Given parser name: %s", pid)
+        LOG.debug("Given parser name '%s'", pid)
         raise KeyError("Parser not found.")
 
     # Add identified Parser to context
-    LOG.debug("Processing reference to: %s", pid)
+    LOG.debug("Processing reference to '%s'", pid)
     entry["!parser_id"] = pid
 
     # Further process reference e.g. filters, internal property references -> links
@@ -207,7 +207,7 @@ def _interpret_calculate_directive_rule(
     if not all(key in prop_val for key in ["expression", "variables"]):
         if is_debug():
             LOG.debug(
-                "Directive item: (%s, %s)",
+                "Directive item ('%s' , %s)",
                 prop_key,
                 dumps(prop_val, indent=4, default=vars),
             )
@@ -216,27 +216,27 @@ def _interpret_calculate_directive_rule(
     expression = prop_val["expression"]
     if not isinstance(expression, str):
         LOG.debug(
-            "Expression type: %s, expected type: %s", str(type(expression)), str(str)
+            "Expression type '%s' , expected type '%s'", str(type(expression)), str(str)
         )
         raise TypeError("Incorrect expression type in !calculate directive.")
 
     cleaned_expr = sub(r"\s", "", expression)
     correct, variable_names = math_check(cleaned_expr)
     if not correct:
-        LOG.debug("Expression: %s", cleaned_expr)
+        LOG.debug("Expression '%s'", cleaned_expr)
         raise ValueError("Incorrect expression value in !calculate directive.")
 
     variables = prop_val["variables"]
     if not isinstance(variables, dict):
         LOG.debug(
-            "Variables type: %s, expected type: %s", str(type(variables)), str(str)
+            "Variables type '%s' , expected type '%s'", str(type(variables)), str(str)
         )
         raise TypeError("Incorrect variables type in !calculate directive.")
 
     if len(variable_names) != len(variables):
         if is_debug():
             LOG.debug(
-                "Expression: %s\nexpression variables: %s\ndefined variables: %s",
+                "Expression '%s' , expression variables '%s' , defined variables = %s",
                 expression,
                 str(variable_names),
                 dumps(variables, indent=4, default=vars),
@@ -247,19 +247,19 @@ def _interpret_calculate_directive_rule(
     variable_entries = {}
     for variable in variables:
         if not variable in variable_names:
-            LOG.debug("Variable name: %s", variable)
+            LOG.debug("Variable name '%s'", variable)
             raise RuntimeError("Variable name mismatch in !calculate directive.")
 
         value = variables[variable]
         if not isinstance(value, dict):
             LOG.debug(
-                "Variables type: %s, expected type: %s", str(type(variable)), str(dict)
+                "Variables type '%s' , expected type '%s'", str(type(variable)), str(dict)
             )
             raise TypeError("Incorrect variable type in !calculate directive.")
 
         if not "$ref" in value:
             if is_debug():
-                LOG.debug("Variable content: %s", dumps(value, indent=4, default=vars))
+                LOG.debug("Variable content = %s", dumps(value, indent=4, default=vars))
             raise RuntimeError(
                 "Variable does not reference a Parser in !calculate directive."
             )

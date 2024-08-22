@@ -51,7 +51,7 @@ class Exporter:
 
         export_format = self.config["output_format"].upper()
         if export_format not in EXPORT_RULES:
-            LOG.debug("Export format type: %s", export_format)
+            LOG.debug("Export format type '%s'", export_format)
             raise RuntimeError("Unknown export format type.")
         export_directory = check_dir(
             self.config["output_directory"], allow_existing=True
@@ -62,16 +62,16 @@ class Exporter:
             if export_file.is_file():
                 if self.config["overwrite"]:
                     LOG.warning(
-                        "Metadata output file exists: '%s', overwriting.",
+                        "Metadata output file exists '%s', overwriting.",
                         str(export_file),
                     )
                 else:
-                    LOG.debug("Metadata export file path: %s", str(export_file))
+                    LOG.debug("Metadata export file path '%s'", str(export_file))
                     raise RuntimeError(
                         "Metadata output file exists; overwriting not allowed."
                     )
             else:
-                LOG.debug("Metadata export file path: %s not a file", str(export_file))
+                LOG.debug("Metadata export file path '%s' not a file", str(export_file))
                 raise RuntimeError(
                     "Conflicting path to metadata output file; cannot overwrite."
                 )

@@ -60,7 +60,7 @@ def _format_parser_id_rule(
     # Further value filtering can be done through key selection in !parsing directive.
 
     if not isinstance(value, str):
-        LOG.debug("value type: %s\nexpected type: %s", str(type(value)), str(str))
+        LOG.debug("value type '%s' , expected type '%s'", str(type(value)), str(str))
         raise TypeError("Incorrect value type for formatting parser id.")
 
     # Currently only one parser reference per entry is allowed
@@ -68,7 +68,7 @@ def _format_parser_id_rule(
     if len(interpreted_schema.items()) > 1:
         if is_debug():
             LOG.debug(
-                "schema entry key: %s\nschema entry content: %s",
+                "schema entry key '%s'\nschema entry content = %s",
                 interpreted_schema.key,
                 dumps(interpreted_schema, indent=4, default=vars),
             )
@@ -93,7 +93,7 @@ def _format_parser_id_rule(
             elif not isinstance(parsed_metadata, dict):
                 if is_debug():
                     LOG.debug(
-                        "parsed metadata: %s\ncontext: %s",
+                        "parsed metadata = %s\ncontext = %s",
                         dumps(parsed_metadata, indent=4, default=vars),
                         dumps(interpreted_schema.context, indent=4, default=vars),
                     )
@@ -124,7 +124,7 @@ def _format_parser_id_rule(
             elif not isinstance(parsed_metadata, dict):
                 if is_debug():
                     LOG.debug(
-                        "parsed metadata: %s\ncontext: %s",
+                        "parsed metadata = %s\ncontext = %s",
                         dumps(parsed_metadata, indent=4, default=vars),
                         dumps(interpreted_schema.context, indent=4, default=vars),
                     )
@@ -167,7 +167,7 @@ def _format_parser_id_rule(
                 if not unpack:
                     if is_debug():
                         LOG.debug(
-                            "parsing context: %s",
+                            "parsing context = %s",
                             dumps(parsing_context, indent=4, default=vars),
                         )
                     raise ValueError(
@@ -180,7 +180,7 @@ def _format_parser_id_rule(
                 if unpack == 0:
                     if is_debug():
                         LOG.debug(
-                            "parsing context: %s",
+                            "parsing context = %s",
                             dumps(parsing_context, indent=4, default=vars),
                         )
                     raise ValueError(
@@ -190,7 +190,7 @@ def _format_parser_id_rule(
                 metadata = unpack_nested_value(metadata, unpack)
             else:
                 LOG.debug(
-                    "Unpack type: %s, expected types: %s or %s",
+                    "Unpack type '%s', expected types '%s' or '%s'",
                     str(type(unpack)),
                     str(bool),
                     str(int),
@@ -234,13 +234,13 @@ def _format_calculate_rule(
     # At this point variable, count and names have been verified by Interpreter.
 
     if not isinstance(value, dict):
-        LOG.debug("value type: %s\nexpected type: %s", str(type(value)), str(dict))
+        LOG.debug("value type '%s' , expected type '%s'", str(type(value)), str(dict))
         raise TypeError("Incorrect value type found while formatting calculation")
 
     if not all(key in value for key in ["expression", "variables"]):
         if is_debug():
             LOG.debug(
-                "!calculate directive value: %s", dumps(value, indent=4, default=vars)
+                "!calculate directive value = %s", dumps(value, indent=4, default=vars)
             )
         raise RuntimeError(
             "Malformed !calculate entry found while formatting calculation."
@@ -257,14 +257,14 @@ def _format_calculate_rule(
         entry = variables[variable]
         if not isinstance(entry, SchemaEntry):
             LOG.debug(
-                "entry type: %s\nexpected type: %s", str(type(entry)), str(SchemaEntry)
+                "entry type '%s' , expected type '%s'", str(type(entry)), str(SchemaEntry)
             )
             raise TypeError(
                 "Incorrect variable type found while formatting calculation."
             )
         if not len(entry.items()) == 1:
             if is_debug():
-                LOG.debug("entry content: %s", dumps(entry, indent=4, default=vars))
+                LOG.debug("entry content = %s", dumps(entry, indent=4, default=vars))
             raise ValueError(
                 "Incorrect variable entry found while formatting calculation."
             )

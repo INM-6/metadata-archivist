@@ -21,7 +21,7 @@ from pathlib import Path
 from hashlib import sha3_256
 from hmac import new, compare_digest
 from typing import Optional, Dict, Union, Any
-from collections.abc import Iterable, Iterator, ItemsView
+from collections.abc import Iterator, ItemsView
 from pickle import loads as p_loads, dumps as p_dumps, HIGHEST_PROTOCOL
 
 
@@ -86,7 +86,7 @@ class CacheEntry:
         if self.metadata is None:
             if self._digest is None:
                 if is_debug():
-                    LOG.debug("CacheEntry: %s", dumps(self, indent=4, default=vars))
+                    LOG.debug("CacheEntry = %s", dumps(self, indent=4, default=vars))
                 raise RuntimeError("Metadata has not been cached yet.")
 
             with self.meta_path.open("rb", encoding=None) as f:
@@ -99,7 +99,7 @@ class CacheEntry:
 
             if self.metadata is None:
                 if is_debug():
-                    LOG.debug("CacheEntry: %s", dumps(self, indent=4, default=vars))
+                    LOG.debug("CacheEntry = %s", dumps(self, indent=4, default=vars))
                 raise RuntimeError("Failed to load metadata from CacheEntry.")
 
         return self.metadata
@@ -121,7 +121,7 @@ class CacheEntry:
                     str(self.meta_path),
                 )
             else:
-                LOG.debug("Meta file path: %s", str(self.meta_path))
+                LOG.debug("Meta file path '%s'", str(self.meta_path))
                 raise FileExistsError(
                     "Unable to save parsed metadata; overwriting not allowed."
                 )
@@ -230,7 +230,7 @@ class FormatterCache:
         if parser_name not in self._cache:
             self._cache[parser_name] = ParserCache()
         else:
-            LOG.debug("Parser name: %s", parser_name)
+            LOG.debug("Parser name '%s'", parser_name)
             raise KeyError("Parser already exists in cache.")
 
     def drop(self, parser_name: str) -> None:
@@ -324,7 +324,7 @@ class ParserIndexes:
             return self._scp_indexes
 
         LOG.debug(
-            "storage value: %s\naccepted values: %s",
+            "storage value '%s' , accepted values '%s'",
             storage,
             str(prs_patterns + ifp_patterns + scp_patterns),
         )
@@ -479,18 +479,18 @@ class SchemaInterpreter:
 
         if not isinstance(schema, dict):
             LOG.debug(
-                "schema type: %s, expected type: %s", str(type(schema)), str(dict)
+                "schema type '%s' , expected type '%s'", str(type(schema)), str(dict)
             )
             raise TypeError("Incorrect schema used for iterator.")
         if "properties" not in schema or not isinstance(schema["properties"], dict):
             if is_debug():
-                LOG.debug("schema: %s", dumps(schema, indent=4, default=vars))
+                LOG.debug("schema = %s", dumps(schema, indent=4, default=vars))
             raise ValueError(
                 "Incorrect schema structure, root is expected to contain properties dictionary."
             )
         if "$defs" not in schema or not isinstance(schema["$defs"], dict):
             if is_debug():
-                LOG.debug("schema: %s", dumps(schema, indent=4, default=vars))
+                LOG.debug("schema = %s", dumps(schema, indent=4, default=vars))
             raise ValueError(
                 "Incorrect schema structure, root is expected to contain $defs dictionary."
             )
@@ -545,7 +545,7 @@ class SchemaInterpreter:
 
             # If key is a known ignored keyword
             if key in IGNORED_ITERABLE_KEYWORDS:
-                LOG.debug("Ignoring schema keyword: %s", key)
+                LOG.debug("Ignoring schema keyword '%s'", key)
 
             # If the key is known as an interpretation rule
             # call the function mapped into the INTERPRETATION_RULE dictionary
@@ -556,7 +556,7 @@ class SchemaInterpreter:
                 if _parent_key is None:
                     if is_debug():
                         LOG.debug(
-                            "current structure: %s",
+                            "current structure = %s",
                             dumps(_relative_root, indent=4, default=vars),
                         )
                     raise RuntimeError("Cannot interpret rule without parent key.")
@@ -579,11 +579,11 @@ class SchemaInterpreter:
 
                 # Case literal i.e. leaf
                 elif isinstance(val, (str, bool, int, float)):
-                    LOG.debug("Ignoring key value pair: (%s: %s)", key, str(val))
+                    LOG.debug("Ignoring key value pair ('%s', '%s')", key, str(val))
 
                 # Else not-implemented
                 else:
-                    LOG.debug("Unknown iterable type: %s", str(type(val)))
+                    LOG.debug("Unknown iterable type '%s'", str(type(val)))
                     raise NotImplementedError("Unknown iterable type.")
 
         return _relative_root
@@ -600,7 +600,7 @@ class SchemaInterpreter:
             # Passing through dumps for pretty printing,
             # however can be costly, so checking if debug is enabled first
             LOG.debug(
-                "Initial structure: %s", dumps(self.schema, indent=4, default=vars)
+                "Initial structure = %s", dumps(self.schema, indent=4, default=vars)
             )
 
         if self.structure.is_empty():
@@ -610,7 +610,7 @@ class SchemaInterpreter:
             # Passing through dumps for pretty printing,
             # however can be costly, so checking if debug is enabled first
             LOG.debug(
-                "Interpreted structure: %s",
+                "Interpreted structure = %s",
                 dumps(self.structure, indent=4, default=vars),
             )
 

@@ -123,14 +123,14 @@ class Archivist:
                     self.config[key] = value
                     key_list.remove(key)
                 else:
-                    LOG.warning("Incorrect type for argument: %s, ignoring value", key)
+                    LOG.warning("Incorrect type for argument '%s' ignoring value", key)
             else:
-                LOG.warning("Unused argument: %s", key)
+                LOG.warning("Unused argument '%s'", key)
 
         if is_debug():
             for key in key_list:
                 LOG.debug(
-                    "No argument found for: '%s' initializing by default: '%s'",
+                    "No argument found for '%s' initializing by default '%s'",
                     key,
                     str(self.config[key]),
                 )
@@ -186,12 +186,12 @@ class Archivist:
         if self.config["auto_cleanup"]:
             if self._cache["extraction"]:
                 root_extraction_path = self._cache["explored_dirs"][0]
-                LOG.info("Cleaning extraction directory: %s", str(root_extraction_path))
+                LOG.info("Cleaning extraction directory '%s'", str(root_extraction_path))
                 try:
                     rmtree(root_extraction_path)
                 except OSError as e:
                     LOG.warning(
-                        "error cleaning %s: %s",
+                        "error cleaning '%s' - '%s'",
                         str(root_extraction_path),
                         e.message if hasattr(e, "message") else str(e),
                     )
@@ -199,12 +199,12 @@ class Archivist:
             # TODO: output meta files to specific directory such as to only invoke rmtree on it
             elif len(self._cache["meta_files"]) > 0:
                 for fp in self._cache["meta_files"]:
-                    LOG.info("Cleaning meta file: %s", str(fp))
+                    LOG.info("Cleaning meta file '%s'", str(fp))
                     try:
                         fp.unlink()
                     except FileNotFoundError as e:
                         LOG.warning(
-                            "error cleaning %s: %s",
+                            "error cleaning '%s' - '%s'",
                             str(fp),
                             e.message if hasattr(e, "message") else str(e),
                         )

@@ -11,7 +11,7 @@ the INTERPRETATION_RULES dictionary.
 All rule functions must have the same arguments.
 
 Arguments:
-    object: dict object to export.
+    export_object: dict object to export.
     outfile: Path object to target file.
 
 exports:
@@ -37,49 +37,31 @@ except ImportError:
         raise ModuleNotFoundError("PyYAML package was not found in environment.")
 
 
-def _export_yaml(object: dict, outfile: Path) -> None:
-    """
-    Exports YAML object to file.
+def _export_yaml(export_object: dict, outfile: Path) -> None:
+    # Exports YAML object to file.
 
-    Arguments:
-        object: dict object to export.
-        outfile: Path object to target file.
-    """
-
-    LOG.debug("   exporting YAML to file: %s", str(outfile))
+    LOG.debug("   exporting YAML to file '%s'", str(outfile))
 
     with outfile.open("w", encoding="utf-8") as f:
-        y_dump(object, f, sort_keys=False)
+        y_dump(export_object, f, sort_keys=False)
 
 
-def _export_pickle(object: dict, outfile: Path) -> None:
-    """
-    Pickles object to file.
+def _export_pickle(export_object: dict, outfile: Path) -> None:
+    # Pickles object to file.
 
-    Arguments:
-        object: dict object to export.
-        outfile: Path object to target file.
-    """
-
-    LOG.debug("   exporting pickle to file: %s", str(outfile))
+    LOG.debug("   exporting pickle to file '%s'", str(outfile))
 
     with outfile.open("wb", encoding=None) as f:
-        p_dump(object, f, protocol=HIGHEST_PROTOCOL)
+        p_dump(export_object, f, protocol=HIGHEST_PROTOCOL)
 
 
-def _export_json(object: dict, outfile: Path) -> None:
-    """
-    Exports JSON object to file.
+def _export_json(export_object: dict, outfile: Path) -> None:
+    # Exports JSON export_object to file.
 
-    Arguments:
-        object: dict object to export.
-        outfile: Path object to target file.
-    """
-
-    LOG.debug("   exporting JSON to file: %s", str(outfile))
+    LOG.debug("   exporting JSON to file '%s'", str(outfile))
 
     with outfile.open("w", encoding="utf-8") as f:
-        j_dump(object, f, indent=4)
+        j_dump(export_object, f, indent=4)
 
 
 EXPORT_RULES = {

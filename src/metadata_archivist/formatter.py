@@ -210,7 +210,7 @@ class Formatter:
                     self._encoding_key = f.read()
 
             else:
-                LOG.debug("config encoding key value: %s", str(encoding_key))
+                LOG.debug("config encoding key value '%s'", str(encoding_key))
                 raise ValueError("No appropriate encoding key could be generated.")
 
         return self._encoding_key
@@ -264,7 +264,7 @@ class Formatter:
             self._schema["$defs"] = {"node": {"properties": {"anyOf": []}}}
         elif not isinstance(self._schema["$defs"], dict):
             LOG.debug(
-                "$def property type: %s\nexpected type: %s",
+                "$def property type '%s' , expected type '%s'",
                 str(type(self._schema["$defs"])),
                 str(dict),
             )
@@ -374,7 +374,7 @@ class Formatter:
         for ex in self.parsers:
             if ex.name == parser_name:
                 return ex, self._cache[parser_name]
-        LOG.warning("No Parser with name: %s exist", parser_name)
+        LOG.warning("No Parser with name '%s' exist", parser_name)
         return None, None
 
     def parse_files(
@@ -403,7 +403,7 @@ class Formatter:
         for parser in self._parsers:
             pid = parser.name
             to_parse[pid] = []
-            LOG.debug("    preparing parser: %s", pid)
+            LOG.debug("    preparing parser '%s'", pid)
             for fp in file_paths:
                 pattern = parser.input_file_pattern.split("/")
                 pattern.reverse()
@@ -413,7 +413,7 @@ class Formatter:
         # TODO: Think about parallelization scheme with ProcessPoolExecutor
         for pid, sorted_paths in to_parse.items():
             for file_path in sorted_paths:
-                LOG.debug("    parsing file: %s", str(file_path))
+                LOG.debug("    parsing file '%s'", str(file_path))
                 # Get parser and parse metadata
                 pix = self._indexes.get_index(pid, "prs")
                 parser = self._parsers[pix]
@@ -493,7 +493,7 @@ class Formatter:
                         if len(recursion_result) > 1 or node not in recursion_result:
                             if is_debug():
                                 LOG.debug(
-                                    "current metadata tree: %s\nrecursion results: %s",
+                                    "current metadata tree = %s\nrecursion results = %s",
                                     dumps(tree, indent=4, default=vars),
                                     dumps(recursion_result, indent=4, default=vars),
                                 )
@@ -515,7 +515,7 @@ class Formatter:
                     else:
                         if is_debug():
                             LOG.debug(
-                                "current metadata tree: %s\nrecursion results: %s",
+                                "current metadata tree = %s\nrecursion results = %s",
                                 dumps(tree, indent=4, default=vars),
                                 dumps(recursion_result, indent=4, default=vars),
                             )
@@ -537,7 +537,7 @@ class Formatter:
             # Nodes should not be of a different type than SchemaEntry
             else:
                 LOG.debug(
-                    "entry key: %s\nvalue type: %s\nexpected type: %s",
+                    "entry key '%s' , value type '%s' , expected type '%s'",
                     key,
                     str(type(value)),
                     str(helpers.SchemaEntry),
@@ -617,7 +617,7 @@ def _combine(
                 if key not in formatter2.config:
                     if is_debug():
                         LOG.debug(
-                            "formatter1.config: %s\nformatter2.config: %s",
+                            "formatter1.config = %s\nformatter2.config = %s",
                             dumps(formatter1.config, indent=4, default=vars),
                             dumps(formatter2.config, indent=4, default=vars),
                         )
@@ -625,7 +625,7 @@ def _combine(
                 if value != formatter2.config[key]:
                     if is_debug():
                         LOG.debug(
-                            "formatter1.config: %s\nformatter2.config: %s",
+                            "formatter1.config = %s\nformatter2.config = %s",
                             dumps(formatter1.config, indent=4, default=vars),
                             dumps(formatter2.config, indent=4, default=vars),
                         )

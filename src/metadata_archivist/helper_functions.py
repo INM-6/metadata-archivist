@@ -82,10 +82,10 @@ def check_dir(dir_path: str, allow_existing: bool = False) -> Tuple[Path, bool]:
     if str(path) != ".":
         if path.exists():
             if not allow_existing:
-                LOG.debug("directory path: %s", str(path))
+                LOG.debug("directory path '%s'", str(path))
                 raise RuntimeError("Directory already exists.")
             if not path.is_dir():
-                LOG.debug("found path: %s", str(path))
+                LOG.debug("found path '%s'", str(path))
                 raise NotADirectoryError("Incorrect path to directory.")
         else:
             path.mkdir(parents=True)
@@ -113,7 +113,7 @@ def update_dict_with_parts(target_dict: dict, value: Any, parts: list) -> None:
         elif not isinstance(relative_root[part], dict):
             if is_debug():
                 LOG.debug(
-                    "key: %s\nrelative root: %s",
+                    "key %s\nrelative root = %s",
                     part,
                     dumps(relative_root, indent=4, default=vars),
                 )
@@ -158,7 +158,7 @@ def merge_dicts(dict1: dict, dict2: dict) -> dict:
                     elif isinstance(val1, frozenset):
                         merged_dict[key] = frozenset(list(val1) + list(val2))
                     else:
-                        LOG.debug("Unknown iterable type: %s", str(type(val1)))
+                        LOG.debug("Unknown iterable type '%s'", str(type(val1)))
                         raise RuntimeError("Unknown Iterable type.")
                 else:
                     if val1 == val2:
@@ -167,7 +167,7 @@ def merge_dicts(dict1: dict, dict2: dict) -> dict:
                         merged_dict[key] = [val1, val2]
             else:
                 LOG.debug(
-                    "val1 type: %s, val2 type: %s", str(type(val1)), str(type(val2))
+                    "val1 type '%s', val2 type '%s'", str(type(val1)), str(type(val2))
                 )
                 raise TypeError("Type mismatch while merge dictionaries.")
         else:
@@ -236,15 +236,15 @@ def deep_get_from_schema(schema: dict, keys: list) -> Any:
                     pass
 
         if is_debug():
-            LOG.debug("schema: %s", dumps(schema, indent=4, default=vars))
-            LOG.debug("keys: %s", dumps(keys, indent=4, default=vars))
+            LOG.debug("schema = %s", dumps(schema, indent=4, default=vars))
+            LOG.debug("keys = %s", dumps(keys, indent=4, default=vars))
         raise StopIteration(
             "Iterated through schema without finding corresponding keys."
         )
 
     if is_debug():
-        LOG.debug("schema: %s", dumps(schema, indent=4, default=vars))
-        LOG.debug("keys: %s", dumps(keys, indent=4, default=vars))
+        LOG.debug("schema = %s", dumps(schema, indent=4, default=vars))
+        LOG.debug("keys = %s", dumps(keys, indent=4, default=vars))
     raise StopIteration("No key found for corresponding schema.")
 
 
@@ -274,7 +274,7 @@ def pattern_parts_match(
             # !varname and regexp should always be in context in this case
             if "!varname" not in context or "regexp" not in context:
                 if is_debug():
-                    LOG.debug("context: %s", dumps(context, indent=4, default=vars))
+                    LOG.debug("context = %s", dumps(context, indent=4, default=vars))
                 raise RuntimeError("Badly structured context for pattern matching.")
 
             # Match against same index element in file path
@@ -282,13 +282,13 @@ def pattern_parts_match(
                 part.format(**{context["!varname"]: context["regexp"]}), actual_parts[i]
             ):
                 LOG.debug(
-                    "pattern: '%s' did not match against '%s'", part, actual_parts[i]
+                    "pattern '%s' did not match against '%s'", part, actual_parts[i]
                 )
                 break
 
         # Else literal matching
         elif not fullmatch(part, actual_parts[i]):
-            LOG.debug("pattern: '%s' did not match against '%s'", part, actual_parts[i])
+            LOG.debug("pattern '%s' did not match against '%s'", part, actual_parts[i])
             break
 
     # Everything matched in the for loop i.e. no breakpoint reached
@@ -316,9 +316,9 @@ def unpack_nested_value(iterable: Any, level: Optional[int] = None) -> Any:
         if level is not None and level > 0:
             if is_debug():
                 LOG.debug(
-                    "iterable: %s\nlevel: %i",
-                    dumps(iterable, indent=4, default=vars),
+                    "level %i\niterable = %s",
                     level,
+                    dumps(iterable, indent=4, default=vars),
                 )
             raise RuntimeError("Cannot further unpack iterable.")
         return iterable
@@ -326,9 +326,9 @@ def unpack_nested_value(iterable: Any, level: Optional[int] = None) -> Any:
     if len(iterable) > 1 and (level is None or level > 0):
         if is_debug():
             LOG.debug(
-                "iterable: %s\nlevel: %i",
-                dumps(iterable, indent=4, default=vars),
+                "level %i\niterable = %s",
                 level,
+                dumps(iterable, indent=4, default=vars),
             )
         raise IndexError("Multiple branching possible when unpacking nested value.")
 
@@ -486,7 +486,7 @@ def filter_metadata(metadata: dict, keys: list) -> dict:
 
     new_dict = {}
     for k in keys:
-        LOG.debug("Filtering key: %s", k)
+        LOG.debug("Filtering key '%s'", k)
         new_dict = merge_dicts(new_dict, filter_dict(metadata, k.split("/")))
     return new_dict
 
@@ -526,10 +526,10 @@ def add_info_from_schema(
             try:
                 schema_entry = deep_get_from_schema(schema, key_list + [key])
             except StopIteration:
-                LOG.warning("No schema entry found for metadata value: %s", key)
+                LOG.warning("No schema entry found for metadata value '%s'", key)
                 if is_debug():
                     LOG.debug(
-                        "key: %s\nvalue: %s\nmetadata: %s\nschema: %s",
+                        "key '%s' , value '%s'\nmetadata = %s\nschema = %s",
                         str(key),
                         str(value),
                         dumps(metadata, indent=4, default=vars),

@@ -72,7 +72,7 @@ class Explorer:
 
         n_path = Path(explore_path)
         if not n_path.exists():
-            LOG.debug("Target path: %s", explore_path)
+            LOG.debug("Target path '%s'", explore_path)
             raise RuntimeError("Nothing found in exploration target path.")
 
         if n_path.is_dir():
@@ -99,7 +99,7 @@ def _check_archive(file_path: Path, extraction_directory: str) -> Tuple[Path, Ca
     """
 
     if not file_path.is_file():
-        LOG.debug("Path to file: %s", str(file_path))
+        LOG.debug("Path to file '%s'", str(file_path))
         raise FileNotFoundError("Incorrect path to file.")
 
     if is_zipfile(file_path):
@@ -115,7 +115,7 @@ def _check_archive(file_path: Path, extraction_directory: str) -> Tuple[Path, Ca
         # Returning file path is used for protected set method of internal _archive_path attribute.
         return decompress_method
 
-    LOG.debug("Archive suffix: %s", file_path.suffix)
+    LOG.debug("Archive suffix '%s'", file_path.suffix)
     raise RuntimeError("Unknown archive format.")
 
 
@@ -140,8 +140,8 @@ def _decompress_tar(
             2. list of Path objects of decompressed files.
     """
 
-    LOG.info("Extracting archive: %s ...", archive_path.name)
-    LOG.debug("   exploring using patterns: %s", str(input_file_patterns))
+    LOG.info("Extracting archive '%s' ...", archive_path.name)
+    LOG.debug("   exploring using patterns '%s'", str(input_file_patterns))
 
     created = False
     if not isinstance(extraction_directory, Path):
@@ -158,7 +158,7 @@ def _decompress_tar(
         item = t.next()
         while item is not None:
             if item.isfile():
-                LOG.debug("   processing file: %s", item.name)
+                LOG.debug("   processing file '%s'", item.name)
                 item_path = directory_path.joinpath(item.name)
                 if any(item.name.endswith(format) for format in _ACCEPTED_FORMATS):
                     t.extract(item, path=directory_path)
@@ -207,15 +207,15 @@ def _dir_explore(
             2. list of Path objects of explored files.
     """
 
-    LOG.info("Exploring directory: %s ...", directory_path.name)
-    LOG.debug("   exploring using patterns: %s", str(input_file_patterns))
+    LOG.info("Exploring directory '%s' ...", directory_path.name)
+    LOG.debug("   exploring using patterns '%s'", str(input_file_patterns))
 
     explored_dirs = [directory_path]
     explored_files = []
 
     for item_path in directory_path.glob("*"):
         if item_path.is_file():
-            LOG.debug("   processing file: %s", item_path.name)
+            LOG.debug("   processing file '%s'", item_path.name)
             # TODO: think about precompiling patterns to optimize regex match time
             if any(
                 pattern_parts_match(

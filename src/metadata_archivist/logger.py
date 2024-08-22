@@ -16,30 +16,24 @@ Authors: Jose V., Matthias K.
 
 """
 
+import sys
 import logging
 
+_stderr = logging.StreamHandler(stream=sys.stderr)
 
-class _LogFormatter(logging.Formatter):
-    """
-    Specialization of logging module Formatter class.
-    Designed to have a specific format style depending on record level.
-    """
+_simple_format = logging.Formatter(
+    "%(levelname)s : %(message)s"
+)
+_info_format = logging.Formatter(
+    "%(levelname)s : %(module)s : %(message)s"
+)
+_full_format = logging.Formatter(
+    "\n%(name)s | %(asctime)s | %(levelname)s : %(levelno)s | %(filename)s : %(funcName)s : %(lineno)s | %(processName)s : %(process)d | %(message)s\n"
+)
 
-    def format(self, record) -> str:
-        if record.levelno == logging.INFO:
-            self._style._fmt = "%(message)s"
-        elif record.levelno == logging.DEBUG:
-            self._style._fmt = "%(levelname)s: %(message)s"
-        else:
-            self._style._fmt = "\n%(levelname)s: %(message)s\n"
-        return super().format(record)
-
-
-_HANDLER = logging.StreamHandler()
-_HANDLER.setFormatter(_LogFormatter())
-logging.basicConfig(handlers=[_HANDLER], level=logging.INFO)
-LOG = logging.getLogger()
-LOG.addHandler(_HANDLER)
+LOG = logging.getLogger(__name__)
+LOG.addHandler(_stderr)
+LOG.setLevel(logging.INFO)
 
 
 def set_level(level: str) -> bool:
@@ -54,13 +48,16 @@ def set_level(level: str) -> bool:
     """
     if level == "warning":
         LOG.setLevel(logging.WARNING)
+        _stderr.setFormatter(_simple_format)
     elif level == "info":
         LOG.setLevel(logging.INFO)
+        _stderr.setFormatter(_info_format)
     elif level == "debug":
         LOG.setLevel(logging.DEBUG)
+        _stderr.setFormatter(_full_format)
     else:
         LOG.warning(
-            "Trying to set incorrect logging level: %s, staying at current level.",
+            "Trying to set incorrect logging level '%s', staying at current level.",
             level,
         )
         return False

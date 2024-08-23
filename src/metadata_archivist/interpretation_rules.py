@@ -155,35 +155,7 @@ def _interpret_refs(definitions: dict, prop_val: str, entry: "SchemaEntry") -> "
     LOG.debug("Processing reference to '%s'", pid)
     entry["!parser_id"] = pid
 
-    # Further process reference e.g. filters, internal property references -> links
-    sub_schema = definitions[pid]["properties"]
-    links = __interpret_sub_schema(sub_schema, entry, filters=None if len(val_split) <= 3 else val_split[3:])
-    # TODO: take care of linking
-
     return entry
-
-
-def __interpret_sub_schema(sub_schema: dict, entry: "SchemaEntry", filters: Optional[list] = None) -> list:
-    """
-    WIP
-    Recursively explore Parser sub-schema and collect entry names and description.
-    List of keys can be passed as filters to select a branch of the Parser sub schema.
-    Resulting list should contain all the #/property that needs to be linked
-    with their respective positions so that _process_refs can take care of creating links
-    and avoid circular dependencies.
-
-    Arguments:
-        sub_schema: dictionary of Parser schema.
-        entry: schema entry where Parser was referenced.
-        filters: list of filters to apply to Parser schema.
-
-    Returns:
-        list of filtered sub-properties of Parser schema.
-    """
-
-    # TODO
-
-    return []
 
 
 def _interpret_calculate_directive_rule(

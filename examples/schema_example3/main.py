@@ -40,9 +40,7 @@ my_schema = {
                 "^basin_.*": {
                     "type": "object",
                     "properties": {
-                        "basin_characteristics": {
-                            "$ref": "#/$defs/basin_character_parser"
-                        },
+                        "basin_characteristics": {"$ref": "#/$defs/basin_character_parser"},
                         "simulation": {
                             "type": "object",
                             "properties": {
@@ -55,9 +53,7 @@ my_schema = {
                 "^station_.*": {
                     "type": "object",
                     "properties": {
-                        "basin_characteristics": {
-                            "$ref": "#/$defs/station_character_parser"
-                        },
+                        "basin_characteristics": {"$ref": "#/$defs/station_character_parser"},
                         "simulation": {
                             "type": "object",
                             "properties": {

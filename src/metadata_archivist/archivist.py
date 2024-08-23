@@ -144,9 +144,7 @@ class Archivist:
         Generates internal cache of returned objects.
         """
 
-        explored_path, explored_dirs, explored_files = self._explorer.explore(
-            self._formatter.input_file_patterns
-        )
+        explored_path, explored_dirs, explored_files = self._explorer.explore(self._formatter.input_file_patterns)
 
         meta_files = self._formatter.parse_files(explored_path, explored_files)
 
@@ -189,9 +187,7 @@ class Archivist:
         if self.config["auto_cleanup"]:
             if self._cache["extraction"]:
                 root_extraction_path = self._cache["explored_dirs"][0]
-                LOG.info(
-                    "Cleaning extraction directory '%s'", str(root_extraction_path)
-                )
+                LOG.info("Cleaning extraction directory '%s'", str(root_extraction_path))
                 try:
                     rmtree(root_extraction_path)
                 except OSError as e:

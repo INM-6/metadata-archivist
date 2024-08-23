@@ -32,9 +32,7 @@ if __name__ == "__main__":
         config = load(f)
     config["verbosity"] = args.verbosity
 
-    arch = Archivist(
-        path="metadata_archive.tar", parsers=[time_parser(), yml_parser()], **config
-    )
+    arch = Archivist(path="metadata_archive.tar", parsers=[time_parser(), yml_parser()], **config)
 
     arch.parse()
     arch.export()

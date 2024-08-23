@@ -12,9 +12,7 @@ from metadata_archivist import AParser
 NCDUMP_HS_SCHEMA = {}
 
 
-def head_rest_split_line(
-    line: str, head_index: int = 0, split_val: str = ":", clean=None
-) -> dict:
+def head_rest_split_line(line: str, head_index: int = 0, split_val: str = ":", clean=None) -> dict:
     if clean is not None:
         line = clean(line)
 
@@ -106,12 +104,8 @@ class ncdump_hs_parser(AParser):
                         else:
                             raise RuntimeError("unknown format in ncdump output!")
                     else:
-                        out["variables"][variable_name].update(
-                            key_val_split_rm_prefix(line[:-3], "=", ":")
-                        )
+                        out["variables"][variable_name].update(key_val_split_rm_prefix(line[:-3], "=", ":"))
                 elif blockname == "global_attributes":
-                    out["global_attributes"].update(
-                        key_val_split_rm_prefix(line[:-3], "=", 1)
-                    )
+                    out["global_attributes"].update(key_val_split_rm_prefix(line[:-3], "=", 1))
 
         return out

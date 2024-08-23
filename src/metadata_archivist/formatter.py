@@ -119,9 +119,7 @@ class Formatter:
         self.config = config
         self.metadata = {}
 
-        self.combine = lambda formatter2, schema=None: _combine(
-            formatter1=self, formatter2=formatter2, schema=schema
-        )
+        self.combine = lambda formatter2, schema=None: _combine(formatter1=self, formatter2=formatter2, schema=schema)
 
         self.get_encoding_key()
 
@@ -143,9 +141,7 @@ class Formatter:
         Forbidden setter for parsers attribute.
         (pythonic indirection for protected attributes)
         """
-        raise AttributeError(
-            "parsers list should be modified through add, update and remove procedures"
-        )
+        raise AttributeError("parsers list should be modified through add, update and remove procedures")
 
     @property
     def input_file_patterns(self) -> List[str]:
@@ -161,9 +157,7 @@ class Formatter:
         Forbidden setter for input_file_patterns attribute.
         (pythonic indirection for protected attributes)
         """
-        raise AttributeError(
-            "Input file patterns list should be modified through add, update and remove procedures"
-        )
+        raise AttributeError("Input file patterns list should be modified through add, update and remove procedures")
 
     @property
     def schema(self) -> dict:
@@ -198,9 +192,7 @@ class Formatter:
 
             encoding_key = self.config["encoding_key"]
             if encoding_key is None:
-                self._encoding_key = sha3_256(
-                    p_dumps(self.config, protocol=HIGHEST_PROTOCOL)
-                ).digest()
+                self._encoding_key = sha3_256(p_dumps(self.config, protocol=HIGHEST_PROTOCOL)).digest()
 
             elif isinstance(encoding_key, bytes):
                 self._encoding_key = encoding_key
@@ -240,14 +232,10 @@ class Formatter:
             return
         if lazy_load and not self.config["lazy_load"]:
             if len(self.metadata) > 0:
-                raise RuntimeError(
-                    "Lazy loading needs to be enabled before metadata parsing"
-                )
+                raise RuntimeError("Lazy loading needs to be enabled before metadata parsing")
         else:
             if len(self.metadata) > 0:
-                LOG.warning(
-                    "Compiling available metadata after disabling lazy loading."
-                )
+                LOG.warning("Compiling available metadata after disabling lazy loading.")
             self.compile_metadata()
         self.config["lazy_load"] = lazy_load
 
@@ -271,9 +259,7 @@ class Formatter:
                 str(type(self._schema["$defs"])),
                 str(dict),
             )
-            raise TypeError(
-                "Incorrect schema format, $defs property should be a dictionary."
-            )
+            raise TypeError("Incorrect schema format, $defs property should be a dictionary.")
 
         pid = parser.name
         p_ref = parser.get_reference()
@@ -282,9 +268,7 @@ class Formatter:
         if "node" not in self._schema["$defs"]:
             self._schema["$defs"].update({"node": {"properties": {"anyOf": []}}})
 
-        self._indexes.set_index(
-            pid, "scp", len(self._schema["$defs"]["node"]["properties"]["anyOf"])
-        )
+        self._indexes.set_index(pid, "scp", len(self._schema["$defs"]["node"]["properties"]["anyOf"]))
         self._schema["$defs"]["node"]["properties"]["anyOf"].append({"$ref": p_ref})
 
     def add_parser(self, parser: AParser) -> None:
@@ -332,9 +316,7 @@ class Formatter:
 
         if self._use_schema:
             scp_index = self._indexes.get_index(pid, "scp")
-            self._schema["$defs"]["node"]["properties"]["anyOf"][scp_index] = {
-                "$ref": parser.get_reference()
-            }
+            self._schema["$defs"]["node"]["properties"]["anyOf"][scp_index] = {"$ref": parser.get_reference()}
 
     def remove_parser(self, parser: AParser) -> None:
         """
@@ -354,9 +336,7 @@ class Formatter:
         self._input_file_patterns.pop(indexes["ifp"], None)
 
         if self._use_schema:
-            self._schema["$defs"]["node"]["properties"]["anyOf"].pop(
-                indexes["scp"], None
-            )
+            self._schema["$defs"]["node"]["properties"]["anyOf"].pop(indexes["scp"], None)
             self._schema["$defs"].pop(pid, None)
 
         self._cache.drop(pid)
@@ -473,9 +453,7 @@ class Formatter:
                 # If current context contains regex information (children always inherit context)
                 # We merge all recursion results from children and return the resulting merge
                 if "useRegex" in context:
-                    tree = merge_dicts(
-                        tree, self._update_metadata_tree_with_schema(value, branch)
-                    )
+                    tree = merge_dicts(tree, self._update_metadata_tree_with_schema(value, branch))
 
                 # If current context does not contain regex information but child context does,
                 # we need to integrate the recursion result into the metadata tree.
@@ -484,9 +462,7 @@ class Formatter:
                 # a merging conflict. For this we loop over the tree nodes stored in the branch
                 # until we reach the current node and at that point we integrate into the tree.
                 elif "useRegex" in value.context:
-                    recursion_result = self._update_metadata_tree_with_schema(
-                        value, branch
-                    )
+                    recursion_result = self._update_metadata_tree_with_schema(value, branch)
                     # For each tree node in the current branch
                     for node in branch:
 
@@ -498,9 +474,7 @@ class Formatter:
                                     dumps(tree, indent=4, default=vars),
                                     dumps(recursion_result, indent=4, default=vars),
                                 )
-                            raise RuntimeError(
-                                "Malformed recursion result when processing regex context"
-                            )
+                            raise RuntimeError("Malformed recursion result when processing regex context")
 
                         # If the current node is equal to the key in the interpreted schema i.e. last iteration of loop
                         if key == node:
@@ -520,9 +494,7 @@ class Formatter:
                                 dumps(tree, indent=4, default=vars),
                                 dumps(recursion_result, indent=4, default=vars),
                             )
-                        raise RuntimeError(
-                            "Malformed metadata tree when processing regex context"
-                        )
+                        raise RuntimeError("Malformed metadata tree when processing regex context")
 
                 # Else we add a new entry to the tree using the recursion results
                 else:
@@ -532,9 +504,7 @@ class Formatter:
 
             # If entry corresponds to an parser reference
             elif key in FORMATTING_RULES:
-                tree = FORMATTING_RULES[key](
-                    self, interpreted_schema, branch, value, **deepcopy(self.config)
-                )
+                tree = FORMATTING_RULES[key](self, interpreted_schema, branch, value, **deepcopy(self.config))
             # Nodes should not be of a different type than SchemaEntry
             else:
                 LOG.debug(
@@ -563,9 +533,7 @@ class Formatter:
         if self._use_schema:
             LOG.debug("    using schema structure ...")
             self._interpreter = helpers.SchemaInterpreter(self.schema)
-            self.metadata = self._update_metadata_tree_with_schema(
-                self._interpreter.generate()
-            )
+            self.metadata = self._update_metadata_tree_with_schema(self._interpreter.generate())
 
         else:
             LOG.debug("    using file path structure ...")
@@ -639,15 +607,11 @@ def _combine(
             # If same reference then keep reference
             config = formatter1.config
 
-    combined_formatter = Formatter(
-        schema=schema, parsers=formatter1.parsers + formatter2.parsers, config=config
-    )
+    combined_formatter = Formatter(schema=schema, parsers=formatter1.parsers + formatter2.parsers, config=config)
 
     if len(formatter1.metadata) > 0 or len(formatter2.metadata) > 0:
         # combined_parser.metadata = _merge_dicts(parser1.metadata, parser2.metadata)
-        raise NotImplementedError(
-            "Combining Parsers with existing metadata is not yet implemented."
-        )
+        raise NotImplementedError("Combining Parsers with existing metadata is not yet implemented.")
 
     return combined_formatter
 

@@ -58,9 +58,7 @@ IGNORED_ITERABLE_KEYWORDS = [
 
 
 # List of known iterable keywords in schema
-KNOWN_ITERABLE_KEYWORDS = sorted(
-    IGNORED_ITERABLE_KEYWORDS + ["properties", "patternProperties"]
-)
+KNOWN_ITERABLE_KEYWORDS = sorted(IGNORED_ITERABLE_KEYWORDS + ["properties", "patternProperties"])
 
 
 def check_dir(dir_path: str, allow_existing: bool = False) -> Tuple[Path, bool]:
@@ -118,9 +116,7 @@ def update_dict_with_parts(target_dict: dict, value: Any, parts: list) -> None:
                     part,
                     dumps(relative_root, indent=4, default=vars),
                 )
-            raise RuntimeError(
-                "Duplicate key with incorrect found while updating tree with path hierarchy."
-            )
+            raise RuntimeError("Duplicate key with incorrect found while updating tree with path hierarchy.")
         relative_root = relative_root[part]
     relative_root[parts[-1]] = value
 
@@ -166,9 +162,7 @@ def merge_dicts(dict1: dict, dict2: dict) -> dict:
                     else:
                         merged_dict[key] = [val1, val2]
             else:
-                LOG.debug(
-                    "val1 type '%s', val2 type '%s'", str(type(val1)), str(type(val2))
-                )
+                LOG.debug("val1 type '%s', val2 type '%s'", str(type(val1)), str(type(val2)))
                 raise TypeError("Type mismatch while merge dictionaries.")
         else:
             merged_dict[key] = dict1[key]
@@ -238,9 +232,7 @@ def deep_get_from_schema(schema: dict, keys: list) -> Any:
         if is_debug():
             LOG.debug("schema = %s", dumps(schema, indent=4, default=vars))
             LOG.debug("keys = %s", dumps(keys, indent=4, default=vars))
-        raise StopIteration(
-            "Iterated through schema without finding corresponding keys."
-        )
+        raise StopIteration("Iterated through schema without finding corresponding keys.")
 
     if is_debug():
         LOG.debug("schema = %s", dumps(schema, indent=4, default=vars))
@@ -248,9 +240,7 @@ def deep_get_from_schema(schema: dict, keys: list) -> Any:
     raise StopIteration("No key found for corresponding schema.")
 
 
-def pattern_parts_match(
-    pattern_parts: list, actual_parts: list, context: Optional[dict] = None
-) -> bool:
+def pattern_parts_match(pattern_parts: list, actual_parts: list, context: Optional[dict] = None) -> bool:
     """
     Path parts pattern matching.
     A tree branch parts or a regex path are needed to compare with an actual path.
@@ -278,12 +268,8 @@ def pattern_parts_match(
                 raise RuntimeError("Badly structured context for pattern matching.")
 
             # Match against same index element in file path
-            if not fullmatch(
-                part.format(**{context["!varname"]: context["regexp"]}), actual_parts[i]
-            ):
-                LOG.debug(
-                    "pattern '%s' did not match against '%s'", part, actual_parts[i]
-                )
+            if not fullmatch(part.format(**{context["!varname"]: context["regexp"]}), actual_parts[i]):
+                LOG.debug("pattern '%s' did not match against '%s'", part, actual_parts[i])
                 break
 
         # Else literal matching
@@ -372,9 +358,7 @@ def math_check(expression: str) -> Tuple[bool, set]:
             variables found in expression only if expression is correct otherwise None.
     """
 
-    state = (
-        -1
-    )  # -1: start, 0: blank|stop, 1: read operand, 2: compiling variable, 3: compiling number
+    state = -1  # -1: start, 0: blank|stop, 1: read operand, 2: compiling variable, 3: compiling number
     par_count = 0
     variables = set()
     new_vals = True
@@ -394,9 +378,7 @@ def math_check(expression: str) -> Tuple[bool, set]:
                     new_vals = True
                 else:
                     return False, None
-            elif (
-                state == 0 and new_vals
-            ):  # blank -> IF new_var THEN new_var = False & par_count -= 1
+            elif state == 0 and new_vals:  # blank -> IF new_var THEN new_var = False & par_count -= 1
                 par_count -= 1
                 new_vals = False
             else:
@@ -430,9 +412,7 @@ def math_check(expression: str) -> Tuple[bool, set]:
                     new_vals = True
                 else:
                     return False, None
-            elif (
-                state == 0 and new_vals
-            ):  # blank -> IF new_var THEN new_var = False & -> operand
+            elif state == 0 and new_vals:  # blank -> IF new_var THEN new_var = False & -> operand
                 state = 1
                 new_vals = False
             else:
@@ -517,9 +497,7 @@ def add_info_from_schema(
     for key in keys:
         value = metadata[key]
         if isinstance(value, dict):
-            add_info_from_schema(
-                value, schema, add_description, add_type, key_list + [key]
-            )
+            add_info_from_schema(value, schema, add_description, add_type, key_list + [key])
         else:
             new_value = {"value": value}
             schema_entry = None

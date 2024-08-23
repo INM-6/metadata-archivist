@@ -108,11 +108,7 @@ def _format_parser_id_rule(
             if not pattern_parts_match(reversed_branch, file_path_parts):
                 continue
 
-        parsing_context = (
-            interpreted_schema.context["!parsing"]
-            if "!parsing" in interpreted_schema.context
-            else None
-        )
+        parsing_context = interpreted_schema.context["!parsing"] if "!parsing" in interpreted_schema.context else None
 
         # If path information is present in parser directives match file path to given regex path
         if parsing_context is not None and "path" in parsing_context:
@@ -136,9 +132,7 @@ def _format_parser_id_rule(
             regex_path.reverse()
 
             # If the match is negative then we skip the current cache entry
-            if not pattern_parts_match(
-                regex_path, file_path_parts, interpreted_schema.context
-            ):
+            if not pattern_parts_match(regex_path, file_path_parts, interpreted_schema.context):
                 continue
 
         # If not in a regex/path context then parsed metadata is structured
@@ -170,9 +164,7 @@ def _format_parser_id_rule(
                             "parsing context = %s",
                             dumps(parsing_context, indent=4, default=vars),
                         )
-                    raise ValueError(
-                        "Incorrect unpacking configuration in !parsing context: unpack=False."
-                    )
+                    raise ValueError("Incorrect unpacking configuration in !parsing context: unpack=False.")
 
                 metadata = unpack_nested_value(metadata)
 
@@ -183,9 +175,7 @@ def _format_parser_id_rule(
                             "parsing context = %s",
                             dumps(parsing_context, indent=4, default=vars),
                         )
-                    raise ValueError(
-                        "Incorrect unpacking configuration in !parsing context: unpack=0."
-                    )
+                    raise ValueError("Incorrect unpacking configuration in !parsing context: unpack=0.")
 
                 metadata = unpack_nested_value(metadata, unpack)
             else:
@@ -195,9 +185,7 @@ def _format_parser_id_rule(
                     str(bool),
                     str(int),
                 )
-                raise TypeError(
-                    "Incorrect unpacking configuration in !parsing context."
-                )
+                raise TypeError("Incorrect unpacking configuration in !parsing context.")
 
         # Update parsed metadata
         # When in a regex context then resulting parsed metadata is a dict
@@ -239,12 +227,8 @@ def _format_calculate_rule(
 
     if not all(key in value for key in ["expression", "variables"]):
         if is_debug():
-            LOG.debug(
-                "!calculate directive value = %s", dumps(value, indent=4, default=vars)
-            )
-        raise RuntimeError(
-            "Malformed !calculate entry found while formatting calculation."
-        )
+            LOG.debug("!calculate directive value = %s", dumps(value, indent=4, default=vars))
+        raise RuntimeError("Malformed !calculate entry found while formatting calculation.")
 
     add_description = kwargs.pop("add_description", False)
     add_type = kwargs.pop("add_type", False)
@@ -261,19 +245,13 @@ def _format_calculate_rule(
                 str(type(entry)),
                 str(SchemaEntry),
             )
-            raise TypeError(
-                "Incorrect variable type found while formatting calculation."
-            )
+            raise TypeError("Incorrect variable type found while formatting calculation.")
         if not len(entry.items()) == 1:
             if is_debug():
                 LOG.debug("entry content = %s", dumps(entry, indent=4, default=vars))
-            raise ValueError(
-                "Incorrect variable entry found while formatting calculation."
-            )
+            raise ValueError("Incorrect variable entry found while formatting calculation.")
 
-        parsing_values[variable] = _format_parser_id_rule(
-            formatter, entry, branch, entry["!parser_id"], **kwargs
-        )
+        parsing_values[variable] = _format_parser_id_rule(formatter, entry, branch, entry["!parser_id"], **kwargs)
 
     formatted_expression = expression.format(**parsing_values)
     result = eval(

@@ -92,9 +92,7 @@ def _interpret_varname_directive_rule(
     # Check if regex context is present in current entry
     if "useRegex" not in entry.context:
         if is_debug():
-            LOG.debug(
-                "SchemaEntry context = %s", dumps(entry.context, indent=4, default=vars)
-            )
+            LOG.debug("SchemaEntry context = %s", dumps(entry.context, indent=4, default=vars))
         raise RuntimeError("Contextless !varname found.")
     # Add a !varname context which contains the name to use
     # and to which expression it corresponds to.
@@ -129,9 +127,7 @@ def _interpret_reference_rule(
     return entry
 
 
-def _interpret_refs(
-    definitions: dict, prop_val: str, entry: "SchemaEntry"
-) -> "SchemaEntry":
+def _interpret_refs(definitions: dict, prop_val: str, entry: "SchemaEntry") -> "SchemaEntry":
     """
     Auxiliary function to check reference to Parser.
 
@@ -161,17 +157,13 @@ def _interpret_refs(
 
     # Further process reference e.g. filters, internal property references -> links
     sub_schema = definitions[pid]["properties"]
-    links = __interpret_sub_schema(
-        sub_schema, entry, filters=None if len(val_split) <= 3 else val_split[3:]
-    )
+    links = __interpret_sub_schema(sub_schema, entry, filters=None if len(val_split) <= 3 else val_split[3:])
     # TODO: take care of linking
 
     return entry
 
 
-def __interpret_sub_schema(
-    sub_schema: dict, entry: "SchemaEntry", filters: Optional[list] = None
-) -> list:
+def __interpret_sub_schema(sub_schema: dict, entry: "SchemaEntry", filters: Optional[list] = None) -> list:
     """
     WIP
     Recursively explore Parser sub-schema and collect entry names and description.
@@ -215,9 +207,7 @@ def _interpret_calculate_directive_rule(
 
     expression = prop_val["expression"]
     if not isinstance(expression, str):
-        LOG.debug(
-            "Expression type '%s' , expected type '%s'", str(type(expression)), str(str)
-        )
+        LOG.debug("Expression type '%s' , expected type '%s'", str(type(expression)), str(str))
         raise TypeError("Incorrect expression type in !calculate directive.")
 
     cleaned_expr = sub(r"\s", "", expression)
@@ -228,9 +218,7 @@ def _interpret_calculate_directive_rule(
 
     variables = prop_val["variables"]
     if not isinstance(variables, dict):
-        LOG.debug(
-            "Variables type '%s' , expected type '%s'", str(type(variables)), str(str)
-        )
+        LOG.debug("Variables type '%s' , expected type '%s'", str(type(variables)), str(str))
         raise TypeError("Incorrect variables type in !calculate directive.")
 
     if len(variable_names) != len(variables):
@@ -262,9 +250,7 @@ def _interpret_calculate_directive_rule(
         if not "$ref" in value:
             if is_debug():
                 LOG.debug("Variable content = %s", dumps(value, indent=4, default=vars))
-            raise RuntimeError(
-                "Variable does not reference a Parser in !calculate directive."
-            )
+            raise RuntimeError("Variable does not reference a Parser in !calculate directive.")
 
         # We create a SchemaEntry in the context to be specially handled by the Formatter
         new_entry = entry.inherit(
@@ -274,13 +260,9 @@ def _interpret_calculate_directive_rule(
         )
 
         if "!parsing" in value:
-            _interpret_parsing_directive_rule(
-                interpreter, value["!parsing"], "!parsing", prop_key, new_entry
-            )
+            _interpret_parsing_directive_rule(interpreter, value["!parsing"], "!parsing", prop_key, new_entry)
 
-        _interpret_reference_rule(
-            interpreter, value["$ref"], "$ref", prop_key, new_entry
-        )
+        _interpret_reference_rule(interpreter, value["$ref"], "$ref", prop_key, new_entry)
 
         variable_entries[variable] = new_entry
 

@@ -149,9 +149,7 @@ def _decompress_tar(
 
     archive_name = archive_path.stem.split(".")[0]
     directory_path = extraction_directory.joinpath(archive_name)
-    explored_dirs = (
-        [directory_path] if not created else [extraction_directory, directory_path]
-    )
+    explored_dirs = [directory_path] if not created else [extraction_directory, directory_path]
     explored_files = []
 
     with t_open(archive_path) as t:
@@ -189,9 +187,7 @@ def _decompress_tar(
     return directory_path, explored_dirs, explored_files
 
 
-def _dir_explore(
-    input_file_patterns: List[str], directory_path: Path
-) -> Tuple[Path, List[Path], List[Path]]:
+def _dir_explore(input_file_patterns: List[str], directory_path: Path) -> Tuple[Path, List[Path], List[Path]]:
     """
     Explores given directory while matching files and recursing over sub-directories.
     Paths are assumed to be checked before call.
@@ -217,17 +213,13 @@ def _dir_explore(
         if item_path.is_file():
             LOG.debug("   processing file '%s'", item_path.name)
             if any(
-                pattern_parts_match(
-                    list(reversed(pat.split("/"))), list(reversed(item_path.parts))
-                )
+                pattern_parts_match(list(reversed(pat.split("/"))), list(reversed(item_path.parts)))
                 for pat in input_file_patterns
             ):
                 explored_files.append(item_path)
                 explored_dirs.append(item_path.parent)
         else:
-            _, new_explored_dirs, new_explored_files = _dir_explore(
-                input_file_patterns, item_path
-            )
+            _, new_explored_dirs, new_explored_files = _dir_explore(input_file_patterns, item_path)
             explored_dirs.extend(new_explored_dirs)
             explored_files.extend(new_explored_files)
 

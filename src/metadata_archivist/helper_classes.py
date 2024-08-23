@@ -51,9 +51,7 @@ class CacheEntry:
                         if lazy loading is enabled then loads metadata from self contained meta file.
     """
 
-    def __init__(
-        self, explored_path: Path, file_path: Path, metadata: Optional[dict] = None
-    ) -> None:
+    def __init__(self, explored_path: Path, file_path: Path, metadata: Optional[dict] = None) -> None:
         """
         Constructor of CacheEntry.
 
@@ -123,9 +121,7 @@ class CacheEntry:
                 )
             else:
                 LOG.debug("Meta file path '%s'", str(self.meta_path))
-                raise FileExistsError(
-                    "Unable to save parsed metadata; overwriting not allowed."
-                )
+                raise FileExistsError("Unable to save parsed metadata; overwriting not allowed.")
 
         pickle_dump = p_dumps(metadata, protocol=HIGHEST_PROTOCOL)
         self._digest = new(key, pickle_dump, sha3_256).hexdigest()
@@ -342,9 +338,7 @@ class ParserIndexes:
         """
         self._get_storage(storage)[parser_name] = index
 
-    def get_index(
-        self, parser_name: str, storage: Optional[str] = None
-    ) -> Union[int, Dict[str, int]]:
+    def get_index(self, parser_name: str, storage: Optional[str] = None) -> Union[int, Dict[str, int]]:
         """
         Get index method for all storages.
         If no storage specified, all stored indexes are returned as a dictionary.
@@ -441,9 +435,7 @@ class SchemaEntry:
         """Entry empty content test."""
         return len(self._content) == 0
 
-    def inherit(
-        self, key: str, key_path: Optional[list], context: Optional[dict]
-    ) -> "SchemaEntry":
+    def inherit(self, key: str, key_path: Optional[list], context: Optional[dict]) -> "SchemaEntry":
         """Instance inheritance function with attribute extension."""
         return SchemaEntry(
             key=key,
@@ -479,22 +471,16 @@ class SchemaInterpreter:
         """
 
         if not isinstance(schema, dict):
-            LOG.debug(
-                "schema type '%s' , expected type '%s'", str(type(schema)), str(dict)
-            )
+            LOG.debug("schema type '%s' , expected type '%s'", str(type(schema)), str(dict))
             raise TypeError("Incorrect schema used for iterator.")
         if "properties" not in schema or not isinstance(schema["properties"], dict):
             if is_debug():
                 LOG.debug("schema = %s", dumps(schema, indent=4, default=vars))
-            raise ValueError(
-                "Incorrect schema structure, root is expected to contain properties dictionary."
-            )
+            raise ValueError("Incorrect schema structure, root is expected to contain properties dictionary.")
         if "$defs" not in schema or not isinstance(schema["$defs"], dict):
             if is_debug():
                 LOG.debug("schema = %s", dumps(schema, indent=4, default=vars))
-            raise ValueError(
-                "Incorrect schema structure, root is expected to contain $defs dictionary."
-            )
+            raise ValueError("Incorrect schema structure, root is expected to contain $defs dictionary.")
 
         self.schema = schema
         self.structure = SchemaEntry()
@@ -562,9 +548,7 @@ class SchemaInterpreter:
                             dumps(_relative_root, indent=4, default=vars),
                         )
                     raise RuntimeError("Cannot interpret rule without parent key.")
-                _relative_root = INTERPRETATION_RULES[key](
-                    self, val, key, _parent_key, _relative_root
-                )
+                _relative_root = INTERPRETATION_RULES[key](self, val, key, _parent_key, _relative_root)
 
             else:
                 # Case dict i.e. branch
@@ -601,9 +585,7 @@ class SchemaInterpreter:
         if is_debug():
             # Passing through dumps for pretty printing,
             # however can be costly, so checking if debug is enabled first
-            LOG.debug(
-                "Initial structure = %s", dumps(self.schema, indent=4, default=vars)
-            )
+            LOG.debug("Initial structure = %s", dumps(self.schema, indent=4, default=vars))
 
         if self.structure.is_empty():
             self.structure = self.interpret_schema(self.schema["properties"])

@@ -216,7 +216,6 @@ def _dir_explore(
     for item_path in directory_path.glob("*"):
         if item_path.is_file():
             LOG.debug("   processing file '%s'", item_path.name)
-            # TODO: think about precompiling patterns to optimize regex match time
             if any(
                 pattern_parts_match(
                     list(reversed(pat.split("/"))), list(reversed(item_path.parts))

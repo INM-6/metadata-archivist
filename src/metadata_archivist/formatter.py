@@ -51,7 +51,7 @@ class Formatter:
         parsers: list of parsers added to Formatter by corresponding method or at construction time.
         input_file_patterns: list of input file patterns derived from parsers registered to Formatter.
         schema: dictionary containing structure template to format parsing results.
-        lazy_load: control boolean to enable storing of parsing results as files and only loading when information is needed.
+        lazy_load: control boolean to enable storing of parsing results as files.
         config: dictionary containing formatter configuration.
 
     Methods:
@@ -75,7 +75,7 @@ class Formatter:
         Constructor of Formatter class.
 
         Arguments:
-            parsers: Optional, Parser or iterable sequence of parsers added to Formatter by corresponding method or at construction time.
+            parsers: Optional, Parser or iterable sequence of parsers added to Formatter.
             schema: Optional, dictionary containing structure template to format parsing results.
             config: Optional, dictionary containing formatter configuration.
         """
@@ -185,7 +185,6 @@ class Formatter:
         self._use_schema = True
         if len(self._parsers) > 0:
             for ex in self._parsers:
-                # TODO: Needs consistency checks
                 self._extend_json_schema(ex)
 
     def get_encoding_key(self) -> bytes:
@@ -234,7 +233,7 @@ class Formatter:
         Sets lazy load of parsing results.
 
         Arguments:
-            lazy_load: control boolean to enable storing of parsing results as files and only loading when information is needed.
+            lazy_load: control boolean to enable storing of parsing results as files.
         """
 
         if lazy_load == self.config["lazy_load"]:
@@ -403,7 +402,6 @@ class Formatter:
 
         to_parse = {}
         meta_files = []
-        # TODO: Think about parallelization scheme with ProcessPoolExecutor
         for parser in self._parsers:
             pid = parser.name
             to_parse[pid] = []
@@ -414,7 +412,6 @@ class Formatter:
                 if pattern_parts_match(pattern, list(reversed(fp.parts))):
                     to_parse[pid].append(fp)
 
-        # TODO: Think about parallelization scheme with ProcessPoolExecutor
         for pid, sorted_paths in to_parse.items():
             for file_path in sorted_paths:
                 LOG.debug("    parsing file '%s'", str(file_path))

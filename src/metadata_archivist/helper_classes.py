@@ -47,7 +47,8 @@ class CacheEntry:
         metadata: parsed metadata dictionary.
 
     Methods:
-        load_metadata: returns CachedMetadata, if lazy loading is enabled then loads metadata from self contained meta file.
+        load_metadata: returns CachedMetadata,
+                        if lazy loading is enabled then loads metadata from self contained meta file.
     """
 
     def __init__(
@@ -384,7 +385,7 @@ class ParserIndexes:
 class SchemaEntry:
     """
     Convenience superset of dictionary class.
-    Used to recursively generate nested dictionary structure to serve as an intermediary between schema and metadata file.
+    Container class for nested dictionary structure to serve as an intermediary between schema and metadata file.
     Contains additional context dictionary for a given tree level and the name of the root node.
     For initial root node, no name is defined, however for subsequent nodes there should always be a name.
     Get, set, and iteration access is redirected to internal storage.
@@ -534,7 +535,8 @@ class SchemaInterpreter:
         Arguments:
             properties: dictionary of schema properties to interpret.
             _parent_key: key of parent property where method was called. Recursion variable.
-            _relative_root: relative SchemaEntry where method was called. Recursion variable. Defaults to self contained structure.
+            _relative_root: relative SchemaEntry where method was called. Recursion variable.
+                            Defaults to self contained structure.
         """
 
         if _relative_root is None:

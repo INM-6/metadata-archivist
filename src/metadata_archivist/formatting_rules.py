@@ -283,8 +283,8 @@ def _format_calculate_rule(
     )
 
     if add_description or add_type:
-        # In calculate directive description or type are retrieved from formatting schema
-        # It is necessary to generate a mock dictionary tree following formatting schema to be able to use _add_info_from_schema function
+        # In calculate directive description or type are retrieved from formatting schema.
+        # It is necessary to generate a mock dictionary tree following formatting schema.
         # After retrieving info from schema then unpacking is used to remove mock tree and getting the annotated result.
         mock_tree = {}
         update_dict_with_parts(mock_tree, result, interpreted_schema.key_path)

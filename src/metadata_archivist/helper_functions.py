@@ -145,7 +145,6 @@ def merge_dicts(dict1: dict, dict2: dict) -> dict:
             keys2.remove(key)
             val1 = dict1[key]
             val2 = dict2[key]
-            # TODO: behavior needs to be validated
             if isinstance(val1, type(val2)):
                 if isinstance(val1, Iterable):
                     if isinstance(val1, dict):
@@ -369,7 +368,7 @@ def math_check(expression: str) -> Tuple[bool, set]:
 
     Returns:
         tuple of:
-            valid state boolean (True if par_count is 0 and state is blank and no malformed traces exists and number of variables found is above 0.).
+            valid expression boolean.
             variables found in expression only if expression is correct otherwise None.
     """
 

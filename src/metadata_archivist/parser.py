@@ -60,7 +60,8 @@ class AParser(ABC):
         remove_formatter: method to remove a Formatter instance from known list.
         run_parsing: wrapper around parse method for additional checks and automated validation.
         parse: Abstract method for file parsing, user defined.
-        run_validation: If jsonschema package is available, validates self contained parsed metadata against self contained schema.
+        run_validation: Only used if jsonschema package is available,
+                        validates self contained parsed metadata against self contained schema.
     """
 
     def __init__(
@@ -216,7 +217,6 @@ class AParser(ABC):
             try:
                 validate(instance=metadata, schema=self.schema)
             except ValidationError as e:
-                # TODO: better exception mechanism
                 LOG.warning(e.message)
 
     # Considering the name of the Parser as unique then we can use

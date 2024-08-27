@@ -2,12 +2,12 @@
 Unit tests for the Cache
 """
 
-from pathlib import Path
-import unittest
 import sys
+import unittest
+from pathlib import Path
 
 sys.path.append("src")
-from metadata_archivist.helper_classes import FormatterCache, CacheEntry, ParserCache
+from metadata_archivist.helper_classes import CacheEntry, FormatterCache, ParserCache
 
 
 class TestCacheEntry(unittest.TestCase):
@@ -27,7 +27,7 @@ class TestCacheEntry(unittest.TestCase):
         self.assertEqual(cache_entry_1.file_path, file_path)
         self.assertIsNone(cache_entry_1.metadata)
 
-        self.assertEqual(cache_entry_1.meta_path, Path(str(file_path) + ".meta"))
+        self.assertEqual(cache_entry_1.meta_path, Path(str(file_path) + ".meta.pkl"))
         self.assertEqual(cache_entry_1.rel_path, file_path.relative_to(decompress_path))
 
         # new_metadata = {'foo': 'bar'}

@@ -190,7 +190,10 @@ class Formatter:
 
         if self._encoding_key is None:
 
-            encoding_key = self.config["encoding_key"]
+            try:
+                encoding_key = self.config["encoding_key"]
+            except TypeError:
+                encoding_key = None
             if encoding_key is None:
                 self._encoding_key = sha3_256(p_dumps(self.config, protocol=HIGHEST_PROTOCOL)).digest()
 

@@ -2,6 +2,12 @@
 
 We welcome contributions from everyone! Here’s how you can help:
 
+## Setup:
+
+Before starting with your contribution we require that you install [pre-commit](https://pre-commit.com/), check these [installation instructions](https://pre-commit.com/#installation) for this.
+Pre-commit will run [Black](https://black.readthedocs.io/en/stable/).
+We also use [Pylint](https://pylint.readthedocs.io/en/stable/) on the source directory, however currently we do not meet 10/10 score on Pylint, check our [linting](https://github.com/INM-6/metadata-archivist/issues) issues to know what we can improve on, however we still keep a minimum score of 9.7.
+
 ## 1. Fork the Repository
 
 Start by forking the repository to your own GitHub account. This allows you to make changes without affecting the original project.

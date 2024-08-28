@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "metadata_archivist"
 version = "0.7"
-requires-python = ">=3.8"
+requires-python = ">3.8"
 authors = [
   { name="Jose Villamar", email="j.villamar@fz-juelich.de" },
   { name="Matthias Kelbling", email="matthias.kelbling@ufz.de" },

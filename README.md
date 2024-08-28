@@ -58,7 +58,9 @@ Additionally a Jupyter example can be found at [schema tutorial](./examples/sche
 
 
 ## How to cite:
-[Villamar et al. 2024, Metadata practices for simulation workflows]()
+Article: [Villamar et al. 2024, Metadata practices for simulation workflows]()
+
+This software: [Villamar et al. 2024, Metadata practices for simulation workflows, Zenodo]()
 
 
 ## How to contribute:

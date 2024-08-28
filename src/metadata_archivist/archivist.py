@@ -48,6 +48,8 @@ DEFAULT_CONFIG = {
     "add_type": False,
     "output_format": "JSON",
     "encoding_key": None,
+    "parallel_decompress": True,
+    "max_workers": 1,
 }
 
 

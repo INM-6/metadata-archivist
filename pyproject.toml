@@ -14,13 +14,20 @@ description = "A heterogeneous metadata file parsing and structuring framework"
 readme = "README.md"
 license = {file = "LICENSE"}
 classifiers = [
-    "Development Status :: 4 - Beta",
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
 ]
 
 [project.urls]
 "Homepage" = "https://codebase.helmholtz.cloud/metamosim/metadata_archivist.git"
+
+[project.optional-dependencies]
+examples = [
+  "pyyaml",
+  "jsonschema",
+  "f90nml"
+]
 
 [tool.black]
 line-length = 120

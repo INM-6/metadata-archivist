@@ -22,7 +22,7 @@ pip install -e .
 
 Currently there are no external dependencies, however if the [jsonschema](https://pypi.org/project/jsonschema/) package is present in the Python environment, then the parsing results can be automatically validated against a user defined schema.
 
-TESTED WITH PYTHON v3.10.12
+**Note:** Compatible with Python >= 3.9
 
 
 ## Modules:
@@ -60,7 +60,7 @@ Additionally a Jupyter example can be found at [schema tutorial](./examples/sche
 ## How to cite:
 Article: [Villamar et al. 2024, Metadata practices for simulation workflows]()
 
-This software: [Villamar et al. 2024, Metadata practices for simulation workflows, Zenodo]()
+This software: [Villamar et al. 2024, Metadata practices for simulation workflows, Zenodo](10.5281/zenodo.13442426)
 
 
 ## How to contribute:

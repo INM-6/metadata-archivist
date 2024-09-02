@@ -1,0 +1,96 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: Metadata Archivist
+message: >-
+  This software was produced as part of a manuscript
+  publication titled "Metadata practices for simulation
+  workflows"
+type: software
+authors:
+  - given-names: Jose
+    family-names: Villamar
+    email: j.villamar@fz-juelich.de
+    affiliation: >-
+      Institute for Advanced Simulation (IAS-6), Jülich
+      Research Centre, Jülich, Germany; RWTH Aachen
+      University, Aachen, Germany
+    orcid: 'https://orcid.org/0009-0007-8791-7100'
+  - given-names: Matthias
+    family-names: Kelbling
+    email: matthias.kelbling@ufz.de
+    affiliation: >-
+      Department of Computational Hydrosystems,
+      Helmholtz-Centre for Environmental Research, Leipzig,
+      Germany
+    orcid: 'https://orcid.org/0000-0001-9303-6712'
+  - given-names: Heather
+    family-names: More
+    affiliation: >-
+      Institute for Advanced Simulation (IAS-6), Jülich
+      Research Centre, Jülich, Germany; Institute for
+      Advanced Simulation (IAS-9), Jülich Research Centre,
+      Jülich, Germany
+    orcid: 'https://orcid.org/0000-0002-7514-2199'
+    email: h.more@fz-juelich.de
+  - given-names: Michael
+    family-names: Denker
+    email: m.denker@fz-juelich.de
+    affiliation: >-
+      Institute for Advanced Simulation (IAS-6), Jülich
+      Research Centre, Jülich, Germany
+    orcid: 'https://orcid.org/0000-0003-1255-7300'
+  - given-names: Tom
+    family-names: Tetzlaff
+    email: t.tetzlaff@fz-juelich.de
+    affiliation: >-
+      Institute for Advanced Simulation (IAS-6), Jülich
+      Research Centre, Jülich, Germany
+    orcid: 'https://orcid.org/0000-0001-5794-5425'
+  - given-names: Johanna
+    family-names: Senk
+    email: J.Senk@sussex.ac.uk
+    affiliation: >-
+      Institute for Advanced Simulation (IAS-6), Jülich
+      Research Centre, Jülich, Germany; Sussex AI, School of
+      Engineering and Informatics, University of Sussex,
+      Brighton, United Kingdom
+    orcid: 'https://orcid.org/0000-0002-6304-062X'
+  - given-names: Stephan
+    family-names: Thober
+    email: stephan.thober@ufz.de
+    affiliation: >-
+      Department of Computational Hydrosystems,
+      Helmholtz-Centre for Environmental Research, Leipzig,
+      Germany
+    orcid: 'https://orcid.org/0000-0003-3939-1523'
+identifiers:
+  - type: doi
+    value: 10.48550/arXiv.2408.17309
+    description: >-
+      Arxiv pre-print - Metadata practices for simulation
+      workflows
+  - type: doi
+    value: 10.5281/zenodo.13442425
+    description: Zenodo publication - Metadata Archivist
+  - type: doi
+    value: 10.5281/zenodo.13585723
+    description: >-
+      Zenodo publication - Proof of Concept implementation
+      of Metadata Archivist
+repository-code: 'https://github.com/INM-6/metadata-archivist'
+abstract: >-
+  The Metadata Archivist is a simple framework to process
+  multiple heterogenous input files and unify the parsed
+  information into a singular structured output. Users must
+  define their own parsing procedures, then with a
+  convenience class offered by our framework, orchestrate
+  exploration the exploration of a given directory or
+  archive, filtering of files to process, parse and
+  optionally structure the target, lastly export the output
+  to a selected format.
+keywords:
+  - Metadata processing
+  - Python framework
+license: GPL-3.0-or-later

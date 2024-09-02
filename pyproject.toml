@@ -23,6 +23,9 @@ classifiers = [
 "Homepage" = "https://codebase.helmholtz.cloud/metamosim/metadata_archivist.git"
 
 [project.optional-dependencies]
+validation = [
+  "jsonschema",
+]
 examples = [
   "pyyaml",
   "jsonschema",

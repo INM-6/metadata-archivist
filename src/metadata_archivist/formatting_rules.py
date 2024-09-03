@@ -141,7 +141,7 @@ def _format_parser_id_rule(
             parsed_metadata = []
 
         # Lazy loading handling
-        metadata = cache_entry.load_metadata(formatter.get_encoding_key())
+        metadata = cache_entry.load_metadata()
 
         # Compute additional directives if given
         if parsing_context is not None and "keys" in parsing_context:

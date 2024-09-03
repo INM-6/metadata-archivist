@@ -19,7 +19,6 @@ Authors: Jose V., Matthias K.
 from json import dumps
 from pathlib import Path
 from hashlib import sha3_256
-from hmac import new, compare_digest
 from typing import Optional, Dict, Union, Any
 from collections.abc import Iterator, ItemsView
 from pickle import loads as p_loads, dumps as p_dumps, HIGHEST_PROTOCOL
@@ -69,14 +68,11 @@ class CacheEntry:
         self.meta_path = Path(str(file_path) + ".meta.pkl")
         self._digest = None
 
-    def load_metadata(self, key: bytes) -> dict:
+    def load_metadata(self) -> dict:
         """
         Loads cached metadata.
         If no cache exists this implies that lazy loading is enabled,
         metadata is loaded then from the self generated meta path.
-
-        Arguments:
-            key: bytes key used to secure pickled file.
 
         Returns:
             self contained parsed metadata dictionary.
@@ -90,8 +86,8 @@ class CacheEntry:
 
             with self.meta_path.open("rb", encoding=None) as f:
                 bytes_read = f.read()
-                new_digest = new(key, bytes_read, sha3_256).hexdigest()
-                if compare_digest(self._digest, new_digest):
+                new_digest = sha3_256(bytes_read).hexdigest()
+                if new_digest == self._digest:
                     self.metadata = p_loads(bytes_read)
                 else:
                     raise ValueError("Encoded pickle has been tampered with.")
@@ -103,13 +99,12 @@ class CacheEntry:
 
         return self.metadata
 
-    def save_metadata(self, metadata: dict, key: bytes, overwrite: bool = True) -> None:
+    def save_metadata(self, metadata: dict, overwrite: bool = True) -> None:
         """
         Saves metadata to file and releases object from memory.
 
         Arguments:
             metadata: dictionary to save.
-            key: bytes key used to secure pickled file.
             overwrite_meta_files : control boolean to enable overwriting of lazy load cache files.
         """
 
@@ -124,7 +119,7 @@ class CacheEntry:
                 raise FileExistsError("Unable to save parsed metadata; overwriting not allowed.")
 
         pickle_dump = p_dumps(metadata, protocol=HIGHEST_PROTOCOL)
-        self._digest = new(key, pickle_dump, sha3_256).hexdigest()
+        self._digest = sha3_256(pickle_dump).hexdigest()
 
         with self.meta_path.open("wb", encoding=None) as f:
             f.write(pickle_dump)

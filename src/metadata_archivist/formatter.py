@@ -58,7 +58,6 @@ class Formatter:
         add_parser: method to add Parser to list, updates internal schema file.
         update_parser: method to update Parser in list, updates internal schema file.
         remove_parser: method to remove Parser from list, updates internal schema file.
-        get_encoding_key: method to generate encoding key for encoded cache saving.
         get_parser: method to retrieve Parser from list, uses Parser name for matching.
         parse_files: method to trigger parsing procedures on a given list of input files.
         compile_metadata: method to trigger structuring of parsing results.
@@ -112,16 +111,11 @@ class Formatter:
         # For parser result caching
         self._cache = helpers.FormatterCache()
 
-        # For securing cached pickles
-        self._encoding_key = None
-
         # Public
         self.config = config
         self.metadata = {}
 
         self.combine = lambda formatter2, schema=None: _combine(formatter1=self, formatter2=formatter2, schema=schema)
-
-        self.get_encoding_key()
 
         if parsers is not None:
             if isinstance(parsers, AParser):
@@ -180,32 +174,6 @@ class Formatter:
         if len(self._parsers) > 0:
             for ex in self._parsers:
                 self._extend_json_schema(ex)
-
-    def get_encoding_key(self) -> bytes:
-        """
-        Method to get or generate encoding key from self contained configuration.
-        If no encoding key provided in the form of a bytes object or path to a binary file then,
-        encoding key is generated from encrypted configuration file.
-        """
-
-        if self._encoding_key is None:
-
-            encoding_key = self.config["encoding_key"]
-            if encoding_key is None:
-                self._encoding_key = sha3_256(p_dumps(self.config, protocol=HIGHEST_PROTOCOL)).digest()
-
-            elif isinstance(encoding_key, bytes):
-                self._encoding_key = encoding_key
-
-            elif isinstance(encoding_key, (str, Path)):
-                with Path(encoding_key).open("rb", encoding=None) as f:
-                    self._encoding_key = f.read()
-
-            else:
-                LOG.debug("config encoding key value '%s'", str(encoding_key))
-                raise ValueError("No appropriate encoding key could be generated.")
-
-        return self._encoding_key
 
     def export_schema(self) -> dict:
         """
@@ -406,7 +374,6 @@ class Formatter:
                     entry = self._cache[pid].add(explored_path, file_path)
                     entry.save_metadata(
                         metadata,
-                        self._encoding_key,
                         overwrite=self.config.get("overwrite", True),
                     )
                     meta_files.append(entry.meta_path)
@@ -541,7 +508,7 @@ class Formatter:
                 for cache_entry in parser_cache:
                     update_dict_with_parts(
                         self.metadata,
-                        cache_entry.load_metadata(self._encoding_key),
+                        cache_entry.load_metadata(),
                         list(cache_entry.rel_path.parts),
                     )
         LOG.info("Done!")

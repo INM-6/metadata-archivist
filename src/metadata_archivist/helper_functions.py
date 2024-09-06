@@ -21,6 +21,8 @@ Authors: Jose V., Matthias K.
 
 """
 
+import logging
+
 from json import dumps
 from re import fullmatch
 from pathlib import Path
@@ -28,8 +30,8 @@ from copy import deepcopy
 from collections.abc import Iterable
 from typing import Optional, Any, Tuple
 
-from metadata_archivist.logger import LOG, is_debug
 
+LOG = logging.getLogger(__name__)
 
 # List of ignored JSON schema iterable keys
 IGNORED_ITERABLE_KEYWORDS = [
@@ -110,12 +112,11 @@ def update_dict_with_parts(target_dict: dict, value: Any, parts: list) -> None:
         if part not in relative_root:
             relative_root[part] = {}
         elif not isinstance(relative_root[part], dict):
-            if is_debug():
-                LOG.debug(
-                    "key %s\nrelative root = %s",
-                    part,
-                    dumps(relative_root, indent=4, default=vars),
-                )
+            LOG.debug(
+                "key %s\nrelative root = %s",
+                part,
+                dumps(relative_root, indent=4, default=vars),
+            )
             raise RuntimeError("Duplicate key with incorrect found while updating tree with path hierarchy.")
         relative_root = relative_root[part]
     relative_root[parts[-1]] = value
@@ -229,14 +230,12 @@ def deep_get_from_schema(schema: dict, keys: list) -> Any:
                 except StopIteration:
                     pass
 
-        if is_debug():
-            LOG.debug("schema = %s", dumps(schema, indent=4, default=vars))
-            LOG.debug("keys = %s", dumps(keys, indent=4, default=vars))
-        raise StopIteration("Iterated through schema without finding corresponding keys.")
-
-    if is_debug():
         LOG.debug("schema = %s", dumps(schema, indent=4, default=vars))
         LOG.debug("keys = %s", dumps(keys, indent=4, default=vars))
+        raise StopIteration("Iterated through schema without finding corresponding keys.")
+
+    LOG.debug("schema = %s", dumps(schema, indent=4, default=vars))
+    LOG.debug("keys = %s", dumps(keys, indent=4, default=vars))
     raise StopIteration("No key found for corresponding schema.")
 
 
@@ -263,8 +262,7 @@ def pattern_parts_match(pattern_parts: list, actual_parts: list, context: Option
         if fullmatch(r"\{\w+\}", part) and context is not None:
             # !varname and regexp should always be in context in this case
             if "!varname" not in context or "regexp" not in context:
-                if is_debug():
-                    LOG.debug("context = %s", dumps(context, indent=4, default=vars))
+                LOG.debug("context = %s", dumps(context, indent=4, default=vars))
                 raise RuntimeError("Badly structured context for pattern matching.")
 
             # Match against same index element in file path
@@ -300,22 +298,20 @@ def unpack_nested_value(iterable: Any, level: Optional[int] = None) -> Any:
 
     if not isinstance(iterable, Iterable):
         if level is not None and level > 0:
-            if is_debug():
-                LOG.debug(
-                    "level %i\niterable = %s",
-                    level,
-                    dumps(iterable, indent=4, default=vars),
-                )
-            raise RuntimeError("Cannot further unpack iterable.")
-        return iterable
-
-    if len(iterable) > 1 and (level is None or level > 0):
-        if is_debug():
             LOG.debug(
                 "level %i\niterable = %s",
                 level,
                 dumps(iterable, indent=4, default=vars),
             )
+            raise RuntimeError("Cannot further unpack iterable.")
+        return iterable
+
+    if len(iterable) > 1 and (level is None or level > 0):
+        LOG.debug(
+            "level %i\niterable = %s",
+            level,
+            dumps(iterable, indent=4, default=vars),
+        )
         raise IndexError("Multiple branching possible when unpacking nested value.")
 
     if level is not None:
@@ -505,14 +501,13 @@ def add_info_from_schema(
                 schema_entry = deep_get_from_schema(schema, key_list + [key])
             except StopIteration:
                 LOG.warning("No schema entry found for metadata value '%s'", key)
-                if is_debug():
-                    LOG.debug(
-                        "key '%s' , value '%s'\nmetadata = %s\nschema = %s",
-                        str(key),
-                        str(value),
-                        dumps(metadata, indent=4, default=vars),
-                        dumps(schema, indent=4, default=vars),
-                    )
+                LOG.debug(
+                    "key '%s' , value '%s'\nmetadata = %s\nschema = %s",
+                    str(key),
+                    str(value),
+                    dumps(metadata, indent=4, default=vars),
+                    dumps(schema, indent=4, default=vars),
+                )
             if schema_entry is not None:
                 if add_description:
                     new_value["description"] = schema_entry["description"]

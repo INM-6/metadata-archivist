@@ -12,9 +12,13 @@ Authors: Jose V., Matthias K.
 
 """
 
-from metadata_archivist.logger import LOG
+import logging
+
 from metadata_archivist.helper_functions import check_dir
 from metadata_archivist.export_rules import EXPORT_RULES, register_export_rule
+
+
+LOG = logging.getLogger(__name__)
 
 
 class Exporter:

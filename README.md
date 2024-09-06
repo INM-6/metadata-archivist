@@ -1,17 +1,16 @@
 # Metadata Archivist
 
+## Description
+The Metadata Archivist is a simple framework to process multiple heterogenous input files and unify the parsed information into a singular structured output.
+Users must define their own parsing procedures, then with a convenience class offered by our framework, orchestrate exploration the exploration of a given directory or archive, filtering of files to process, parse and optionally structure the target, lastly export the output to a selected format.
+
 ![***Archivist* metadata processing pipeline with two example parsers.**](./docs/Archivist_Dataflow.svg "Archivist metadata processing pipeline with two example parsers")
 
 From the user perspective, the **Archivist** class is provided with all inputs associated with the pipeline. Internally, the **Explorer** (light red) class sorts the individual files to process from a collection of raw metadata files (yellow), and dispatches them to corresponding **Parsers**.
 Then, each **Parser** (light red) employs user defined functions (gray) to extract specific information from the respective files.
 After this, the **Formatter** (light red) collects the parsing results; if a schema (gray) is provided, the composite result can be structured following user design. The final processed metadata is output in a format of choice by the **Exporter** (light red).
 
-Excerpt from [Villamar et al. 2024, Metadata practices for simulation workflows, arxiv]()
-
-
-## Description
-The Metadata Archivist is a simple framework to process multiple heterogenous input files and unify the parsed information into a singular structured output.
-Users must define their own parsing procedures, then with a convenience class offered by our framework, orchestrate exploration the exploration of a given directory or archive, filtering of files to process, parse and optionally structure the target, lastly export the output to a selected format.
+Excerpt from [Villamar et al. 2024, Metadata practices for simulation workflows]()
 
 
 ## Installation
@@ -23,7 +22,7 @@ pip install -e .
 
 Currently there are no external dependencies, however if the [jsonschema](https://pypi.org/project/jsonschema/) package is present in the Python environment, then the parsing results can be automatically validated against a user defined schema.
 
-TESTED WITH PYTHON v3.10.12
+**Note:** Compatible with Python >= 3.9
 
 
 ## Modules:
@@ -59,7 +58,9 @@ Additionally a Jupyter example can be found at [schema tutorial](./examples/sche
 
 
 ## How to cite:
-[Villamar et al. 2024, Metadata practices for simulation workflows, arxiv]()
+Article: [Villamar et al. 2024, Metadata practices for simulation workflows]()
+
+This software: [Villamar et al. 2024, Metadata practices for simulation workflows, Zenodo](https://doi.org/10.5281/zenodo.13442426)
 
 
 ## How to contribute:

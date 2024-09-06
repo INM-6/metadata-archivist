@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "metadata_archivist"
 version = "0.7"
-requires-python = ">=3.10.12"
+requires-python = ">3.8"
 authors = [
   { name="Jose Villamar", email="j.villamar@fz-juelich.de" },
   { name="Matthias Kelbling", email="matthias.kelbling@ufz.de" },
@@ -14,13 +14,23 @@ description = "A heterogeneous metadata file parsing and structuring framework"
 readme = "README.md"
 license = {file = "LICENSE"}
 classifiers = [
-    "Development Status :: 4 - Beta",
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
 ]
 
 [project.urls]
 "Homepage" = "https://codebase.helmholtz.cloud/metamosim/metadata_archivist.git"
+
+[project.optional-dependencies]
+validation = [
+  "jsonschema",
+]
+examples = [
+  "pyyaml",
+  "jsonschema",
+  "f90nml"
+]
 
 [tool.black]
 line-length = 120

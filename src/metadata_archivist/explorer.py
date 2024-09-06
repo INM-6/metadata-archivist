@@ -12,6 +12,8 @@ Authors: Jose V., Matthias K.
 
 """
 
+import logging
+
 from pathlib import Path
 from functools import partial
 from zipfile import is_zipfile
@@ -19,8 +21,10 @@ from collections.abc import Callable
 from typing import List, Tuple, Union
 from tarfile import is_tarfile, TarFile, open as t_open
 
-from metadata_archivist.logger import LOG
 from metadata_archivist.helper_functions import pattern_parts_match, check_dir
+
+
+LOG = logging.getLogger(__name__)
 
 # Accepted archive file formats
 _ACCEPTED_FORMATS = list(TarFile.OPEN_METH.keys()) + ["tgz", "txz", "tbz", "tbz2"]

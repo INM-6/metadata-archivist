@@ -12,15 +12,19 @@ Authors: Jose V., Matthias K.
 
 """
 
+import logging
+
 from pathlib import Path
 from typing import TYPE_CHECKING
 from abc import ABC, abstractmethod
 
-from metadata_archivist.logger import LOG
 from metadata_archivist.helper_functions import pattern_parts_match
 
 if TYPE_CHECKING:
     from metadata_archivist.formatter import Formatter
+
+
+LOG = logging.getLogger(__name__)
 
 # Try to load jsonschema package components for validation
 # In case of failure, validation is disabled

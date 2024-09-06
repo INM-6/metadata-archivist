@@ -14,15 +14,14 @@ Authors: Jose V., Matthias K.
 
 """
 
+import logging
+
 from pathlib import Path
 from copy import deepcopy
 from json import load, dumps
-from hashlib import sha3_256
-from pickle import dumps as p_dumps, HIGHEST_PROTOCOL
 from typing import Optional, List, Iterable, NoReturn, Union, Tuple
 
 from metadata_archivist.parser import AParser
-from metadata_archivist.logger import LOG, is_debug
 from metadata_archivist import helper_classes as helpers
 from metadata_archivist.formatting_rules import (
     FORMATTING_RULES,
@@ -34,6 +33,9 @@ from metadata_archivist.helper_functions import (
     pattern_parts_match,
     remove_directives_from_schema,
 )
+
+
+LOG = logging.getLogger(__name__)
 
 
 class Formatter:
@@ -58,7 +60,6 @@ class Formatter:
         add_parser: method to add Parser to list, updates internal schema file.
         update_parser: method to update Parser in list, updates internal schema file.
         remove_parser: method to remove Parser from list, updates internal schema file.
-        get_encoding_key: method to generate encoding key for encoded cache saving.
         get_parser: method to retrieve Parser from list, uses Parser name for matching.
         parse_files: method to trigger parsing procedures on a given list of input files.
         compile_metadata: method to trigger structuring of parsing results.
@@ -112,16 +113,11 @@ class Formatter:
         # For parser result caching
         self._cache = helpers.FormatterCache()
 
-        # For securing cached pickles
-        self._encoding_key = None
-
         # Public
         self.config = config
         self.metadata = {}
 
         self.combine = lambda formatter2, schema=None: _combine(formatter1=self, formatter2=formatter2, schema=schema)
-
-        self.get_encoding_key()
 
         if parsers is not None:
             if isinstance(parsers, AParser):
@@ -180,35 +176,6 @@ class Formatter:
         if len(self._parsers) > 0:
             for ex in self._parsers:
                 self._extend_json_schema(ex)
-
-    def get_encoding_key(self) -> bytes:
-        """
-        Method to get or generate encoding key from self contained configuration.
-        If no encoding key provided in the form of a bytes object or path to a binary file then,
-        encoding key is generated from encrypted configuration file.
-        """
-
-        if self._encoding_key is None:
-
-            try:
-                encoding_key = self.config["encoding_key"]
-            except TypeError:
-                encoding_key = None
-            if encoding_key is None:
-                self._encoding_key = sha3_256(p_dumps(self.config, protocol=HIGHEST_PROTOCOL)).digest()
-
-            elif isinstance(encoding_key, bytes):
-                self._encoding_key = encoding_key
-
-            elif isinstance(encoding_key, (str, Path)):
-                with Path(encoding_key).open("rb", encoding=None) as f:
-                    self._encoding_key = f.read()
-
-            else:
-                LOG.debug("config encoding key value '%s'", str(encoding_key))
-                raise ValueError("No appropriate encoding key could be generated.")
-
-        return self._encoding_key
 
     def export_schema(self) -> dict:
         """
@@ -409,7 +376,6 @@ class Formatter:
                     entry = self._cache[pid].add(explored_path, file_path)
                     entry.save_metadata(
                         metadata,
-                        self._encoding_key,
                         overwrite=self.config.get("overwrite", True),
                     )
                     meta_files.append(entry.meta_path)
@@ -471,12 +437,11 @@ class Formatter:
 
                         # Check the length of the recursion result and and existence of node
                         if len(recursion_result) > 1 or node not in recursion_result:
-                            if is_debug():
-                                LOG.debug(
-                                    "current metadata tree = %s\nrecursion results = %s",
-                                    dumps(tree, indent=4, default=vars),
-                                    dumps(recursion_result, indent=4, default=vars),
-                                )
+                            LOG.debug(
+                                "current metadata tree = %s\nrecursion results = %s",
+                                dumps(tree, indent=4, default=vars),
+                                dumps(recursion_result, indent=4, default=vars),
+                            )
                             raise RuntimeError("Malformed recursion result when processing regex context")
 
                         # If the current node is equal to the key in the interpreted schema i.e. last iteration of loop
@@ -491,12 +456,11 @@ class Formatter:
 
                     # If the break is never reached an error has ocurred
                     else:
-                        if is_debug():
-                            LOG.debug(
-                                "current metadata tree = %s\nrecursion results = %s",
-                                dumps(tree, indent=4, default=vars),
-                                dumps(recursion_result, indent=4, default=vars),
-                            )
+                        LOG.debug(
+                            "current metadata tree = %s\nrecursion results = %s",
+                            dumps(tree, indent=4, default=vars),
+                            dumps(recursion_result, indent=4, default=vars),
+                        )
                         raise RuntimeError("Malformed metadata tree when processing regex context")
 
                 # Else we add a new entry to the tree using the recursion results
@@ -544,7 +508,7 @@ class Formatter:
                 for cache_entry in parser_cache:
                     update_dict_with_parts(
                         self.metadata,
-                        cache_entry.load_metadata(self._encoding_key),
+                        cache_entry.load_metadata(),
                         list(cache_entry.rel_path.parts),
                     )
         LOG.info("Done!")
@@ -587,20 +551,18 @@ def _combine(
         if formatter1.config != formatter2.config:
             for key, value in formatter1.config:
                 if key not in formatter2.config:
-                    if is_debug():
-                        LOG.debug(
-                            "formatter1.config = %s\nformatter2.config = %s",
-                            dumps(formatter1.config, indent=4, default=vars),
-                            dumps(formatter2.config, indent=4, default=vars),
-                        )
+                    LOG.debug(
+                        "formatter1.config = %s\nformatter2.config = %s",
+                        dumps(formatter1.config, indent=4, default=vars),
+                        dumps(formatter2.config, indent=4, default=vars),
+                    )
                     raise KeyError("key mismatch in Formatter.combine.")
                 if value != formatter2.config[key]:
-                    if is_debug():
-                        LOG.debug(
-                            "formatter1.config = %s\nformatter2.config = %s",
-                            dumps(formatter1.config, indent=4, default=vars),
-                            dumps(formatter2.config, indent=4, default=vars),
-                        )
+                    LOG.debug(
+                        "formatter1.config = %s\nformatter2.config = %s",
+                        dumps(formatter1.config, indent=4, default=vars),
+                        dumps(formatter2.config, indent=4, default=vars),
+                    )
                     raise ValueError("Value mismatch in Formatter.combine.")
 
             # If different reference but same content then copy content to new config

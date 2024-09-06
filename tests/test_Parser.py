@@ -1,19 +1,31 @@
-"""
-Unit tests for AParser
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 
-import sys
+Unit tests for the AParser class.
+
+Requires PyYAML.
+
+Authors: Matthias K., Jose V.
+
+"""
+
 import unittest
+
 from pathlib import Path
 
-import yaml
+from yaml import safe_load
 
-sys.path.append("src")
 from metadata_archivist.formatter import Formatter
 from metadata_archivist.parser import AParser
 
+
+TEST_DIR_PATH = Path(__file__).resolve().parent
+
 PARSER_NAME = "DummyParser"
+
 INPUT_FILE_PATTERN = ".*_dummyfile\.yaml"
+
 SCHEMA = {
     "type": "object",
     "properties": {
@@ -46,7 +58,7 @@ class DummyParser(AParser):
     def parse(self, file_path) -> dict:
         out = {}
         with file_path.open("r") as fp:
-            out = yaml.safe_load(fp)
+            out = safe_load(fp)
         return out
 
 
@@ -65,7 +77,7 @@ class TestAParser(unittest.TestCase):
         self.assertTrue(parser.validate_output)
         self.assertEqual(parser.get_reference(), f"#/$defs/{PARSER_NAME}")
 
-        f1 = Path("tests/test_data/example_dummyfile.yaml")
+        f1 = TEST_DIR_PATH / "test_data/example_dummyfile.yaml"
         self.assertEqual(parser.run_parser(f1), TESTFILE_CONTENT)
 
         new_name = "new_DummyParser"

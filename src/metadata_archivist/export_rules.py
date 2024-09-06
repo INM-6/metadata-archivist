@@ -21,12 +21,15 @@ Authors: Jose V., Matthias K.
 
 """
 
+import logging
+
 from pathlib import Path
 from typing import Callable
 from json import dump as j_dump
 from pickle import dump as p_dump, HIGHEST_PROTOCOL
 
-from metadata_archivist.logger import LOG
+
+LOG = logging.getLogger(__name__)
 
 try:
     from yaml import dump as y_dump

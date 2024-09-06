@@ -14,15 +14,14 @@ Authors: Jose V., Matthias K.
 
 """
 
+import logging
+
 from pathlib import Path
 from copy import deepcopy
 from json import load, dumps
-from hashlib import sha3_256
-from pickle import dumps as p_dumps, HIGHEST_PROTOCOL
 from typing import Optional, List, Iterable, NoReturn, Union, Tuple
 
 from metadata_archivist.parser import AParser
-from metadata_archivist.logger import LOG, is_debug
 from metadata_archivist import helper_classes as helpers
 from metadata_archivist.formatting_rules import (
     FORMATTING_RULES,
@@ -34,6 +33,9 @@ from metadata_archivist.helper_functions import (
     pattern_parts_match,
     remove_directives_from_schema,
 )
+
+
+LOG = logging.getLogger(__name__)
 
 
 class Formatter:
@@ -435,12 +437,11 @@ class Formatter:
 
                         # Check the length of the recursion result and and existence of node
                         if len(recursion_result) > 1 or node not in recursion_result:
-                            if is_debug():
-                                LOG.debug(
-                                    "current metadata tree = %s\nrecursion results = %s",
-                                    dumps(tree, indent=4, default=vars),
-                                    dumps(recursion_result, indent=4, default=vars),
-                                )
+                            LOG.debug(
+                                "current metadata tree = %s\nrecursion results = %s",
+                                dumps(tree, indent=4, default=vars),
+                                dumps(recursion_result, indent=4, default=vars),
+                            )
                             raise RuntimeError("Malformed recursion result when processing regex context")
 
                         # If the current node is equal to the key in the interpreted schema i.e. last iteration of loop
@@ -455,12 +456,11 @@ class Formatter:
 
                     # If the break is never reached an error has ocurred
                     else:
-                        if is_debug():
-                            LOG.debug(
-                                "current metadata tree = %s\nrecursion results = %s",
-                                dumps(tree, indent=4, default=vars),
-                                dumps(recursion_result, indent=4, default=vars),
-                            )
+                        LOG.debug(
+                            "current metadata tree = %s\nrecursion results = %s",
+                            dumps(tree, indent=4, default=vars),
+                            dumps(recursion_result, indent=4, default=vars),
+                        )
                         raise RuntimeError("Malformed metadata tree when processing regex context")
 
                 # Else we add a new entry to the tree using the recursion results
@@ -551,20 +551,18 @@ def _combine(
         if formatter1.config != formatter2.config:
             for key, value in formatter1.config:
                 if key not in formatter2.config:
-                    if is_debug():
-                        LOG.debug(
-                            "formatter1.config = %s\nformatter2.config = %s",
-                            dumps(formatter1.config, indent=4, default=vars),
-                            dumps(formatter2.config, indent=4, default=vars),
-                        )
+                    LOG.debug(
+                        "formatter1.config = %s\nformatter2.config = %s",
+                        dumps(formatter1.config, indent=4, default=vars),
+                        dumps(formatter2.config, indent=4, default=vars),
+                    )
                     raise KeyError("key mismatch in Formatter.combine.")
                 if value != formatter2.config[key]:
-                    if is_debug():
-                        LOG.debug(
-                            "formatter1.config = %s\nformatter2.config = %s",
-                            dumps(formatter1.config, indent=4, default=vars),
-                            dumps(formatter2.config, indent=4, default=vars),
-                        )
+                    LOG.debug(
+                        "formatter1.config = %s\nformatter2.config = %s",
+                        dumps(formatter1.config, indent=4, default=vars),
+                        dumps(formatter2.config, indent=4, default=vars),
+                    )
                     raise ValueError("Value mismatch in Formatter.combine.")
 
             # If different reference but same content then copy content to new config

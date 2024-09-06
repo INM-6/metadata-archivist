@@ -16,6 +16,8 @@ Authors: Jose V., Matthias K.
 
 """
 
+import logging
+
 from json import dumps
 from pathlib import Path
 from hashlib import sha3_256
@@ -24,12 +26,14 @@ from collections.abc import Iterator, ItemsView
 from pickle import loads as p_loads, dumps as p_dumps, HIGHEST_PROTOCOL
 
 
-from metadata_archivist.logger import LOG, is_debug
 from metadata_archivist.helper_functions import merge_dicts, IGNORED_ITERABLE_KEYWORDS
 from metadata_archivist.interpretation_rules import (
     INTERPRETATION_RULES,
     register_interpretation_rule,
 )
+
+
+LOG = logging.getLogger(__name__)
 
 
 class CacheEntry:
@@ -80,8 +84,7 @@ class CacheEntry:
 
         if self.metadata is None:
             if self._digest is None:
-                if is_debug():
-                    LOG.debug("CacheEntry = %s", dumps(self, indent=4, default=vars))
+                LOG.debug("CacheEntry = %s", dumps(self, indent=4, default=vars))
                 raise RuntimeError("Metadata has not been cached yet.")
 
             with self.meta_path.open("rb", encoding=None) as f:
@@ -93,8 +96,7 @@ class CacheEntry:
                     raise ValueError("Encoded pickle has been tampered with.")
 
             if self.metadata is None:
-                if is_debug():
-                    LOG.debug("CacheEntry = %s", dumps(self, indent=4, default=vars))
+                LOG.debug("CacheEntry = %s", dumps(self, indent=4, default=vars))
                 raise RuntimeError("Failed to load metadata from CacheEntry.")
 
         return self.metadata
@@ -469,12 +471,10 @@ class SchemaInterpreter:
             LOG.debug("schema type '%s' , expected type '%s'", str(type(schema)), str(dict))
             raise TypeError("Incorrect schema used for iterator.")
         if "properties" not in schema or not isinstance(schema["properties"], dict):
-            if is_debug():
-                LOG.debug("schema = %s", dumps(schema, indent=4, default=vars))
+            LOG.debug("schema = %s", dumps(schema, indent=4, default=vars))
             raise ValueError("Incorrect schema structure, root is expected to contain properties dictionary.")
         if "$defs" not in schema or not isinstance(schema["$defs"], dict):
-            if is_debug():
-                LOG.debug("schema = %s", dumps(schema, indent=4, default=vars))
+            LOG.debug("schema = %s", dumps(schema, indent=4, default=vars))
             raise ValueError("Incorrect schema structure, root is expected to contain $defs dictionary.")
 
         self.schema = schema
@@ -537,11 +537,10 @@ class SchemaInterpreter:
                 # rules must be defined in individual items of the properties, hence a parent key should
                 # always be present.
                 if _parent_key is None:
-                    if is_debug():
-                        LOG.debug(
-                            "current structure = %s",
-                            dumps(_relative_root, indent=4, default=vars),
-                        )
+                    LOG.debug(
+                        "current structure = %s",
+                        dumps(_relative_root, indent=4, default=vars),
+                    )
                     raise RuntimeError("Cannot interpret rule without parent key.")
                 _relative_root = INTERPRETATION_RULES[key](self, val, key, _parent_key, _relative_root)
 
@@ -577,21 +576,15 @@ class SchemaInterpreter:
         Returns:
             self contained SchemaEntry
         """
-        if is_debug():
-            # Passing through dumps for pretty printing,
-            # however can be costly, so checking if debug is enabled first
-            LOG.debug("Initial structure = %s", dumps(self.schema, indent=4, default=vars))
+        LOG.debug("Initial structure = %s", dumps(self.schema, indent=4, default=vars))
 
         if self.structure.is_empty():
             self.structure = self.interpret_schema(self.schema["properties"])
 
-        if is_debug():
-            # Passing through dumps for pretty printing,
-            # however can be costly, so checking if debug is enabled first
-            LOG.debug(
-                "Interpreted structure = %s",
-                dumps(self.structure, indent=4, default=vars),
-            )
+        LOG.debug(
+            "Interpreted structure = %s",
+            dumps(self.structure, indent=4, default=vars),
+        )
 
         return self.structure
 

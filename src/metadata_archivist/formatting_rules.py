@@ -29,11 +29,12 @@ Authors: Jose V., Matthias K.
 
 """
 
+import logging
+
 from json import dumps
 from typing import Callable
 from typing import Union, TYPE_CHECKING
 
-from metadata_archivist.logger import LOG, is_debug
 from metadata_archivist.helper_classes import SchemaEntry
 from metadata_archivist.helper_functions import (
     pattern_parts_match,
@@ -45,6 +46,9 @@ from metadata_archivist.helper_functions import (
 
 if TYPE_CHECKING:
     from metadata_archivist.formatter import Formatter
+
+
+LOG = logging.getLogger(__name__)
 
 
 def _format_parser_id_rule(
@@ -66,12 +70,11 @@ def _format_parser_id_rule(
     # Currently only one parser reference per entry is allowed
     # and if a reference exists it must be the only content in the entry
     if len(interpreted_schema.items()) > 1:
-        if is_debug():
-            LOG.debug(
-                "schema entry key '%s'\nschema entry content = %s",
-                interpreted_schema.key,
-                dumps(interpreted_schema, indent=4, default=vars),
-            )
+        LOG.debug(
+            "schema entry key '%s'\nschema entry content = %s",
+            interpreted_schema.key,
+            dumps(interpreted_schema, indent=4, default=vars),
+        )
         raise RuntimeError("Invalid SchemaEntry content.")
 
     # Get parser and its cache
@@ -91,12 +94,11 @@ def _format_parser_id_rule(
             if parsed_metadata is None:
                 parsed_metadata = {}
             elif not isinstance(parsed_metadata, dict):
-                if is_debug():
-                    LOG.debug(
-                        "parsed metadata = %s\ncontext = %s",
-                        dumps(parsed_metadata, indent=4, default=vars),
-                        dumps(interpreted_schema.context, indent=4, default=vars),
-                    )
+                LOG.debug(
+                    "parsed metadata = %s\ncontext = %s",
+                    dumps(parsed_metadata, indent=4, default=vars),
+                    dumps(interpreted_schema.context, indent=4, default=vars),
+                )
                 raise TypeError("Incorrect parsed_metadata type.")
 
             # We skip the last element as it represents the node name of the parsed metadata
@@ -118,12 +120,11 @@ def _format_parser_id_rule(
             if parsed_metadata is None:
                 parsed_metadata = {}
             elif not isinstance(parsed_metadata, dict):
-                if is_debug():
-                    LOG.debug(
-                        "parsed metadata = %s\ncontext = %s",
-                        dumps(parsed_metadata, indent=4, default=vars),
-                        dumps(interpreted_schema.context, indent=4, default=vars),
-                    )
+                LOG.debug(
+                    "parsed metadata = %s\ncontext = %s",
+                    dumps(parsed_metadata, indent=4, default=vars),
+                    dumps(interpreted_schema.context, indent=4, default=vars),
+                )
                 raise TypeError("Incorrect parsed_metadata type.")
 
             # In this case the name of the file should be taken into account in the context path
@@ -159,22 +160,20 @@ def _format_parser_id_rule(
             unpack = parsing_context["unpack"]
             if isinstance(unpack, bool):
                 if not unpack:
-                    if is_debug():
-                        LOG.debug(
-                            "parsing context = %s",
-                            dumps(parsing_context, indent=4, default=vars),
-                        )
+                    LOG.debug(
+                        "parsing context = %s",
+                        dumps(parsing_context, indent=4, default=vars),
+                    )
                     raise ValueError("Incorrect unpacking configuration in !parsing context: unpack=False.")
 
                 metadata = unpack_nested_value(metadata)
 
             elif isinstance(unpack, int):
                 if unpack == 0:
-                    if is_debug():
-                        LOG.debug(
-                            "parsing context = %s",
-                            dumps(parsing_context, indent=4, default=vars),
-                        )
+                    LOG.debug(
+                        "parsing context = %s",
+                        dumps(parsing_context, indent=4, default=vars),
+                    )
                     raise ValueError("Incorrect unpacking configuration in !parsing context: unpack=0.")
 
                 metadata = unpack_nested_value(metadata, unpack)
@@ -226,8 +225,7 @@ def _format_calculate_rule(
         raise TypeError("Incorrect value type found while formatting calculation")
 
     if not all(key in value for key in ["expression", "variables"]):
-        if is_debug():
-            LOG.debug("!calculate directive value = %s", dumps(value, indent=4, default=vars))
+        LOG.debug("!calculate directive value = %s", dumps(value, indent=4, default=vars))
         raise RuntimeError("Malformed !calculate entry found while formatting calculation.")
 
     add_description = kwargs.pop("add_description", False)
@@ -247,8 +245,7 @@ def _format_calculate_rule(
             )
             raise TypeError("Incorrect variable type found while formatting calculation.")
         if not len(entry.items()) == 1:
-            if is_debug():
-                LOG.debug("entry content = %s", dumps(entry, indent=4, default=vars))
+            LOG.debug("entry content = %s", dumps(entry, indent=4, default=vars))
             raise ValueError("Incorrect variable entry found while formatting calculation.")
 
         parsing_values[variable] = _format_parser_id_rule(formatter, entry, branch, entry["!parser_id"], **kwargs)

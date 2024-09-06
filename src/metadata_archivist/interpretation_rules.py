@@ -27,16 +27,20 @@ Authors: Jose V., Matthias K.
 
 """
 
+import logging
+
 from re import sub
 from json import dumps
 from typing import Callable
-from typing import Optional, Union, TYPE_CHECKING
+from typing import Union, TYPE_CHECKING
 
-from metadata_archivist.logger import LOG, is_debug
 from metadata_archivist.helper_functions import math_check
 
 if TYPE_CHECKING:
     from metadata_archivist.helper_classes import SchemaInterpreter, SchemaEntry
+
+
+LOG = logging.getLogger(__name__)
 
 # Constants for schema specific/special values to be considered when parsing.
 _KNOWN_REFS = [
@@ -91,8 +95,7 @@ def _interpret_varname_directive_rule(
 ) -> "SchemaEntry":
     # Check if regex context is present in current entry
     if "useRegex" not in entry.context:
-        if is_debug():
-            LOG.debug("SchemaEntry context = %s", dumps(entry.context, indent=4, default=vars))
+        LOG.debug("SchemaEntry context = %s", dumps(entry.context, indent=4, default=vars))
         raise RuntimeError("Contextless !varname found.")
     # Add a !varname context which contains the name to use
     # and to which expression it corresponds to.
@@ -110,12 +113,11 @@ def _interpret_reference_rule(
 ) -> "SchemaEntry":
     # Check if reference is well formed against knowledge base
     if not any(prop_val.startswith(ss) for ss in _KNOWN_REFS):
-        if is_debug():
-            LOG.debug(
-                "Reference item ('%s' , %s)",
-                prop_key,
-                dumps(prop_val, indent=4, default=vars),
-            )
+        LOG.debug(
+            "Reference item ('%s' , %s)",
+            prop_key,
+            dumps(prop_val, indent=4, default=vars),
+        )
         raise ValueError("Malformed reference prop_value.")
 
     # Get schema definitions
@@ -169,12 +171,11 @@ def _interpret_calculate_directive_rule(
     # Requires referenced parsers to return numerical values.
     # references can be supplemented with !parsing directives to properly select value.
     if not all(key in prop_val for key in ["expression", "variables"]):
-        if is_debug():
-            LOG.debug(
-                "Directive item ('%s' , %s)",
-                prop_key,
-                dumps(prop_val, indent=4, default=vars),
-            )
+        LOG.debug(
+            "Directive item ('%s' , %s)",
+            prop_key,
+            dumps(prop_val, indent=4, default=vars),
+        )
         raise ValueError("Malformed !calculate directive.")
 
     expression = prop_val["expression"]
@@ -194,13 +195,12 @@ def _interpret_calculate_directive_rule(
         raise TypeError("Incorrect variables type in !calculate directive.")
 
     if len(variable_names) != len(variables):
-        if is_debug():
-            LOG.debug(
-                "Expression '%s' , expression variables '%s' , defined variables = %s",
-                expression,
-                str(variable_names),
-                dumps(variables, indent=4, default=vars),
-            )
+        LOG.debug(
+            "Expression '%s' , expression variables '%s' , defined variables = %s",
+            expression,
+            str(variable_names),
+            dumps(variables, indent=4, default=vars),
+        )
         raise RuntimeError("Variables count mismatch in !calculate directive.")
 
     # At this point we check if each variable entry corresponds to a reference to a Parser
@@ -220,8 +220,7 @@ def _interpret_calculate_directive_rule(
             raise TypeError("Incorrect variable type in !calculate directive.")
 
         if not "$ref" in value:
-            if is_debug():
-                LOG.debug("Variable content = %s", dumps(value, indent=4, default=vars))
+            LOG.debug("Variable content = %s", dumps(value, indent=4, default=vars))
             raise RuntimeError("Variable does not reference a Parser in !calculate directive.")
 
         # We create a SchemaEntry in the context to be specially handled by the Formatter

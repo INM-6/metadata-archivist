@@ -8,7 +8,7 @@
             "description": "ratio of wall clock time to simulation time"
         },
         "model": {
-            "$ref": "#/$defs/yml_parser"
+            "$ref": "#/$defs/config_parser"
         },
         "virtual_processes": {
             "type": "number",
@@ -23,7 +23,7 @@
                         "$ref": "#/$defs/time_parser"
                     },
                     {
-                        "$ref": "#/$defs/yml_parser"
+                        "$ref": "#/$defs/config_parser"
                     }
                 ]
             }
@@ -32,23 +32,21 @@
             "type": "object",
             "properties": {
                 "real": {
-                    "type": "number",
-                    "description": "the time from start to finish of the call"
-                },
-                "user": {
-                    "type": "number",
-                    "description": "amount of CPU time spent in user mode"
-                },
-                "sys": {
-                    "type": "number",
-                    "description": "amount of CPU time spent in kernel mode"
-                },
-                "system": {
-                    "$ref": "#/properties/sys"
+                    "type": "object",
+                    "properties": {
+                        "value": {
+                            "type": "number",
+                            "description": "the time from start to finish of the call"
+                        },
+                        "unit": {
+                            "type": "string",
+                            "description": "unit of the value of time"
+                        }
+                    }
                 }
             }
         },
-        "yml_parser": {
+        "config_parser": {
             "type": "object",
             "properties": {
                 "parameters": {

@@ -7,25 +7,10 @@ Authors: Matthias K., Jose V.
 
 """
 
+import re
+
 from metadata_archivist import AParser
 import yaml
-
-
-def time_parser_sec(string):
-    minute_split = string.split("m")
-    minutes = int(minute_split[0]) * 60 * 1000
-    second_split = minute_split[1].split(".")
-    seconds = int(second_split[0]) * 1000
-    milis = int(second_split[1][:-1])
-    return (minutes + seconds + milis) / 1000
-
-
-def key_val_split(string, split_char, functor=None):
-    if functor is None:
-        functor = lambda x: x
-    string = string.strip()
-    out = string.split(split_char)
-    return {out[0].strip(): functor(out[1].strip())}
 
 
 class time_parser(AParser):
@@ -38,37 +23,42 @@ class time_parser(AParser):
                 "type": "object",
                 "properties": {
                     "real": {
-                        "type": "number",
-                        "description": "the time from start to finish of the call",
+                        "type": "object",
+                        "properties": {
+                            "value": {
+                                "type": "number",
+                                "description": "the time from start to finish of the call",
+                            },
+                            "unit": {
+                                "type": "string",
+                                "description": "unit of the value of time",
+                            },
+                        },
                     },
-                    "user": {
-                        "type": "number",
-                        "description": "amount of CPU time spent in user mode",
-                    },
-                    "sys": {
-                        "type": "number",
-                        "description": "amount of CPU time spent in kernel mode",
-                    },
-                    "system": {"$ref": "#/properties/sys"},
                 },
             },
         )
 
     def parse(self, file_path) -> dict:
-        out = {}
+        out = {"real": {"value": None, "unit": "s"}}
+        rex = re.compile(r"^real\s+(\d+)m(\d+\.?\d*)s$")
         with file_path.open("r") as fp:
             for line in fp:
-                if line != "\n":
-                    out.update(key_val_split(line, "\t", time_parser_sec))
+                rmatch = rex.match(line)
+                if rmatch is not None and len(rmatch.groups()) > 1:
+                    out["real"]["value"] = int(rmatch.group(1)) * 60 + float(rmatch.group(2))
+                    break
+            else:
+                raise ValueError("Real time not found in file.", file_path)
         return out
 
 
-class yml_parser(AParser):
+class config_parser(AParser):
 
     def __init__(self) -> None:
         super().__init__(
-            name="yml_parser",
-            input_file_pattern=".*\.yml",
+            name="config_parser",
+            input_file_pattern="config\.yml",
             schema={
                 "type": "object",
                 "properties": {
@@ -104,4 +94,4 @@ class yml_parser(AParser):
                 out = yaml.safe_load(stream)
                 return out
             except yaml.YAMLError as exc:
-                print(exc)
+                raise ValueError("Could not open YAML file.", file_path, exc)

@@ -19,7 +19,7 @@ from json import dumps, dump
 from argparse import ArgumentParser
 
 from metadata_archivist import Archivist
-from my_parsers import time_parser, yml_parser
+from my_parsers import time_parser, config_parser
 
 
 stderr = logging.StreamHandler(stream=sys.stderr)
@@ -49,19 +49,19 @@ my_schema = {
                 "expression": "{val1} / {val2}",
                 "variables": {
                     "val1": {
-                        "!parsing": {"keys": ["real"], "unpack": 1},
+                        "!parsing": {"keys": ["real/value"], "unpack": 2},
                         "$ref": "#/$defs/time_parser",
                     },
                     "val2": {
                         "!parsing": {"keys": ["parameters/sim_time"], "unpack": 2},
-                        "$ref": "#/$defs/yml_parser",
+                        "$ref": "#/$defs/config_parser",
                     },
                 },
             },
         },
         "model": {
             "!parsing": {"keys": ["parameters/scale"], "unpack": 1},
-            "$ref": "#/$defs/yml_parser",
+            "$ref": "#/$defs/config_parser",
         },
         "virtual_processes": {
             "type": "number",
@@ -71,14 +71,14 @@ my_schema = {
                 "variables": {
                     "val1": {
                         "!parsing": {"keys": ["parameters/num_procs"], "unpack": True},
-                        "$ref": "#/$defs/yml_parser",
+                        "$ref": "#/$defs/config_parser",
                     },
                     "val2": {
                         "!parsing": {
                             "keys": ["parameters/threads_per_proc"],
                             "unpack": True,
                         },
-                        "$ref": "#/$defs/yml_parser",
+                        "$ref": "#/$defs/config_parser",
                     },
                 },
             },
@@ -114,7 +114,7 @@ if __name__ == "__main__":
     set_level(args.verbosity)
     arch = Archivist(
         path="raw_metadata",
-        parsers=[time_parser(), yml_parser()],
+        parsers=[time_parser(), config_parser()],
         schema=my_schema,
         output_directory="./",
         output_file="metadata.json",

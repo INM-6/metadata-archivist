@@ -63,7 +63,7 @@ def set_level(level: str) -> None:
 
 if __name__ == "__main__":
     set_level(args.verbosity)
-    config_path = Path(__file__).parent.resolve() / "config.json"
+    config_path = Path(__file__).resolve().parent / "config.json"
     if not config_path.is_file():
         raise FileNotFoundError(f"No config file at: {config_path}")
 
